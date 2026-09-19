@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مستقبل حالة شحنات بوسطة</title>
+<style>
+  :root {
+    --bg: #0f1720; --panel: #172333; --panel2: #1e2c40; --border: #2a3b52;
+    --text: #e7edf5; --muted: #93a4bb; --accent: #3b82f6;
+    --green: #22c55e; --yellow: #eab308; --red: #ef4444; --neutral: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  input, select, button {
+    font-family: inherit; font-size: 14px; padding: 9px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--panel2); color: var(--text);
+  }
+  input::placeholder { color: var(--muted); }
+  button { cursor: pointer; background: var(--accent); border: none; color: #fff; font-weight: 600; }
+  button:hover { filter: brightness(1.1); }
+  button.secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--muted); }
+  .login-box { max-width: 380px; margin: 80px auto; }
+  .banner {
+    display: none; background: #3a1414; border: 1px solid var(--red); color: #ffb4b4;
+    padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-weight: 600; font-size: 14px;
+  }
+  .banner.show { display: block; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--panel); }
+  tbody tr:hover { background: var(--panel2); }
+  .table-wrap { overflow-x: auto; max-height: 65vh; overflow-y: auto; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .badge.success { background: rgba(34,197,94,.15); color: var(--green); }
+  .badge.warning { background: rgba(234,179,8,.15); color: var(--yellow); }
+  .badge.error   { background: rgba(239,68,68,.15); color: var(--red); }
+  .badge.neutral { background: rgba(100,116,139,.2); color: var(--neutral); }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--panel2); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 18px; border-radius: 8px; font-size: 13px; z-index: 50; display: none;
+  }
+  .err { color: var(--red); font-size: 13px; min-height: 18px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .muted { color: var(--muted); }
+  a { color: var(--accent); }
+  #app { display: none; }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="setup" style="display:none;">
+  <div class="login-box card">
+    <h1>إعداد أولي</h1>
+    <div class="sub">أدخل عنوان الـ Worker وسر التشغيل (WORKER_SECRET) — بيتخزّنوا في المتصفح ده بس.</div>
+    <div class="field"><label>رابط الـ Worker</label>
+      <input id="setupUrl" placeholder="https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev">
+    </div>
+    <div class="field" style="margin-top:10px;"><label>WORKER_SECRET</label>
+      <input id="setupSecret" type="password" placeholder="السر">
+    </div>
+    <div class="err" id="setupErr"></div>
+    <button style="margin-top:10px;width:100%" onclick="saveSetup()">حفظ ومتابعة</button>
+  </div>
+</div>
+
+<div class="wrap" id="login" style="display:none;">
+  <div class="login-box card">
+    <h1>تسجيل الدخول</h1>
+    <div class="sub">مستقبل حالة شحنات بوسطة</div>
+    <div class="field"><label>اسم المستخدم</label>
+      <select id="loginUsername"></select>
+    </div>
+    <div class="field" style="margin-top:10px;"><label>PIN</label>
+      <input id="loginPin" type="password" inputmode="numeric" placeholder="••••" maxlength="8">
+    </div>
+    <div class="err" id="loginErr"></div>
+    <div class="row" style="margin-top:12px;">
+      <button style="flex:1" onclick="doLogin()">دخول</button>
+      <button class="secondary" style="flex:1" onclick="doRegisterPin()">أول مرة — سجّل PIN</button>
+    </div>
+    <div style="margin-top:10px;text-align:left;">
+      <button class="secondary" onclick="resetSetup()">تغيير إعداد الـ Worker</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="app">
+  <div class="topbar">
+    <div>
+      <h1>مستقبل حالة شحنات بوسطة</h1>
+      <div class="sub">آخر الأحداث · <span id="whoami" class="muted"></span></div>
+    </div>
+    <button class="secondary" onclick="doLogout()">خروج</button>
+  </div>
+
+  <div class="banner" id="silenceBanner"></div>
+  <div class="banner" id="matchFailBanner"></div>
+
+  <div class="card">
+    <div class="row">
+      <div class="field"><label>رقم الأوردر</label><input id="fOrder" placeholder="#12345"></div>
+      <div class="field"><label>رقم التتبع</label><input id="fTracking" placeholder="8485106207"></div>
+      <div class="field"><label>من تاريخ</label><input id="fFrom" type="date"></div>
+      <div class="field"><label>إلى تاريخ</label><input id="fTo" type="date"></div>
+      <div class="field"><label>&nbsp;</label><button onclick="loadEvents()">فلترة</button></div>
+      <div class="field"><label>&nbsp;</label><button class="secondary" onclick="clearFilters()">تفريغ</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>الأوردر</th><th>رقم التتبع</th><th>الحالة</th><th>الوصف</th>
+            <th>الوقت</th><th>الجنب</th><th>طريقة المطابقة</th><th>النتيجة</th>
+          </tr>
+        </thead>
+        <tbody id="eventsBody"></tbody>
+      </table>
+    </div>
+    <div class="sub" id="eventsMeta" style="margin-top:10px;"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════ §CONFIG ═══════════════
+const LS_URL    = 'bwsr_worker_url';
+const LS_SECRET = 'bwsr_worker_secret';
+const APP_ID    = 'bosta_webhook_status';
+let currentEmployee = null; // JS memory only — never localStorage (Rule 4)
+
+function getConfig() {
+  return {
+    workerUrl:    localStorage.getItem(LS_URL) || '',
+    workerSecret: localStorage.getItem(LS_SECRET) || '',
+  };
+}
+
+// ═══════════════ §HELPERS ═══════════════
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => { t.style.display = 'none'; }, 3500);
+}
+const REQUEST_TIMEOUT_MS = 15000;
+async function apiRequest(action, { method = 'GET', body = null, params = {} } = {}) {
+  const cfg = getConfig();
+  if (!cfg.workerUrl || !cfg.workerSecret) throw new Error('إعداد الـ Worker ناقص');
+  const url = new URL(cfg.workerUrl.replace(/\/$/, ''));
+  url.searchParams.set('action', action);
+  for (const [k, v] of Object.entries(params)) if (v !== null && v !== undefined && v !== '') url.searchParams.set(k, v);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const resp = await fetch(url.toString(), {
+      method,
+      headers: {
+        'Authorization': `Bearer ${cfg.workerSecret}`,
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+    return data;
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('انتهت مهلة الاتصال بالـ Worker');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ═══════════════ §SETUP ═══════════════
+function saveSetup() {
+  const url = document.getElementById('setupUrl').value.trim();
+  const secret = document.getElementById('setupSecret').value.trim();
+  const err = document.getElementById('setupErr');
+  if (!url || !secret) { err.textContent = 'الرابط والسر مطلوبان'; return; }
+  localStorage.setItem(LS_URL, url);
+  localStorage.setItem(LS_SECRET, secret);
+  boot();
+}
+function resetSetup() {
+  localStorage.removeItem(LS_URL);
+  localStorage.removeItem(LS_SECRET);
+  boot();
+}
+
+// ═══════════════ §AUTH ═══════════════
+async function loadEmployeesDropdown() {
+  const sel = document.getElementById('loginUsername');
+  sel.innerHTML = '<option>...جاري التحميل</option>';
+  try {
+    const data = await apiRequest('get_employees');
+    sel.innerHTML = (data.employees || [])
+      .map(e => `<option value="${esc(e.username)}">${esc(e.display_name)}</option>`).join('');
+  } catch (e) {
+    sel.innerHTML = '<option>تعذّر التحميل</option>';
+    showToast(e.message);
+  }
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value;
+  const pin      = document.getElementById('loginPin').value.trim();
+  const err      = document.getElementById('loginErr');
+  err.textContent = '';
+  if (!username || !pin) { err.textContent = 'اختر المستخدم واكتب الـ PIN'; return; }
+  try {
+    const data = await apiRequest('verify_employee', { method: 'POST', body: { username, pin, appId: APP_ID } });
+    currentEmployee = { username, displayName: data.displayName };
+    if (data.logged === false) showToast('تم الدخول — لكن السجل لم يُكتب');
+    showApp();
+  } catch (e) {
+    err.textContent = e.message;
+  }
+}
+
+async function doRegisterPin() {
+  const username = document.getElementById('loginUsername').value;
+  const pin      = document.getElementById('loginPin').value.trim();
+  const err      = document.getElementById('loginErr');
+  err.textContent = '';
+  if (!username || !pin) { err.textContent = 'اختر المستخدم واكتب PIN جديد'; return; }
+  try {
+    await apiRequest('register_pin', { method: 'POST', body: { username, pin } });
+    showToast('تم تسجيل الـ PIN — سجّل دخولك الآن');
+  } catch (e) {
+    err.textContent = e.message;
+  }
+}
+
+async function doLogout() {
+  if (currentEmployee) {
+    try { await apiRequest('log_logout', { params: { username: currentEmployee.username, appId: APP_ID } }); }
+    catch (e) { /* logout log failure is non-blocking */ }
+  }
+  currentEmployee = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'block';
+  document.getElementById('loginPin').value = '';
+  loadEmployeesDropdown();
+}
+
+// ═══════════════ §SCREEN ═══════════════
+function resultBadge(extra) {
+  let r = null;
+  try { r = (typeof extra === 'string' ? JSON.parse(extra) : extra)?.result; } catch { /* ignore */ }
+  const map = { success: 'success', warning: 'warning', error: 'error', rejected: 'neutral', already: 'neutral' };
+  const cls = map[r] || 'neutral';
+  return `<span class="badge ${cls}">${esc(r || '—')}</span>`;
+}
+
+function fmtCairo(iso) {
+  if (!iso) return '—';
+  try {
+    return new Intl.DateTimeFormat('ar-EG', {
+      timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).format(new Date(iso));
+  } catch { return iso; }
+}
+
+async function loadEvents() {
+  const body = document.getElementById('eventsBody');
+  const meta = document.getElementById('eventsMeta');
+  body.innerHTML = '<tr><td colspan="8">...جاري التحميل</td></tr>';
+  try {
+    const params = {
+      order:    document.getElementById('fOrder').value.trim(),
+      tracking: document.getElementById('fTracking').value.trim(),
+      dateFrom: document.getElementById('fFrom').value,
+      dateTo:   document.getElementById('fTo').value,
+      limit: 200,
+    };
+    const data = await apiRequest('list_events', { params });
+    const events = data.events || [];
+    if (!events.length) {
+      body.innerHTML = '<tr><td colspan="8" class="muted">لا توجد أحداث مطابقة</td></tr>';
+    } else {
+      body.innerHTML = events.map(ev => `
+        <tr>
+          <td>${esc(ev.business_reference)}</td>
+          <td>${esc(ev.tracking_number)}</td>
+          <td>${esc(ev.state)}</td>
+          <td>${esc(ev.description || '—')}</td>
+          <td>${fmtCairo(ev.received_at)}</td>
+          <td>${esc((ev.matched_slot || '—').toUpperCase())}</td>
+          <td>${esc(ev.match_method || '—')}</td>
+          <td>${writeStatusBadge(ev.write_status)}</td>
+        </tr>`).join('');
+    }
+    meta.textContent = `${events.length} حدث معروض`;
+  } catch (e) {
+    body.innerHTML = `<tr><td colspan="8" class="err">${esc(e.message)}</td></tr>`;
+  }
+}
+
+function writeStatusBadge(status) {
+  const map = {
+    written:            ['success', 'اتكتب'],
+    dry_run_matched:     ['warning', 'تطابق (بدون كتابة)'],
+    stale_skipped:       ['neutral', 'أقدم من المكتوب'],
+    match_failed:        ['error',   'فشلت المطابقة'],
+    shopify_write_failed:['error',   'فشلت الكتابة'],
+    processing:          ['neutral', 'قيد المعالجة'],
+  };
+  const [cls, label] = map[status] || ['neutral', status || '—'];
+  return `<span class="badge ${cls}">${esc(label)}</span>`;
+}
+
+function clearFilters() {
+  ['fOrder', 'fTracking', 'fFrom', 'fTo'].forEach(id => document.getElementById(id).value = '');
+  loadEvents();
+}
+
+async function refreshDiagBanners() {
+  try {
+    const d = await apiRequest('diag');
+    const silenceBanner = document.getElementById('silenceBanner');
+    const matchBanner    = document.getElementById('matchFailBanner');
+
+    let silent = true;
+    if (d.lastEvent?.received_at) {
+      const gapH = (Date.now() - Date.parse(d.lastEvent.received_at)) / 3600000;
+      if (gapH < (d.silenceThresholdHours || 3)) silent = false;
+      if (silent) silenceBanner.textContent = `🔴 مفيش حدث من بوسطة منذ ${gapH.toFixed(1)} ساعة — راجع تسجيل الويبهوك في داشبورد بوسطة`;
+    } else {
+      silenceBanner.textContent = '🔴 مفيش أي حدث اتسجّل من بوسطة على الإطلاق';
+    }
+    silenceBanner.classList.toggle('show', silent);
+
+    const hasMatchFailed = (d.matchFailed24h || 0) > 0;
+    if (hasMatchFailed) matchBanner.textContent = `⚠️ ${d.matchFailed24h} حدث فشلت مطابقته لأوردر (S1/S2) في آخر 24 ساعة`;
+    matchBanner.classList.toggle('show', hasMatchFailed);
+  } catch (e) {
+    // فشل diag نفسه — ماينفعش نعرض بانر بيانات غير موثوقة
+  }
+}
+
+// ═══════════════ §BOOT ═══════════════
+function showApp() {
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('whoami').textContent = currentEmployee?.displayName || '';
+  loadEvents();
+  refreshDiagBanners();
+  clearInterval(showApp._poll);
+  showApp._poll = setInterval(() => { loadEvents(); refreshDiagBanners(); }, 60000);
+}
+
+function boot() {
+  const cfg = getConfig();
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+  if (!cfg.workerUrl || !cfg.workerSecret) {
+    document.getElementById('setup').style.display = 'block';
+    return;
+  }
+  document.getElementById('login').style.display = 'block';
+  loadEmployeesDropdown();
+}
+
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# الشكل المعتمد لأدوات EcomModa
+# ⚠️ name لازم يطابق اسم الـ Worker في داشبورد Cloudflare حرف بحرف.
+#    لو اختلفوا، الـ build مش بيفشل — بينشر Worker جديد والأصلي بيتجمّد بصمت.
+
+name               = "bosta-webhook-status-receiver-worker"
+main               = "index.js"
+compatibility_date = "2025-01-01"
+workers_dev        = true
+
+[observability]
+enabled = true
+
+# ─── D1 ──────────────────────────────────────────────
+# الـ binding دايمًا "DB" — أي اسم تاني والكتابة بتفشل بصمت
+[[d1_databases]]
+binding       = "DB"
+database_name = "ecommoda-dev-logs"
+database_id   = "90db62d3-bd7e-4d92-912b-10fc78eeb565"
+
+# ─── Vars (نص عادي — مش أسرار) ────────────────────────
+# دي بتتطبّق فعليًا مع Workers Builds. الداشبورد مش مصدر حقيقة لها —
+# أي تعديل لازم يبقى commit هنا (ecommoda-constants §6).
+[vars]
+SHOP_DOMAIN = "6c7e1a-53.myshopify.com"
+
+# 🔴 يبدأ "false" عمدًا (ترتيب التنفيذ §9 خطوة 3). يتغيّر لـ "true" بعد
+# مراقبة المطابقة على أحداث حقيقية (خطوة 6-7 في CLAUDE.md).
+WRITE_METAFIELDS = "false"
+
+# نافذة مراقبة السكوت بالساعات (§7.1) — رقم مبدئي قابل للتعديل من غير كود.
+SILENCE_THRESHOLD_HOURS = "3"
+
+# ─── Cron — مراقبة السكوت (§7.1) ──────────────────────
+[triggers]
+crons = ["*/30 * * * *"]
