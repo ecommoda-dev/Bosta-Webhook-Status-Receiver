@@ -4,128 +4,458 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>مستقبل حالة شحنات بوسطة</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- skills: ecommoda-html-builder v7.2.0 · ecommoda-worker-builder v3.4.0 · ecommoda-constants v2.7.0 — 20-09-2026 -->
 <style>
-  :root {
-    --bg: #0f1720; --panel: #172333; --panel2: #1e2c40; --border: #2a3b52;
-    --text: #e7edf5; --muted: #93a4bb; --accent: #3b82f6;
-    --green: #22c55e; --yellow: #eab308; --red: #ef4444; --neutral: #64748b;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-    background: var(--bg); color: var(--text); min-height: 100vh;
-  }
-  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
-  .card {
-    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
-    padding: 20px; margin-bottom: 16px;
-  }
-  input, select, button {
-    font-family: inherit; font-size: 14px; padding: 9px 12px; border-radius: 8px;
-    border: 1px solid var(--border); background: var(--panel2); color: var(--text);
-  }
-  input::placeholder { color: var(--muted); }
-  button { cursor: pointer; background: var(--accent); border: none; color: #fff; font-weight: 600; }
-  button:hover { filter: brightness(1.1); }
-  button.secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
-  button:disabled { opacity: .5; cursor: not-allowed; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  .field { display: flex; flex-direction: column; gap: 4px; }
-  .field label { font-size: 12px; color: var(--muted); }
-  .login-box { max-width: 380px; margin: 80px auto; }
-  .banner {
-    display: none; background: #3a1414; border: 1px solid var(--red); color: #ffb4b4;
-    padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-weight: 600; font-size: 14px;
-  }
-  .banner.show { display: block; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--border); }
-  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--panel); }
-  tbody tr:hover { background: var(--panel2); }
-  .table-wrap { overflow-x: auto; max-height: 65vh; overflow-y: auto; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-  .badge.success { background: rgba(34,197,94,.15); color: var(--green); }
-  .badge.warning { background: rgba(234,179,8,.15); color: var(--yellow); }
-  .badge.error   { background: rgba(239,68,68,.15); color: var(--red); }
-  .badge.neutral { background: rgba(100,116,139,.2); color: var(--neutral); }
-  .toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: var(--panel2); border: 1px solid var(--border); color: var(--text);
-    padding: 10px 18px; border-radius: 8px; font-size: 13px; z-index: 50; display: none;
-  }
-  .err { color: var(--red); font-size: 13px; min-height: 18px; }
-  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-  .muted { color: var(--muted); }
-  a { color: var(--accent); }
-  #app { display: none; }
+/* ══════════════════════════════════════════════════════
+   §STYLES — design tokens (design-system.md) + shell + login + tool
+   ══════════════════════════════════════════════════════ */
+:root {
+  --bg:             #f3f4f6;
+  --surface:        #ffffff;
+  --surface-2:      #f9fafb;
+  --border:         #e5e7eb;
+  --border-strong:  #d1d5db;
+  --text-primary:   #111827;
+  --text-secondary: #6b7280;
+  --text-muted:     #6b7280;
+  --text-mid:       #374151;
+  --accent:         #2563eb;
+  --accent-light:   #eff6ff;
+  --accent-dark:    #1d4ed8;
+  --green:          #16a34a;
+  --green-light:    #f0fdf4;
+  --green-border:   #86efac;
+  --red:            #dc2626;
+  --red-light:      #fef2f2;
+  --red-border:     #fca5a5;
+  --amber:          #d97706;
+  --amber-light:    #fffbeb;
+  --amber-border:   #fde68a;
+  --purple:         #7c3aed;
+  --purple-light:   #f5f3ff;
+  --purple-border:  #c4b5fd;
+  --surface-hover:      #f0f4f8;
+  --neutral-dark:       #1a1d27;
+  --on-accent:          #ffffff;
+  --accent-border:      #bfdbfe;
+  --accent-hover:       #dbeafe;
+  --accent-hover-border:#93c5fd;
+  --green-dark:         #15803d;
+  --red-dark:           #b91c1c;
+  --amber-dark:         #92400e;
+  --purple-dark:        #4c1d95;
+  --radius:         12px;
+  --radius-sm:      8px;
+  --shadow:         0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+  --font-body:      'Noto Sans Arabic', -apple-system, sans-serif;
+  --font-mono:      'Noto Sans Arabic', -apple-system, sans-serif;
+  --container-max:  1200px;   /* Tier M — جدول رئيسي واحد */
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  padding: 12px;
+  direction: rtl;
+}
+.container { max-width: var(--container-max); margin: 0 auto; }
+
+/* ── Header ─────────────────────────────────────────────────── */
+.app-header {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 16px; margin-bottom: 12px; box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+.app-title { display: flex; align-items: center; gap: 10px; }
+.app-icon { font-size: 22px; }
+.app-title-text h1 { font-size: 15px; font-weight: 700; line-height: 1.2; }
+.app-title-text span { font-size: 11px; color: var(--text-muted); }
+.app-header-btns { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.hbtn {
+  display: flex; align-items: center; gap: 5px; padding: 6px 12px;
+  border: 1.5px solid var(--border-strong); background: var(--surface); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.hbtn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.hbtn:disabled { opacity: .5; cursor: not-allowed; }
+.hbtn.ver-btn { border-color: var(--accent-border); color: var(--accent-dark); background: var(--accent-light); font-family: var(--font-mono); font-weight: 700; }
+.hbtn.ver-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover-border); color: var(--accent-dark); }
+.hbtn.active-user { border-color: var(--green); color: var(--green); background: var(--green-light); }
+.hbtn.active-user:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+.hbtn.warn-btn { border-color: var(--amber); color: var(--amber-dark); background: var(--amber-light); }
+.hbtn .ico { display: inline-block; }
+.hbtn.refreshing .ico { animation: hbtn-spin .7s linear infinite; }
+@keyframes hbtn-spin { to { transform: rotate(360deg); } }
+
+/* ── Settings Modal ─────────────────────────────────────────── */
+.settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; }
+.settings-overlay.open { display: flex; }
+.settings-modal { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,.18); animation: modalIn .2s ease; overflow: hidden; }
+@keyframes modalIn { from { transform: scale(.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.settings-modal-hdr { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 15px; font-weight: 700; }
+.modal-close-x { background: var(--red-light); border: 1.5px solid var(--red-border); color: var(--red); font-size: 14px; font-weight: 700; line-height: 1; padding: 4px 11px; border-radius: var(--radius-sm); font-family: inherit; cursor: pointer; transition: all .15s; }
+.modal-close-x:hover { background: var(--red); color: var(--on-accent); border-color: var(--red); }
+.settings-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.settings-field { display: flex; flex-direction: column; gap: 5px; }
+.settings-label { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .5px; }
+.settings-input { border: 1.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 9px 11px; font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); outline: none; width: 100%; direction: ltr; background: var(--surface); transition: border-color .15s; }
+.settings-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+.settings-modal-ftr { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+.btn-modal-cancel { padding: 8px 14px; background: transparent; color: var(--text-secondary); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-family: inherit; font-size: 12px; cursor: pointer; }
+.btn-modal-cancel:hover { color: var(--text-primary); }
+.btn-modal-save { padding: 8px 18px; background: var(--accent); color: var(--on-accent); border: none; border-radius: var(--radius-sm); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s; }
+.btn-modal-save:hover { background: var(--accent-dark); }
+.diag-box { border-top: 1.5px solid var(--border); padding-top: 12px; }
+.diag-btn-row { display: flex; }
+.diag-result { margin-top: 10px; font-size: 12px; line-height: 1.8; }
+.diag-row { display: flex; gap: 6px; align-items: flex-start; }
+
+/* ── Modal Shell — About / Changelog ───────────────────────── */
+.eco-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; }
+.eco-overlay.open { display: flex; }
+.eco-modal { background: var(--surface); border-radius: var(--radius); width: 90%; max-width: calc(var(--container-max) * .9); max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.18); overflow: hidden; }
+.eco-modal-hdr { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 700; background: var(--surface); flex-shrink: 0; }
+.eco-modal-body { overflow-y: auto; padding: 16px 20px; flex: 1; }
+
+.cl-version-block { margin-bottom: 4px; }
+.cl-version-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.cl-ver-badge { font-family: var(--font-mono); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 5px; background: var(--accent-light); color: var(--accent-dark); border: 1px solid var(--accent-border); direction: ltr; }
+.cl-ver-date { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); direction: ltr; }
+.cl-items { list-style: none; display: flex; flex-direction: column; gap: 5px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+.cl-version-block:last-child .cl-items { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+.cl-item { display: flex; gap: 8px; font-size: 13px; align-items: flex-start; }
+.cl-tag { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; align-self: flex-start; margin-top: 2px; }
+.cl-tag.new { background: var(--green-light); color: var(--green-dark); }
+.cl-tag.fix { background: var(--red-light); color: var(--red); }
+.cl-tag.change { background: var(--amber-light); color: var(--amber-dark); }
+
+.about-sec { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 10px; overflow: hidden; }
+.about-sec > summary { padding: 11px 14px; font-weight: 700; font-size: 14px; background: var(--surface-2); cursor: pointer; user-select: none; }
+.about-sec-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.75; }
+.about-sec-body h4 { font-size: 12px; font-weight: 700; color: var(--accent); margin-top: 4px; }
+.about-sec-body ol, .about-sec-body ul { padding-inline-start: 20px; display: flex; flex-direction: column; gap: 4px; }
+.about-sec-body code { font-family: var(--font-mono); font-size: 11px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; direction: ltr; display: inline-block; }
+.about-sec-body table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.about-sec-body th, .about-sec-body td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast { padding: 10px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: var(--on-accent); box-shadow: 0 4px 12px rgba(0,0,0,.2); animation: toastIn .3s ease; max-width: 320px; }
+@keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+.toast-success { background: var(--green); }
+.toast-error   { background: var(--red); }
+.toast-warning { background: var(--amber); }
+.toast-neutral { background: var(--neutral-dark); }
+
+/* ── Login Overlay ──────────────────────────────────────────── */
+.login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.login-overlay.hidden { display: none; }
+.login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 22px 70px rgba(0,0,0,.22); width: 100%; max-width: 420px; padding: 28px 26px 24px; position: relative; animation: loginIn .18s ease; }
+@keyframes loginIn { from { transform: translateY(6px) scale(.985); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+.login-settings-btn { position: absolute; top: 16px; left: 16px; display: inline-flex; align-items: center; gap: 5px; min-height: 38px; padding: 8px 12px; border-radius: 9px; border: 1.5px solid; background: var(--surface); font-family: var(--font-body); font-size: 12px; font-weight: 800; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.login-settings-btn.ready { border-color: var(--green); color: var(--green); background: var(--green-light); }
+.login-settings-btn.missing { border-color: var(--red); color: var(--red); background: var(--red-light); }
+.login-settings-btn:hover { transform: translateY(-1px); }
+.login-version { position: absolute; top: 58px; left: 17px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: .2px; user-select: none; }
+.login-top { padding-top: 12px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.login-icon { font-size: 34px; line-height: 1; margin-bottom: 14px; }
+.login-title { font-size: 19px; font-weight: 900; letter-spacing: -.1px; }
+.login-desc { font-size: 13px; color: var(--text-secondary); font-weight: 600; margin-top: 5px; }
+.login-sub { min-height: 22px; margin-top: 4px; color: var(--text-muted); font-size: 12px; font-weight: 600; text-align: center; line-height: 1.7; }
+.login-body { margin-top: 22px; display: flex; flex-direction: column; gap: 14px; }
+.login-field { display: flex; flex-direction: column; gap: 7px; }
+.login-field select { width: 100%; height: 58px; border: 1.5px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text-primary); font-family: var(--font-body); font-size: 14px; font-weight: 600; outline: none; padding: 0 14px; transition: border-color .15s, box-shadow .15s; }
+.login-field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+.login-field select:disabled { opacity: .68; cursor: not-allowed; background: var(--surface-2); }
+.login-status { min-height: 18px; font-size: 12px; font-weight: 700; color: var(--text-muted); line-height: 1.5; }
+.login-status.info { color: var(--accent); }
+.login-status.warn { color: var(--amber); }
+.login-status.error { color: var(--red); }
+.pin-zone { display: none; flex-direction: column; gap: 12px; animation: pinZoneIn .16s ease; }
+.pin-zone.visible { display: flex; }
+@keyframes pinZoneIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.pin-label { font-size: 12px; font-weight: 800; color: var(--text-secondary); text-align: right; margin-top: 2px; }
+.pin-slots { display: flex; justify-content: center; gap: 9px; direction: ltr; }
+.pin-slot { width: 48px; height: 48px; border-radius: 10px; border: 1.5px solid var(--border-strong); background: var(--surface-2); display: grid; place-items: center; font-family: var(--font-mono); font-size: 22px; font-weight: 800; color: var(--accent); transition: all .15s; user-select: none; }
+.pin-slot.empty::before { content: '_'; transform: translateY(-2px); color: var(--accent); opacity: .75; font-size: 18px; }
+.pin-slot.filled { background: var(--accent-light); border-color: var(--accent); }
+.pin-slot.filled::before { content: '●'; font-size: 17px; transform: translateY(-1px); color: var(--accent); opacity: 1; }
+.pin-slot.error { border-color: var(--red); background: var(--red-light); }
+.pin-slot.error::before { color: var(--red); }
+.pin-slots.shake { animation: pinShake .34s ease; }
+@keyframes pinShake { 0%,100% { transform: translateX(0); } 22% { transform: translateX(-5px); } 44% { transform: translateX(5px); } 66% { transform: translateX(-3px); } 88% { transform: translateX(3px); } }
+.pin-keypad { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 1px 0 0; }
+.pin-key { min-height: 49px; border-radius: 10px; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text-primary); font-family: var(--font-mono); font-size: 18px; font-weight: 800; cursor: pointer; transition: background .12s, color .12s, border-color .12s, transform .06s; display: flex; align-items: center; justify-content: center; }
+.pin-key:hover:not(:disabled) { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+.pin-key:active:not(:disabled) { transform: translateY(1px); }
+.pin-key.utility { color: var(--red); background: var(--red-light); border-color: var(--red-border); font-family: var(--font-body); font-size: 13px; font-weight: 900; }
+.pin-key.utility:hover:not(:disabled) { background: var(--red); color: var(--on-accent); border-color: var(--red); }
+.pin-key:disabled { opacity: .55; cursor: not-allowed; }
+.login-alert { display: none; min-height: 38px; border-radius: 10px; border: 1px solid var(--red-border); background: var(--red-light); color: var(--red); padding: 9px 12px; font-size: 12px; font-weight: 800; text-align: center; line-height: 1.6; }
+.login-alert.visible { display: block; }
+.login-primary { display: none; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 58px; margin-top: 1px; border: none; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-family: var(--font-body); font-size: 15px; font-weight: 900; cursor: pointer; transition: background .15s, opacity .15s, transform .06s; }
+.login-primary.visible { display: inline-flex; }
+.login-primary:hover:not(:disabled) { background: var(--accent-dark); }
+.login-primary:active:not(:disabled) { transform: translateY(1px); }
+.login-primary:disabled { opacity: .56; cursor: not-allowed; }
+.login-secondary { display: none; align-items: center; justify-content: center; width: 100%; min-height: 42px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-secondary); font-family: var(--font-body); font-size: 12px; font-weight: 800; cursor: pointer; transition: all .15s; }
+.login-secondary.visible { display: inline-flex; }
+.login-secondary:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+
+/* ── §TOOL — أحداث الويبهوك ───────────────────────────────────── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px; }
+.filters-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.field-group { display: flex; flex-direction: column; gap: 5px; }
+.field-group label { font-size: 11px; font-weight: 700; color: var(--text-secondary); }
+.field-input { border: 1.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 9px 11px; font-family: inherit; font-size: 13px; color: var(--text-primary); background: var(--surface); outline: none; transition: border-color .15s, background .15s; }
+.field-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+.field-input.has-value { border-color: var(--accent); background: var(--accent-light); }
+.btn-primary { padding: 9px 16px; border-radius: var(--radius-sm); border: none; background: var(--accent); color: var(--on-accent); font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s; }
+.btn-primary:hover { background: var(--accent-dark); }
+.btn-ghost { padding: 9px 16px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary); font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+.banner { display: none; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 12px; font-weight: 600; font-size: 13px; line-height: 1.6; }
+.banner.show { display: block; }
+.banner-red { background: var(--red-light); border: 1px solid var(--red-border); color: var(--red); }
+.banner-amber { background: var(--amber-light); border: 1px solid var(--amber-border); color: var(--amber-dark); }
+
+.data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.data-table thead th { text-align: center; padding: 8px 10px; color: var(--text-secondary); font-weight: 700; border-bottom: 1.5px solid var(--border-strong); background: var(--surface-2); border-inline-start: 1px solid var(--border); }
+.data-table thead th:first-child { border-inline-start: none; }
+.data-table tbody td { text-align: center; padding: 8px 10px; border-bottom: 1px solid var(--border); border-inline-start: 1px solid var(--border); }
+.data-table tbody td:first-child { border-inline-start: none; }
+.data-table tbody tr:hover { background: var(--surface-hover); }
+.table-wrap { overflow-x: auto; max-height: 62vh; overflow-y: auto; }
+.results-row { margin-top: 10px; font-size: 12.5px; color: var(--text-secondary); }
+
+.badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.badge-success { background: var(--green-light); color: var(--green-dark); }
+.badge-warn    { background: var(--amber-light); color: var(--amber-dark); }
+.badge-danger  { background: var(--red-light); color: var(--red); }
+.badge-neutral { background: var(--surface-2); color: var(--text-secondary); border: 1px solid var(--border-strong); }
 </style>
 </head>
 <body>
+<div class="container">
 
-<div class="wrap" id="setup" style="display:none;">
-  <div class="login-box card">
-    <h1>إعداد أولي</h1>
-    <div class="sub">أدخل عنوان الـ Worker وسر التشغيل (WORKER_SECRET) — بيتخزّنوا في المتصفح ده بس.</div>
-    <div class="field"><label>رابط الـ Worker</label>
-      <input id="setupUrl" placeholder="https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev">
-    </div>
-    <div class="field" style="margin-top:10px;"><label>WORKER_SECRET</label>
-      <input id="setupSecret" type="password" placeholder="السر">
-    </div>
-    <div class="err" id="setupErr"></div>
-    <button style="margin-top:10px;width:100%" onclick="saveSetup()">حفظ ومتابعة</button>
-  </div>
-</div>
-
-<div class="wrap" id="login" style="display:none;">
-  <div class="login-box card">
-    <h1>تسجيل الدخول</h1>
-    <div class="sub">مستقبل حالة شحنات بوسطة</div>
-    <div class="field"><label>اسم المستخدم</label>
-      <select id="loginUsername"></select>
-    </div>
-    <div class="field" style="margin-top:10px;"><label>PIN</label>
-      <input id="loginPin" type="password" inputmode="numeric" placeholder="••••" maxlength="8">
-    </div>
-    <div class="err" id="loginErr"></div>
-    <div class="row" style="margin-top:12px;">
-      <button style="flex:1" onclick="doLogin()">دخول</button>
-      <button class="secondary" style="flex:1" onclick="doRegisterPin()">أول مرة — سجّل PIN</button>
-    </div>
-    <div style="margin-top:10px;text-align:left;">
-      <button class="secondary" onclick="resetSetup()">تغيير إعداد الـ Worker</button>
-    </div>
-  </div>
-</div>
-
-<div class="wrap" id="app">
-  <div class="topbar">
-    <div>
+<!-- ══════════════════════════════════════════════════════
+     §SHELL — header + settings modal + changelog + about + toast
+     ══════════════════════════════════════════════════════ -->
+<div class="app-header">
+  <div class="app-title">
+    <div class="app-icon">📮</div>
+    <div class="app-title-text">
       <h1>مستقبل حالة شحنات بوسطة</h1>
-      <div class="sub">آخر الأحداث · <span id="whoami" class="muted"></span></div>
+      <span>أحداث الويبهوك · المطابقة على الأوردر · الكتابة على شوبيفاي</span>
     </div>
-    <button class="secondary" onclick="doLogout()">خروج</button>
   </div>
+  <div class="app-header-btns">
+    <button class="hbtn" id="refreshBtn" onclick="doRefresh()"><span class="ico">↺</span> تحديث</button>
+    <button class="hbtn active-user" id="activeUserBtn" onclick="doLogout()">👤 —</button>
+    <button class="hbtn" id="aboutBtn" onclick="openAbout()">ℹ️ عن الأداة</button>
+    <button class="hbtn ver-btn" id="verBtn" onclick="openChangelog()"></button>
+    <button class="hbtn warn-btn" id="verStaleBtn" style="display:none;" onclick="showWorkerStale()">⚠️ الـ Worker نسخة قديمة</button>
+    <button class="hbtn" id="settingsBtn" onclick="openSettings()">⚙️ الإعدادات</button>
+  </div>
+</div>
 
-  <div class="banner" id="silenceBanner"></div>
-  <div class="banner" id="matchFailBanner"></div>
+<!-- Settings Modal — WORKER_SECRET فقط (Standards #28: الرابط ثابت في §CONFIG) -->
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettingsOnBackdrop(event)">
+  <div class="settings-modal">
+    <div class="settings-modal-hdr">
+      ⚙️ الإعدادات
+      <button class="modal-close-x" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-modal-body">
+      <div class="settings-field">
+        <label class="settings-label">WORKER SECRET</label>
+        <input type="password" class="settings-input" id="cfgSecret">
+      </div>
+      <div class="diag-box">
+        <label class="settings-label">فحص النظام</label>
+        <div class="diag-btn-row">
+          <button class="btn-ghost" id="diagBtn" onclick="runDiag()">🩺 افحص الأداة والاتصالات</button>
+        </div>
+        <div class="diag-result" id="diagResult"></div>
+      </div>
+    </div>
+    <div class="settings-modal-ftr">
+      <button class="btn-modal-cancel" onclick="closeSettings()">إلغاء</button>
+      <button class="btn-modal-save" onclick="saveSettings()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Changelog Modal -->
+<div class="eco-overlay" id="changelogOverlay" onclick="if(event.target===this)closeChangelog()">
+  <div class="eco-modal">
+    <div class="eco-modal-hdr">
+      <span>📋 سجل التحديثات</span>
+      <button class="modal-close-x" onclick="closeChangelog()">✕</button>
+    </div>
+    <div class="eco-modal-body">
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">20-09-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag fix">إصلاح</span><span>إزالة شاشة "إعداد أولي" غير المطابقة للمعيار — رابط الـ Worker بقى ثابت في الكود، وشاشة الدخول بقت أول ما يفتح الموظف الأداة، وWORKER_SECRET بقى الحقل الوحيد في الإعدادات (Standards #28).</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>حارس نسخة الـ Worker + زرار فحص النظام (diag) في الإعدادات.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.0.0</span>
+          <span class="cl-ver-date">19-09-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>إطلاق الأداة — شاشة الأحداث والفلاتر وبانرات المراقبة.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- About Modal -->
+<div class="eco-overlay" id="aboutOverlay" onclick="if(event.target===this)closeAbout()">
+  <div class="eco-modal">
+    <div class="eco-modal-hdr">
+      <span>ℹ️ About — مستقبل حالة شحنات بوسطة</span>
+      <button class="modal-close-x" onclick="closeAbout()">✕</button>
+    </div>
+    <div class="eco-modal-body">
+      <details class="about-sec" open>
+        <summary>📋 وصف الأداة</summary>
+        <div class="about-sec-body">
+          <p><strong>الهدف:</strong> استقبال أحداث الويبهوك من بوسطة عند تغيّر حالة أي شحنة، تسجيلها خام في D1، ومطابقتها بأوردر شوبيفاي (S1 أو S2) لكتابة آخر حالة في أربع ميتافيلدات.</p>
+          <p><strong>المستخدمون المستهدفون:</strong> فريق العمليات — مراقبة الأحداث والاستثناءات، مش تنفيذ أي فعل يدوي.</p>
+          <h4>كيف تعمل — Workflow</h4>
+          <ol>
+            <li>بوسطة تبعت حدث POST على <code>/webhook</code> بهيدر تحقق مخصص (مش Authorization).</li>
+            <li>الـ Worker يتحقق من الهيدر، يمنع التكرار، ويسجّل الحدث الخام في D1 فورًا.</li>
+            <li>يحدّد الشحنة S1 ولا S2 (رقم التتبع أولًا، بعدين نوع الشحنة كـ fallback).</li>
+            <li>لو <code>WRITE_METAFIELDS=true</code> ومفيش حارس ترتيب يوقفه، يكتب الحالة على شوبيفاي.</li>
+            <li>الشاشة دي بتعرض النتيجة — مش بتنفّذ أي حاجة بنفسها.</li>
+          </ol>
+          <h4>الـ Endpoints الرئيسية</h4>
+          <table>
+            <tr><th>action</th><th>الوصف</th></tr>
+            <tr><td><code>POST /webhook</code></td><td>استقبال حدث بوسطة (بوابة منفصلة، مش action=)</td></tr>
+            <tr><td><code>list_events</code></td><td>أحداث D1 بفلاتر الأوردر/التتبع/التاريخ</td></tr>
+            <tr><td><code>diag</code></td><td>فحص ذاتي — الأسرار موجودة؟ آخر حدث امتى؟ اتصال شوبيفاي؟</td></tr>
+            <tr><td><code>get_config</code></td><td>نسخة الـ Worker + حالة WRITE_METAFIELDS</td></tr>
+            <tr><td><code>check_employee</code> / <code>verify_employee</code> / <code>register_pin</code> / <code>log_logout</code> / <code>get_employees</code></td><td>Universal D1 Auth القياسي</td></tr>
+            <tr><td><code>get_logs</code> / <code>get_logs_count</code> / <code>get_logs_export</code></td><td>سجل <code>logs</code> المشترك (login/logout وأنواع status_event/duplicate_skipped/match_failed/...)</td></tr>
+          </table>
+        </div>
+      </details>
+      <details class="about-sec">
+        <summary>🔧 تشريح الكود</summary>
+        <div class="about-sec-body">
+          <h4>FEATURE MAP</h4>
+          <ul>
+            <li><code>§SHELL</code> — App Shell + Login + Settings/About/Changelog modals</li>
+            <li><code>§TOOL / §TOOL-JS</code> — فلاتر وجدول الأحداث + بانرات المراقبة</li>
+          </ul>
+          <h4>KEY VARIABLES</h4>
+          <ul>
+            <li><code>currentEmployee</code> — { username, displayName } في الذاكرة فقط</li>
+            <li><code>WORKER_URL</code> — ثابت في §CONFIG، مش localStorage (Standards #28)</li>
+            <li><code>LS_SECRET = 'bosta_webhook_status_worker_secret'</code> — السر الوحيد في localStorage. 🔴 هيتغيّر لمفتاح مجموعة <code>delivery_cod_ops_worker_secret</code> لما التسجيل في <code>ecommoda-constants</code> يخلص (راجع CLAUDE.md)</li>
+            <li><code>TOOL_NAME = 'bosta_webhook_status'</code> — قيمة tool في جدول logs</li>
+          </ul>
+          <h4>NOTES</h4>
+          <ul>
+            <li>الأداة مالهاش أي زرار تنفيذ فعل — كل الكتابة على شوبيفاي بتحصل من الـ Worker وحده عند استقبال ويبهوك.</li>
+            <li>بانر السكوت وبانر فشل المطابقة بيتحدّثوا من <code>diag</code> كل دقيقة أثناء فتح الشاشة.</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     §LOGIN
+     ══════════════════════════════════════════════════════ -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <button class="login-settings-btn missing" id="loginSettingsBtn" onclick="openSettings()">⚙️ الإعدادات</button>
+    <div class="login-version" id="loginVersionText"></div>
+    <div class="login-top">
+      <div class="login-icon">📮</div>
+      <div class="login-title">مستقبل حالة شحنات بوسطة</div>
+      <div class="login-desc">مراقبة أحداث الويبهوك من بوسطة</div>
+      <div class="login-sub" id="loginSub"></div>
+    </div>
+    <div class="login-body">
+      <div class="login-field">
+        <select id="loginSelect" onchange="handleEmployeeChange()" disabled>
+          <option value="">اختر اسمك للمتابعة</option>
+        </select>
+        <div class="login-status warn" id="loginStatus">الإعدادات غير مكتملة — افتح الإعدادات أولاً.</div>
+      </div>
+      <div class="login-alert" id="loginAlert"></div>
+      <div class="pin-zone" id="pinZone">
+        <div class="pin-label" id="pinLabel">أدخل الـ PIN</div>
+        <div class="pin-slots" id="pinSlots">
+          <div class="pin-slot empty" id="pinSlot0"></div>
+          <div class="pin-slot empty" id="pinSlot1"></div>
+          <div class="pin-slot empty" id="pinSlot2"></div>
+          <div class="pin-slot empty" id="pinSlot3"></div>
+        </div>
+        <div class="pin-keypad" id="pinKeypad">
+          <button class="pin-key" onclick="pressPinKey('1')">1</button>
+          <button class="pin-key" onclick="pressPinKey('2')">2</button>
+          <button class="pin-key" onclick="pressPinKey('3')">3</button>
+          <button class="pin-key" onclick="pressPinKey('4')">4</button>
+          <button class="pin-key" onclick="pressPinKey('5')">5</button>
+          <button class="pin-key" onclick="pressPinKey('6')">6</button>
+          <button class="pin-key" onclick="pressPinKey('7')">7</button>
+          <button class="pin-key" onclick="pressPinKey('8')">8</button>
+          <button class="pin-key" onclick="pressPinKey('9')">9</button>
+          <button class="pin-key utility" onclick="pressPinKey('clear')">مسح</button>
+          <button class="pin-key" onclick="pressPinKey('0')">0</button>
+          <button class="pin-key utility" onclick="pressPinKey('back')">←</button>
+        </div>
+        <button class="login-primary visible" id="loginPrimaryBtn" onclick="handlePrimaryLoginAction()" disabled>دخول</button>
+        <button class="login-secondary" id="loginSecondaryBtn" onclick="restartNewPinFlow()">الرجوع لإدخال PIN جديد</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     §TOOL — شاشة الأحداث
+     ══════════════════════════════════════════════════════ -->
+<main id="appContent" style="display:none;">
+  <div class="banner banner-red" id="silenceBanner"></div>
+  <div class="banner banner-amber" id="matchFailBanner"></div>
 
   <div class="card">
-    <div class="row">
-      <div class="field"><label>رقم الأوردر</label><input id="fOrder" placeholder="#12345"></div>
-      <div class="field"><label>رقم التتبع</label><input id="fTracking" placeholder="8485106207"></div>
-      <div class="field"><label>من تاريخ</label><input id="fFrom" type="date"></div>
-      <div class="field"><label>إلى تاريخ</label><input id="fTo" type="date"></div>
-      <div class="field"><label>&nbsp;</label><button onclick="loadEvents()">فلترة</button></div>
-      <div class="field"><label>&nbsp;</label><button class="secondary" onclick="clearFilters()">تفريغ</button></div>
+    <div class="filters-row">
+      <div class="field-group"><label>رقم الأوردر</label><input class="field-input" id="fOrder" placeholder="#12345" oninput="toggleHasValue(this)"></div>
+      <div class="field-group"><label>رقم التتبع</label><input class="field-input" id="fTracking" placeholder="8485106207" oninput="toggleHasValue(this)"></div>
+      <div class="field-group"><label>من تاريخ</label><input class="field-input" id="fFrom" type="date" onclick="this.showPicker&&this.showPicker();"></div>
+      <div class="field-group"><label>إلى تاريخ</label><input class="field-input" id="fTo" type="date" onclick="this.showPicker&&this.showPicker();"></div>
+      <div class="field-group"><label>&nbsp;</label><button class="btn-primary" onclick="loadEvents()">فلترة</button></div>
+      <div class="field-group"><label>&nbsp;</label><button class="btn-ghost" onclick="clearFilters()">تفريغ</button></div>
     </div>
   </div>
 
   <div class="card">
     <div class="table-wrap">
-      <table>
+      <table class="data-table">
         <thead>
           <tr>
             <th>الأوردر</th><th>رقم التتبع</th><th>الحالة</th><th>الوصف</th>
@@ -135,158 +465,427 @@
         <tbody id="eventsBody"></tbody>
       </table>
     </div>
-    <div class="sub" id="eventsMeta" style="margin-top:10px;"></div>
+    <div class="results-row" id="eventsMeta"></div>
   </div>
-</div>
+</main>
 
-<div class="toast" id="toast"></div>
+</div><!-- /.container -->
 
 <script>
-// ═══════════════ §CONFIG ═══════════════
-const LS_URL    = 'bwsr_worker_url';
-const LS_SECRET = 'bwsr_worker_secret';
-const APP_ID    = 'bosta_webhook_status';
-let currentEmployee = null; // JS memory only — never localStorage (Rule 4)
+// ══════════════════════════════════════════════════════
+// §CONFIG
+// ══════════════════════════════════════════════════════
+const MIN_WORKER_VERSION = '1.0.0';
+const TOOL_VERSION       = 'v1.1.0';
+// 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
+const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
+// 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
+//    ecommoda-constants → references/secret-groups.md (راجع CLAUDE.md § STOP).
+const LS_SECRET = 'bosta_webhook_status_worker_secret';
+const APP_ID     = 'bosta_webhook_status';
 
-function getConfig() {
-  return {
-    workerUrl:    localStorage.getItem(LS_URL) || '',
-    workerSecret: localStorage.getItem(LS_SECRET) || '',
+function getConfig() { return { workerSecret: localStorage.getItem(LS_SECRET) || '' }; }
+function isConfigured() { return getConfig().workerSecret.length > 0; }
+
+// ─── §CONFIG::esc ───
+function esc(v) {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ─── §CONFIG::time — Africa/Cairo يتحسب، مايتكتبش ثابت ───
+const CAIRO_TZ = 'Africa/Cairo';
+const _cairoFmt = new Intl.DateTimeFormat('en-CA', { timeZone: CAIRO_TZ, hourCycle: 'h23',
+  year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+function cairoParts(d) {
+  const o = {};
+  for (const p of _cairoFmt.formatToParts(d)) if (p.type !== 'literal') o[p.type] = p.value;
+  if (o.hour === '24') o.hour = '00';
+  return o;
+}
+function formatDateTime(iso) {
+  if (!iso) return '—';
+  const p = cairoParts(new Date(iso));
+  let h = +p.hour;
+  const ampm = h >= 12 ? 'مساءً' : 'صباحاً';
+  h = h % 12 || 12;
+  return `${p.day}/${p.month}/${p.year} ${String(h).padStart(2,'0')}:${p.minute} ${ampm}`;
+}
+
+// ─── §CONFIG::apiRequest — مهلة إلزامية (H-7) ───
+const API_TIMEOUT_MS = 30000;
+async function apiRequest(url, opts) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), API_TIMEOUT_MS);
+  let resp, text;
+  try {
+    resp = await fetch(url, { ...opts, signal: ctrl.signal });
+    text = await resp.text();
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error(`الـ Worker ما ردّش خلال ${API_TIMEOUT_MS/1000} ثانية`);
+    throw new Error(`تعذّر الوصول للـ Worker (شبكة أو CORS) — ${e.message}`);
+  } finally { clearTimeout(timer); }
+  let data;
+  try { data = JSON.parse(text); }
+  catch { throw new Error(`رد غير متوقع من الـ Worker (HTTP ${resp.status}): ${text.slice(0,160)}`); }
+  if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+  return data;
+}
+async function apiPost(action, body = {}) {
+  if (!isConfigured()) { openSettings(); throw new Error('الإعدادات غير مكتملة'); }
+  const { workerSecret } = getConfig();
+  return apiRequest(`${WORKER_URL}?action=${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${workerSecret}` },
+    body: JSON.stringify(body),
+  });
+}
+async function apiGet(action, params = {}) {
+  if (!isConfigured()) { openSettings(); throw new Error('الإعدادات غير مكتملة'); }
+  const { workerSecret } = getConfig();
+  const qs = new URLSearchParams({ action, ...params });
+  return apiRequest(`${WORKER_URL}?${qs}`, { headers: { 'Authorization': `Bearer ${workerSecret}` } });
+}
+
+// ══════════════════════════════════════════════════════
+// §SHELL-JS
+// ══════════════════════════════════════════════════════
+function openSettings() {
+  document.getElementById('cfgSecret').value = getConfig().workerSecret;
+  document.getElementById('diagResult').innerHTML = '';
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+function closeSettings() { document.getElementById('settingsOverlay').classList.remove('open'); }
+function closeSettingsOnBackdrop(e) { if (e.target === e.currentTarget) closeSettings(); }
+
+function saveSettings() {
+  const secret = document.getElementById('cfgSecret').value.trim();
+  if (!secret) { showToast('الرجاء إدخال WORKER SECRET', 'error'); return; }
+  localStorage.setItem(LS_SECRET, secret);
+  updateSettingsBtn();
+  updateLoginSettingsBtn();
+  closeSettings();
+  showToast('تم حفظ الإعدادات ✓', 'success');
+  loadEmployeesList();
+}
+function updateSettingsBtn() {
+  document.getElementById('settingsBtn').classList.toggle('active-user', isConfigured());
+}
+
+function renderVersionUI() {
+  const verBtn = document.getElementById('verBtn');
+  if (verBtn) verBtn.textContent = `${TOOL_VERSION} 📋`;
+  const clBadge = document.getElementById('clLatestVerBadge');
+  if (clBadge) clBadge.textContent = TOOL_VERSION;
+  const loginVer = document.getElementById('loginVersionText');
+  if (loginVer) loginVer.textContent = TOOL_VERSION;
+}
+
+function openChangelog() { document.getElementById('changelogOverlay').classList.add('open'); }
+function closeChangelog() { document.getElementById('changelogOverlay').classList.remove('open'); }
+function openAbout() { document.getElementById('aboutOverlay').classList.add('open'); }
+function closeAbout() { document.getElementById('aboutOverlay').classList.remove('open'); }
+
+function setRefreshing(active) {
+  const btn = document.getElementById('refreshBtn');
+  if (!btn) return;
+  btn.disabled = active;
+  btn.classList.toggle('refreshing', active);
+}
+async function doRefresh() {
+  setRefreshing(true);
+  try { await loadEvents(); await refreshDiagBanners(); } finally { setRefreshing(false); }
+}
+
+function showToast(msg, type = 'neutral', duration = 3500) {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(() => t.remove(), duration);
+}
+
+function toggleHasValue(el) { el.classList.toggle('has-value', el.value.trim().length > 0); }
+
+// ── حارس نسخة الـ Worker (Standards #29) ──
+let workerVersion = null;
+function cmpVersion(a, b) {
+  const pa = String(a).replace(/^v/, '').split('.').map(Number);
+  const pb = String(b).replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < 3; i++) { const d = (pa[i]||0) - (pb[i]||0); if (d) return d; }
+  return 0;
+}
+async function checkWorkerVersion() {
+  if (!isConfigured()) return;
+  try {
+    const d = await apiGet('get_config');
+    workerVersion = d.version || null;
+    const stale = workerVersion && cmpVersion(workerVersion, MIN_WORKER_VERSION) < 0;
+    const btn = document.getElementById('verStaleBtn');
+    if (btn) btn.style.display = stale ? '' : 'none';
+  } catch { /* الإعدادات ممكن تكون لسه مش مضبوطة */ }
+}
+function showWorkerStale() {
+  showToast(`الـ Worker نسخته ${workerVersion} والواجهة محتاجة ${MIN_WORKER_VERSION} على الأقل — راجع Deployments وPromote في كلاودفلير.`, 'error', 7000);
+}
+
+// ── فحص النظام (diag) ──
+async function runDiag() {
+  const box = document.getElementById('diagResult');
+  box.innerHTML = '...جاري الفحص';
+  try {
+    const d = await apiGet('diag');
+    const rows = (d.checks || []).map(c => `<div class="diag-row">${c.ok ? '✅' : '❌'} <b>${esc(c.label)}</b> — ${esc(c.detail)}</div>`);
+    rows.push(`<div class="diag-row">ℹ️ آخر حدث: ${d.lastEvent ? esc(d.lastEvent.business_reference) + ' — ' + formatDateTime(d.lastEvent.received_at) : 'لا يوجد'}</div>`);
+    rows.push(`<div class="diag-row">ℹ️ أحداث آخر 24 ساعة: ${d.count24h ?? 0} · مكرر: ${d.dup24h ?? 0} · فشل مطابقة: ${d.matchFailed24h ?? 0}</div>`);
+    box.innerHTML = rows.join('');
+  } catch (e) {
+    box.innerHTML = `<div class="diag-row">❌ ${esc(e.message)}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// §AUTH-JS
+// ══════════════════════════════════════════════════════
+let currentEmployee = null;
+let loginMode = 'employee';
+let pinDigits = [];
+let pendingNewPin = '';
+let isLoginBusy = false;
+let autoLoginTimer = null;
+
+if (typeof playBeep === 'undefined') {
+  let _audioCtx = null;
+  window.playBeep = function(type) {
+    try {
+      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = _audioCtx.createOscillator(), gain = _audioCtx.createGain();
+      osc.connect(gain); gain.connect(_audioCtx.destination);
+      if (type === 'success') {
+        osc.frequency.setValueAtTime(880, _audioCtx.currentTime);
+        osc.frequency.setValueAtTime(1100, _audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, _audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.25);
+        osc.start(_audioCtx.currentTime); osc.stop(_audioCtx.currentTime + 0.25);
+      } else {
+        osc.frequency.setValueAtTime(300, _audioCtx.currentTime);
+        osc.frequency.setValueAtTime(200, _audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.4, _audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.35);
+        osc.start(_audioCtx.currentTime); osc.stop(_audioCtx.currentTime + 0.35);
+      }
+    } catch {}
   };
 }
 
-// ═══════════════ §HELPERS ═══════════════
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[c]));
-}
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.style.display = 'block';
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => { t.style.display = 'none'; }, 3500);
-}
-const REQUEST_TIMEOUT_MS = 15000;
-async function apiRequest(action, { method = 'GET', body = null, params = {} } = {}) {
-  const cfg = getConfig();
-  if (!cfg.workerUrl || !cfg.workerSecret) throw new Error('إعداد الـ Worker ناقص');
-  const url = new URL(cfg.workerUrl.replace(/\/$/, ''));
-  url.searchParams.set('action', action);
-  for (const [k, v] of Object.entries(params)) if (v !== null && v !== undefined && v !== '') url.searchParams.set(k, v);
+async function loadEmployeesList() {
+  const sel = document.getElementById('loginSelect');
+  const status = document.getElementById('loginStatus');
+  clearLoginAlert();
+  sel.innerHTML = '<option value="">اختر اسمك للمتابعة</option>';
+  sel.disabled = true;
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  if (!isConfigured()) {
+    status.className = 'login-status warn';
+    status.textContent = 'الإعدادات غير مكتملة — افتح الإعدادات أولاً.';
+    renderLoginMode('employee');
+    return;
+  }
+  status.className = 'login-status info';
+  status.textContent = 'جارٍ تحميل قائمة الموظفين...';
   try {
-    const resp = await fetch(url.toString(), {
-      method,
-      headers: {
-        'Authorization': `Bearer ${cfg.workerSecret}`,
-        ...(body ? { 'Content-Type': 'application/json' } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-      signal: controller.signal,
+    const data = await apiGet('get_employees');
+    const employees = data.employees || [];
+    employees.forEach(e => {
+      const o = document.createElement('option');
+      o.value = e.username; o.textContent = e.display_name;
+      sel.appendChild(o);
     });
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
-    return data;
-  } catch (e) {
-    if (e.name === 'AbortError') throw new Error('انتهت مهلة الاتصال بالـ Worker');
-    throw e;
-  } finally {
-    clearTimeout(timer);
+    sel.disabled = false;
+    status.className = employees.length ? 'login-status info' : 'login-status warn';
+    status.textContent = employees.length ? '' : 'لا يوجد موظفون نشطون.';
+  } catch (err) {
+    status.className = 'login-status error';
+    status.textContent = 'تعذّر تحميل قائمة الموظفين.';
+    showLoginAlert(err.message || 'تعذّر تحميل قائمة الموظفين.');
   }
 }
 
-// ═══════════════ §SETUP ═══════════════
-function saveSetup() {
-  const url = document.getElementById('setupUrl').value.trim();
-  const secret = document.getElementById('setupSecret').value.trim();
-  const err = document.getElementById('setupErr');
-  if (!url || !secret) { err.textContent = 'الرابط والسر مطلوبان'; return; }
-  localStorage.setItem(LS_URL, url);
-  localStorage.setItem(LS_SECRET, secret);
-  boot();
-}
-function resetSetup() {
-  localStorage.removeItem(LS_URL);
-  localStorage.removeItem(LS_SECRET);
-  boot();
-}
-
-// ═══════════════ §AUTH ═══════════════
-async function loadEmployeesDropdown() {
-  const sel = document.getElementById('loginUsername');
-  sel.innerHTML = '<option>...جاري التحميل</option>';
+async function handleEmployeeChange() {
+  if (isLoginBusy) return;
+  clearTimeout(autoLoginTimer);
+  clearLoginAlert();
+  resetPinState();
+  const sel = document.getElementById('loginSelect');
+  const username = sel.value || '';
+  if (!username) { renderLoginMode('employee'); return; }
+  renderLoginMode('employee');
+  document.getElementById('loginSub').textContent = 'جارٍ التحقق من الحساب...';
   try {
-    const data = await apiRequest('get_employees');
-    sel.innerHTML = (data.employees || [])
-      .map(e => `<option value="${esc(e.username)}">${esc(e.display_name)}</option>`).join('');
-  } catch (e) {
-    sel.innerHTML = '<option>تعذّر التحميل</option>';
-    showToast(e.message);
+    const data = await apiGet('check_employee', { username });
+    if (!data.exists) { showLoginAlert('المستخدم غير موجود'); sel.value=''; renderLoginMode('employee'); playBeep('error'); return; }
+    if (!data.isActive) { showLoginAlert('الحساب موقوف — تواصل مع المسؤول'); sel.value=''; renderLoginMode('employee'); playBeep('error'); return; }
+    renderLoginMode(data.hasPin ? 'existing' : 'new');
+  } catch (err) {
+    showLoginAlert(err.message || 'تعذّر التحقق من الحساب'); sel.value=''; renderLoginMode('employee'); playBeep('error');
   }
 }
 
-async function doLogin() {
-  const username = document.getElementById('loginUsername').value;
-  const pin      = document.getElementById('loginPin').value.trim();
-  const err      = document.getElementById('loginErr');
-  err.textContent = '';
-  if (!username || !pin) { err.textContent = 'اختر المستخدم واكتب الـ PIN'; return; }
-  try {
-    const data = await apiRequest('verify_employee', { method: 'POST', body: { username, pin, appId: APP_ID } });
-    currentEmployee = { username, displayName: data.displayName };
-    if (data.logged === false) showToast('تم الدخول — لكن السجل لم يُكتب');
-    showApp();
-  } catch (e) {
-    err.textContent = e.message;
+function renderLoginMode(mode) {
+  loginMode = mode;
+  const pinZone = document.getElementById('pinZone');
+  const pinLabel = document.getElementById('pinLabel');
+  const primary = document.getElementById('loginPrimaryBtn');
+  const secondary = document.getElementById('loginSecondaryBtn');
+  pinZone.classList.toggle('visible', mode !== 'employee');
+  primary.classList.toggle('visible', mode !== 'employee');
+  secondary.classList.toggle('visible', mode === 'confirm');
+  resetPinState(false);
+  clearLoginAlert();
+  const sub = document.getElementById('loginSub');
+  if (mode === 'employee') { sub.textContent=''; pinLabel.textContent='أدخل الـ PIN'; primary.textContent='دخول'; primary.disabled=true; return; }
+  if (mode === 'existing') { sub.textContent='أدخل الـ PIN'; pinLabel.textContent='أدخل الـ PIN'; primary.textContent='دخول'; primary.disabled=true; return; }
+  if (mode === 'new') { sub.textContent='أول مرة؟ أنشئ PIN من 4 أرقام'; pinLabel.textContent='أنشئ PIN جديد'; primary.textContent='متابعة'; primary.disabled=true; return; }
+  if (mode === 'confirm') { sub.textContent='أعد إدخال الـ PIN للتأكيد'; pinLabel.textContent='تأكيد الـ PIN'; primary.textContent='تأكيد وتسجيل الدخول'; primary.disabled=true; }
+}
+function restartNewPinFlow() { pendingNewPin=''; renderLoginMode('new'); }
+
+function pressPinKey(key) {
+  if (isLoginBusy || loginMode === 'employee') return;
+  clearTimeout(autoLoginTimer);
+  if (key === 'clear') pinDigits = [];
+  else if (key === 'back') pinDigits.pop();
+  else if (/^\d$/.test(key) && pinDigits.length < 4) pinDigits.push(key);
+  clearLoginAlert(); renderPinSlots(); updatePrimaryLoginState();
+  if (pinDigits.length === 4) autoLoginTimer = setTimeout(() => handlePrimaryLoginAction(), 140);
+}
+function renderPinSlots() {
+  for (let i=0;i<4;i++) {
+    const slot = document.getElementById(`pinSlot${i}`);
+    slot.classList.remove('empty','filled','error');
+    slot.classList.add(i < pinDigits.length ? 'filled' : 'empty');
   }
 }
-
-async function doRegisterPin() {
-  const username = document.getElementById('loginUsername').value;
-  const pin      = document.getElementById('loginPin').value.trim();
-  const err      = document.getElementById('loginErr');
-  err.textContent = '';
-  if (!username || !pin) { err.textContent = 'اختر المستخدم واكتب PIN جديد'; return; }
+function resetPinState(clearPending = true) {
+  pinDigits = [];
+  if (clearPending && loginMode !== 'confirm') pendingNewPin = '';
+  renderPinSlots(); updatePrimaryLoginState();
+}
+function updatePrimaryLoginState() {
+  document.getElementById('loginPrimaryBtn').disabled = loginMode==='employee' || pinDigits.length!==4 || isLoginBusy;
+}
+async function handlePrimaryLoginAction() {
+  if (isLoginBusy || loginMode==='employee' || pinDigits.length!==4) return;
+  if (loginMode==='existing') { await verifyExistingPin(); return; }
+  if (loginMode==='new') { pendingNewPin = pinDigits.join(''); renderLoginMode('confirm'); return; }
+  if (loginMode==='confirm') { await registerNewPinAndLogin(); }
+}
+async function verifyExistingPin() {
+  const username = document.getElementById('loginSelect').value;
+  const pin = pinDigits.join('');
+  setLoginBusy(true, '⏳ جاري التحقق...');
   try {
-    await apiRequest('register_pin', { method: 'POST', body: { username, pin } });
-    showToast('تم تسجيل الـ PIN — سجّل دخولك الآن');
-  } catch (e) {
-    err.textContent = e.message;
-  }
+    const data = await apiPost('verify_employee', { username, pin, appId: APP_ID });
+    if (!data.ok) { await presentLoginPinError('PIN خطأ — حاول مرة أخرى'); return; }
+    await finishLogin(username, data.displayName);
+  } catch (err) { await presentLoginPinError(err.message || 'PIN خطأ'); }
+  finally { setLoginBusy(false); }
+}
+async function registerNewPinAndLogin() {
+  const username = document.getElementById('loginSelect').value;
+  const confirmPin = pinDigits.join('');
+  if (confirmPin !== pendingNewPin) { await presentLoginPinError('الـ PIN غير متطابق — حاول مرة أخرى'); pendingNewPin=''; renderLoginMode('new'); return; }
+  setLoginBusy(true, '⏳ جاري التسجيل...');
+  try {
+    const reg = await apiPost('register_pin', { username, pin: pendingNewPin });
+    if (reg && reg.ok===false) { await presentLoginPinError(reg.error || 'تعذّر تسجيل الـ PIN'); return; }
+    const data = await apiPost('verify_employee', { username, pin: pendingNewPin, appId: APP_ID });
+    if (!data.ok) { await presentLoginPinError(data.error || 'تعذّر تسجيل الدخول'); return; }
+    await finishLogin(username, data.displayName);
+  } catch (err) { await presentLoginPinError(err.message || 'تعذّر تسجيل الـ PIN'); }
+  finally { setLoginBusy(false); }
+}
+function setLoginBusy(active, text='') {
+  isLoginBusy = active;
+  const primary = document.getElementById('loginPrimaryBtn');
+  document.querySelectorAll('#pinKeypad .pin-key').forEach(b => b.disabled = active);
+  document.getElementById('loginSelect').disabled = active || !isConfigured();
+  if (active) { primary.dataset.prevText = primary.textContent; primary.textContent = text || primary.textContent; primary.disabled = true; }
+  else { primary.textContent = primary.dataset.prevText || primary.textContent; delete primary.dataset.prevText; updatePrimaryLoginState(); }
+}
+async function presentLoginPinError(message) {
+  playBeep('error'); showLoginAlert(message);
+  const slots = document.getElementById('pinSlots');
+  slots.classList.add('shake');
+  for (let i=0;i<4;i++) document.getElementById(`pinSlot${i}`).classList.add('error');
+  await new Promise(r => setTimeout(r, 760));
+  slots.classList.remove('shake'); pinDigits=[]; renderPinSlots(); updatePrimaryLoginState();
+}
+function showLoginAlert(msg) { const a=document.getElementById('loginAlert'); a.textContent=msg; a.classList.add('visible'); }
+function clearLoginAlert() { const a=document.getElementById('loginAlert'); a.textContent=''; a.classList.remove('visible'); }
+
+document.addEventListener('keydown', e => {
+  const loginVisible = !document.getElementById('loginOverlay').classList.contains('hidden');
+  const settingsOpen = document.getElementById('settingsOverlay').classList.contains('open');
+  if (!loginVisible || settingsOpen || isLoginBusy) return;
+  if (/^\d$/.test(e.key)) { e.preventDefault(); pressPinKey(e.key); return; }
+  if (e.key === 'Backspace') { e.preventDefault(); pressPinKey('back'); return; }
+  if (e.key === 'Delete' || e.key === 'Escape') { e.preventDefault(); pressPinKey('clear'); return; }
+  if (e.key === 'Enter') { e.preventDefault(); handlePrimaryLoginAction(); }
+});
+
+async function finishLogin(username, displayName) {
+  currentEmployee = { username, displayName };
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('activeUserBtn').textContent = `👤 ${displayName}`;
+  showToast(`أهلاً ${displayName} 👋`, 'success');
+  playBeep('success');
+  // CUSTOMIZE — post-login
+  document.getElementById('appContent').style.display = 'block';
+  loadEvents();
+  refreshDiagBanners();
+  clearInterval(finishLogin._poll);
+  finishLogin._poll = setInterval(() => { loadEvents(); refreshDiagBanners(); }, 60000);
 }
 
 async function doLogout() {
-  if (currentEmployee) {
-    try { await apiRequest('log_logout', { params: { username: currentEmployee.username, appId: APP_ID } }); }
-    catch (e) { /* logout log failure is non-blocking */ }
-  }
-  currentEmployee = null;
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login').style.display = 'block';
-  document.getElementById('loginPin').value = '';
-  loadEmployeesDropdown();
+  if (!currentEmployee) return;
+  if (!confirm('تسجيل الخروج؟')) return;
+  apiGet('log_logout', { username: currentEmployee.username, appId: APP_ID }).catch(() => {});
+  currentEmployee = null; loginMode='employee'; pinDigits=[]; pendingNewPin=''; isLoginBusy=false;
+  clearTimeout(autoLoginTimer);
+  clearInterval(finishLogin._poll);
+  const sel = document.getElementById('loginSelect'); sel.value='';
+  document.getElementById('pinSlots').classList.remove('shake');
+  renderPinSlots(); renderLoginMode('employee'); clearLoginAlert();
+  // CUSTOMIZE — tool-specific reset
+  document.getElementById('appContent').style.display = 'none';
+  document.getElementById('activeUserBtn').textContent = '👤 —';
+  document.getElementById('loginOverlay').classList.remove('hidden');
 }
 
-// ═══════════════ §SCREEN ═══════════════
-function resultBadge(extra) {
-  let r = null;
-  try { r = (typeof extra === 'string' ? JSON.parse(extra) : extra)?.result; } catch { /* ignore */ }
-  const map = { success: 'success', warning: 'warning', error: 'error', rejected: 'neutral', already: 'neutral' };
-  const cls = map[r] || 'neutral';
-  return `<span class="badge ${cls}">${esc(r || '—')}</span>`;
+function updateLoginSettingsBtn() {
+  const btn = document.getElementById('loginSettingsBtn');
+  if (!btn) return;
+  btn.classList.toggle('ready', isConfigured());
+  btn.classList.toggle('missing', !isConfigured());
 }
 
-function fmtCairo(iso) {
-  if (!iso) return '—';
-  try {
-    return new Intl.DateTimeFormat('ar-EG', {
-      timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-    }).format(new Date(iso));
-  } catch { return iso; }
+// ══════════════════════════════════════════════════════
+// §TOOL-JS
+// ══════════════════════════════════════════════════════
+function resultBadge(status) {
+  const map = {
+    written:              ['badge-success', 'اتكتب'],
+    dry_run_matched:      ['badge-warn',    'تطابق (بدون كتابة)'],
+    stale_skipped:        ['badge-neutral', 'أقدم من المكتوب'],
+    match_failed:         ['badge-danger',  'فشلت المطابقة'],
+    shopify_write_failed: ['badge-danger',  'فشلت الكتابة'],
+    processing:           ['badge-neutral', 'قيد المعالجة'],
+  };
+  const [cls, label] = map[status] || ['badge-neutral', status || '—'];
+  return `<span class="badge ${cls}">${esc(label)}</span>`;
 }
 
 async function loadEvents() {
@@ -301,10 +900,10 @@ async function loadEvents() {
       dateTo:   document.getElementById('fTo').value,
       limit: 200,
     };
-    const data = await apiRequest('list_events', { params });
+    const data = await apiGet('list_events', params);
     const events = data.events || [];
     if (!events.length) {
-      body.innerHTML = '<tr><td colspan="8" class="muted">لا توجد أحداث مطابقة</td></tr>';
+      body.innerHTML = '<tr><td colspan="8">لا توجد أحداث مطابقة</td></tr>';
     } else {
       body.innerHTML = events.map(ev => `
         <tr>
@@ -312,85 +911,50 @@ async function loadEvents() {
           <td>${esc(ev.tracking_number)}</td>
           <td>${esc(ev.state)}</td>
           <td>${esc(ev.description || '—')}</td>
-          <td>${fmtCairo(ev.received_at)}</td>
+          <td>${formatDateTime(ev.received_at)}</td>
           <td>${esc((ev.matched_slot || '—').toUpperCase())}</td>
           <td>${esc(ev.match_method || '—')}</td>
-          <td>${writeStatusBadge(ev.write_status)}</td>
+          <td>${resultBadge(ev.write_status)}</td>
         </tr>`).join('');
     }
-    meta.textContent = `${events.length} حدث معروض`;
+    meta.textContent = `النتائج: ${events.length}`;
   } catch (e) {
-    body.innerHTML = `<tr><td colspan="8" class="err">${esc(e.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="8">${esc(e.message)}</td></tr>`;
   }
 }
-
-function writeStatusBadge(status) {
-  const map = {
-    written:            ['success', 'اتكتب'],
-    dry_run_matched:     ['warning', 'تطابق (بدون كتابة)'],
-    stale_skipped:       ['neutral', 'أقدم من المكتوب'],
-    match_failed:        ['error',   'فشلت المطابقة'],
-    shopify_write_failed:['error',   'فشلت الكتابة'],
-    processing:          ['neutral', 'قيد المعالجة'],
-  };
-  const [cls, label] = map[status] || ['neutral', status || '—'];
-  return `<span class="badge ${cls}">${esc(label)}</span>`;
-}
-
 function clearFilters() {
-  ['fOrder', 'fTracking', 'fFrom', 'fTo'].forEach(id => document.getElementById(id).value = '');
+  ['fOrder','fTracking','fFrom','fTo'].forEach(id => { const el = document.getElementById(id); el.value=''; el.classList.remove('has-value'); });
   loadEvents();
 }
 
 async function refreshDiagBanners() {
   try {
-    const d = await apiRequest('diag');
+    const d = await apiGet('diag');
     const silenceBanner = document.getElementById('silenceBanner');
-    const matchBanner    = document.getElementById('matchFailBanner');
-
+    const matchBanner = document.getElementById('matchFailBanner');
     let silent = true;
-    if (d.lastEvent?.received_at) {
+    if (d.lastEvent && d.lastEvent.received_at) {
       const gapH = (Date.now() - Date.parse(d.lastEvent.received_at)) / 3600000;
-      if (gapH < (d.silenceThresholdHours || 3)) silent = false;
+      silent = gapH >= (d.silenceThresholdHours || 3);
       if (silent) silenceBanner.textContent = `🔴 مفيش حدث من بوسطة منذ ${gapH.toFixed(1)} ساعة — راجع تسجيل الويبهوك في داشبورد بوسطة`;
     } else {
       silenceBanner.textContent = '🔴 مفيش أي حدث اتسجّل من بوسطة على الإطلاق';
     }
     silenceBanner.classList.toggle('show', silent);
-
     const hasMatchFailed = (d.matchFailed24h || 0) > 0;
     if (hasMatchFailed) matchBanner.textContent = `⚠️ ${d.matchFailed24h} حدث فشلت مطابقته لأوردر (S1/S2) في آخر 24 ساعة`;
     matchBanner.classList.toggle('show', hasMatchFailed);
-  } catch (e) {
-    // فشل diag نفسه — ماينفعش نعرض بانر بيانات غير موثوقة
-  }
+  } catch (e) { /* فشل diag — ماينفعش نعرض بانر بيانات غير موثوقة */ }
 }
 
-// ═══════════════ §BOOT ═══════════════
-function showApp() {
-  document.getElementById('login').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  document.getElementById('whoami').textContent = currentEmployee?.displayName || '';
-  loadEvents();
-  refreshDiagBanners();
-  clearInterval(showApp._poll);
-  showApp._poll = setInterval(() => { loadEvents(); refreshDiagBanners(); }, 60000);
-}
-
-function boot() {
-  const cfg = getConfig();
-  document.getElementById('setup').style.display = 'none';
-  document.getElementById('login').style.display = 'none';
-  document.getElementById('app').style.display = 'none';
-  if (!cfg.workerUrl || !cfg.workerSecret) {
-    document.getElementById('setup').style.display = 'block';
-    return;
-  }
-  document.getElementById('login').style.display = 'block';
-  loadEmployeesDropdown();
-}
-
-boot();
+// ══════════════════════════════════════════════════════
+// §INIT
+// ══════════════════════════════════════════════════════
+renderVersionUI();
+updateSettingsBtn();
+checkWorkerVersion();
+updateLoginSettingsBtn();
+loadEmployeesList();
 </script>
 </body>
 </html>
