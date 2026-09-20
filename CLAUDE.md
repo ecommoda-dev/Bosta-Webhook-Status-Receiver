@@ -1,11 +1,15 @@
+<div dir="rtl" style="text-align: right;">
+
 # مستقبل حالة شحنات بوسطة (`Bosta-Webhook-Status-Receiver`)
+
+![version](https://img.shields.io/badge/version-v1.1.0-blue)
 
 > بيتحمّل أوتوماتيك في كل جلسة Claude — في Claude Code وCowork.
 
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.0.0` · الواجهة `v1.0.0`
+**الإصدار:** Worker `v1.0.0` · الواجهة `v1.1.0`
 
 ---
 
@@ -33,10 +37,15 @@
 4. **الأداة تنضم لمجموعة سر `delivery_cod_ops` من أول يوم (قرار أحمد
    19-09-2026)** — هذا القرار **جديد ومش مسجّل بعد** في
    `ecommoda-constants` → `references/secret-groups.md` (المجموعة المسجّلة
-   حاليًا هناك `warehouse_ops` بس). قبل تسجيل `WORKER_SECRET` كقيمة مشتركة،
-   لازم شخص يقرا `secret-groups.md` ويسجّل هذه الأداة عضو رابع في
-   `delivery_cod_ops` (أو ينشئها لو أول أداة فيها) — وإلا إجراء التدوير
-   بيتكسر بصمت (القاعدة موثّقة في `ecommoda-constants` §6).
+   حاليًا هناك `warehouse_ops` بس).
+   ✅ **مؤكَّد من أحمد 20-09-2026: `delivery_cod_ops` مجموعة جديدة كليًا —
+   مفيش أي أداة تانية محتاجة تنضم لها دلوقتي.** يعني التسجيل في
+   `secret-groups.md` بسيط: قسم مجموعة جديد بعضو واحد بس
+   (`Bosta-Webhook-Status-Receiver`)، بمفتاح مشترك اسمه
+   `delivery_cod_ops_worker_secret` — مفيش حاجة تتراجع مع أداة تانية. لسه
+   لازم يتسجّل قبل ما القيمة الفعلية على Cloudflare تتحول من سر فريد
+   (الوضع الحالي) لقيمة المجموعة + `LS_SECRET` في `index.html` يتحدّث لنفس
+   الاسم (Standards Changelog #39 في `ecommoda-html-builder`).
 5. **تحويل رابط الويبهوك في داشبورد بوسطة** لازم يحصل **بعد** ما الـ Worker
    يبقى منشور وشغّال (§5 من ترتيب التنفيذ) — أي شحنة تتعمل وقت التحويل ممكن
    تضيع.
@@ -85,7 +94,7 @@ CREATE TABLE IF NOT EXISTS bosta_webhook_events (id INTEGER PRIMARY KEY AUTOINCR
 
 | السر | القيمة |
 |---|---|
-| `WORKER_SECRET` | 🔴 راجع بند ٤ في STOP فوق قبل تحديد القيمة — المفروض يبقى قيمة مجموعة `delivery_cod_ops` المشتركة، مش قيمة فريدة، **بعد** ما يتسجّل عضو رسمي في `secret-groups.md` |
+| `WORKER_SECRET` | ✅ متسجّل حاليًا (20-09-2026) كقيمة فريدة لهذه الأداة. 🔴 لسه محتاج يتحوّل لقيمة مجموعة `delivery_cod_ops` المشتركة بعد ما تتسجّل في `secret-groups.md` (بند ٤ في STOP فوق) — مجموعة جديدة بعضو واحد، مفيش أداة تانية تتأثر |
 | `BOSTA_WEBHOOK_HEADER_NAME` | اسم الهيدر **بالظبط** زي ما هو مسجّل في داشبورد بوسطة (Authorization key name) — **مش** `Authorization` |
 | `BOSTA_WEBHOOK_HEADER_VALUE` | قيمة نفس المفتاح (Authorization Key) |
 | `CLIENT_ID` / `CLIENT_SECRET` | نفس الـ Custom App المشترك في الستاك (`ecommoda-constants` §1) |
@@ -131,6 +140,16 @@ Build watch paths : index.js + wrangler.toml
   في `bosta_webhook_events` (`write_status='dry_run_matched'`) من غير ما
   تكتب فعليًا على شوبيفاي، لحد ما حد يراجع المطابقة على أحداث حقيقية ويحوّل
   الفلاج لـ `"true"` في `wrangler.toml`.
+  🔴 **لما يتحوّل لـ `"true"`، الكتابة **مش** على الأربعة ميتافيلدات مع بعض —
+  حدث واحد بيكتب **حقلين بس**، حسب الجنب اللي اتحدد له (S1 أو S2):
+  ```
+  حدث اتحدد له S1 → custom.bosta_webhook_status_update_s1 + custom.bosta_webhook_last_update_s1
+  حدث اتحدد له S2 → custom.bosta_webhook_status_update_s2 + custom.bosta_webhook_last_update_s2
+  ```
+  الأربعة الميتافيلدات (`_s1`/`_s2` × status/last_update) موجودين بالفعل على
+  الأوردر من أدوات تانية — الأداة دي **مش** بتنشئهم، بتكتب فيهم بس. الحقلين
+  التانيين (بتوع الجنب اللي ما اتحددش) بيفضلوا زي ما هما — مفيش أي أوردر
+  بيتكتب عليه S1 وS2 مع بعض من نفس الحدث.
 - **ممنوع كتابة `custom.status_1`/`custom.status_2`** — دول بيشغّلوا إجراءات
   مخزون في أداة تانية (`Order-Status-Updater`)، وكتابة أوتوماتيك هنا = مخزون
   ما رجعش.
@@ -171,5 +190,9 @@ Build watch paths : index.js + wrangler.toml
 | ecommoda-constants | v2.7.0 |
 | ecommoda-tool-migration-playbook | (بلا رقم إصدار ظاهر وقت القراءة) |
 
-آخر مطابقة: 19-09-2026 · `index.js` v1.0.0 · `index.html` v1.0.0
+آخر مطابقة: 20-09-2026 · `index.js` v1.0.0 · `index.html` v1.1.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md` — راجع قسم STOP فوق.
+
+آخر تحديث: 20-09-2026 — 08:10
+
+</div>
