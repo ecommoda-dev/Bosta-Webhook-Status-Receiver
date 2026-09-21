@@ -2,21 +2,37 @@
 
 # مستقبل حالة شحنات بوسطة (`Bosta-Webhook-Status-Receiver`)
 
-![version](https://img.shields.io/badge/version-v1.1.0-blue)
+![version](https://img.shields.io/badge/version-v1.2.0-blue)
 
 > بيتحمّل أوتوماتيك في كل جلسة Claude — في Claude Code وCowork.
 
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.0.0` · الواجهة `v1.1.0`
+**الإصدار:** Worker `v1.1.0` · الواجهة `v1.2.0`
 
 ---
 
-## 🔴 STOP قبل أي نشر حقيقي — لسه ما اتعملش
+## 🟢 الأداة شغّالة على الإنتاج — من 21-09-2026
 
-هذا التسليم **كود الريبو بس**. الأداة **مش شغّالة على الإنتاج** لحد ما البنود
-دي تتقفل — بالترتيب:
+الأداة بتستقبل أحداث بوسطة فعليًا وبتخزّنها. اللي اتقفل:
+
+| البند | الحالة |
+|---|---|
+| الـ Worker مربوط بالريبو + Build watch paths | ✅ 20-09-2026 |
+| GitHub Pages | ✅ 20-09-2026 |
+| الأسرار على Cloudflare | ✅ 20-09-2026 — كلها خضرا في `diag` |
+| تسجيل رابط الويبهوك في داشبورد بوسطة | ✅ 20-09-2026 (`x-bosta-webhook-key`) |
+| جدول `bosta_webhook_events` في D1 | ✅ 21-09-2026 — **يدويًا من D1 Console** |
+
+> 🔴 **درس 20/21-09-2026 — كل أحداث اليومين دول ضاعت.** بوسطة كانت بتبعت
+> والتحقق كان بيعدّي، بس `db.exec(SCHEMA_SQL)` كان بيفشل لأن الـ SQL كانت
+> منسّقة على ٢٦ سطر (عقد `exec` = عبارة واحدة لكل سطر)، والـ Worker كان
+> بيرد **200** فبوسطة ما أعادتش. والشاشة كانت بتعرض «مفيش أي حدث اتسجّل من
+> بوسطة» لأن `list_events` كان بيبلع `no such table` ويرجّع `[]`.
+> الاتنين اتصلحوا في v1.1.0/v1.2.0، والأحداث الضايعة **مش قابلة للاسترجاع**.
+
+### لسه مطلوب (مش بيمنع التشغيل):
 
 1. **تسجيل `ecommoda-constants` §7 — قبل أول `writeLog` حقيقي.**
    القيم دي **مأخوذة حرفيًا من تكليف البناء (brief v1.0.0, 19-09-2026,
@@ -28,13 +44,10 @@
           shopify_write_failed · unauthorized · login · logout
    ```
    هذه الجلسة **مالهاش وصول** لتعديل ملف `ecommoda-constants` نفسه (مش ريبو
-   Git متاح في نطاق هذه الجلسة). **حد عنده وصول لازم يضيف الصف ده في §7 قبل
-   push الفلاج `WRITE_METAFIELDS=true`.**
-2. **الأسرار على Cloudflare** (لسه مش متسجّلة — راجع "الأسرار" تحت).
-3. **إنشاء الجدول الإضافي `bosta_webhook_events` في D1** (الكود بيعمله
-   تلقائيًا أول مرة INSERT يفشل بـ"no such table"، بس تقدر تشغّله يدويًا
-   الأول من D1 Console — الأمر تحت في "D1").
-4. **الأداة تنضم لمجموعة سر `delivery_cod_ops` من أول يوم (قرار أحمد
+   Git متاح في نطاق هذه الجلسة). 🔴 **الفلاج `WRITE_METAFIELDS="true"` اتعمله
+   push بالفعل (21-09-2026) والأداة بتكتب على شوبيفاي — فالتسجيل ده بقى
+   **متأخّر**، لازم يتعمل في أقرب فرصة.**
+2. **الأداة تنضم لمجموعة سر `delivery_cod_ops` من أول يوم (قرار أحمد
    19-09-2026)** — هذا القرار **جديد ومش مسجّل بعد** في
    `ecommoda-constants` → `references/secret-groups.md` (المجموعة المسجّلة
    حاليًا هناك `warehouse_ops` بس).
@@ -46,9 +59,6 @@
    لازم يتسجّل قبل ما القيمة الفعلية على Cloudflare تتحول من سر فريد
    (الوضع الحالي) لقيمة المجموعة + `LS_SECRET` في `index.html` يتحدّث لنفس
    الاسم (Standards Changelog #39 في `ecommoda-html-builder`).
-5. **تحويل رابط الويبهوك في داشبورد بوسطة** لازم يحصل **بعد** ما الـ Worker
-   يبقى منشور وشغّال (§5 من ترتيب التنفيذ) — أي شحنة تتعمل وقت التحويل ممكن
-   تضيع.
 
 ---
 
@@ -108,18 +118,25 @@ CREATE TABLE IF NOT EXISTS bosta_webhook_events (id INTEGER PRIMARY KEY AUTOINCR
 
 ## المضبوط فعليًا في الداشبورد
 
-> اللي **متظبط بالفعل** — مش اللي المفروض يكون. **لسه فاضي بالكامل** لحد ما
-> أحمد يعمل خطوات §9 (`ecommoda-tool-migration-playbook`): إنشاء الـ Worker
-> مربوط بالريبو، تضييق الـ Build watch paths لـ `index.js` + `wrangler.toml`،
-> تفعيل GitHub Pages، وتسجيل الأسرار فوق.
+> اللي **متظبط بالفعل** — مش اللي المفروض يكون. محدَّث من `diag` و
+> لقطات الداشبورد 21-09-2026.
 
 ```
-Bindings : DB → ecommoda-dev-logs
-Secrets  : (لسه فاضي)
-Vars     : SHOP_DOMAIN · WRITE_METAFIELDS="false" · SILENCE_THRESHOLD_HOURS="3"   ← من [vars] في wrangler.toml
-Cron     : */30 * * * * (مراقبة السكوت — §7.1)
-Build watch paths : index.js + wrangler.toml
+Bindings : DB → ecommoda-dev-logs                                   ✅
+Secrets  : WORKER_SECRET · BOSTA_WEBHOOK_HEADER_NAME (19 حرف) ·     ✅
+           BOSTA_WEBHOOK_HEADER_VALUE · BOSTA_API_KEY ·
+           CLIENT_ID · CLIENT_SECRET
+Vars     : SHOP_DOMAIN=6c7e1a-53.myshopify.com ·                    ✅
+           WRITE_METAFIELDS="true" · SILENCE_THRESHOLD_HOURS="3"      ← من [vars] في wrangler.toml
+Cron     : */30 * * * * (مراقبة السكوت — §7.1)                       ✅
+Build watch paths : index.js + wrangler.toml                         ✅
+Production branch : main · Builds for non-production branches: ON
 ```
+
+> ⚠️ **الداشبورد مش مصدر حقيقة للـ Vars.** أي تعديل من الداشبورد بيتمسح عند
+> أول build من git. `WRITE_METAFIELDS` اتغيّرت من الداشبورد لـ `true` في
+> 20-09-2026 وكانت هتترجّع `false` عند أول ميرج — اتثبتت في `wrangler.toml`
+> في 21-09-2026 (`ecommoda-constants` §6).
 
 ## CORS
 
@@ -129,6 +146,18 @@ Build watch paths : index.js + wrangler.toml
 
 ## فخاخ الأداة دي
 
+- 🔴 **`db.exec()` في D1 = عبارة واحدة لكل سطر.** بيقسّم النص عند كل `\n`
+  ويعتبر كل سطر عبارة كاملة. SQL منسّق على أكتر من سطر بيرجّع
+  `incomplete input: SQLITE_ERROR` — **والجدول ما بيتعملش**. ده كلّفنا كل
+  أحداث 20/21-09-2026. `SCHEMA_SQL` في `index.js` دلوقتي مصفوفة
+  `.join('\n')` — عبارة لكل عنصر. **ممنوع إعادة تنسيقها على أسطر.**
+  (نفس قاعدة `ecommoda-constants` §8 اللي على أوامر الـ Console.)
+- 🔴 **`200` على فشل التخزين = ضياع نهائي.** `/webhook` بيرد 200 على أي فشل
+  بعد التحقق (عشان بوسطة ماتحذفش الاشتراك) — يعني بوسطة **مش هتعيد** الحدث.
+  أي فشل في الكتابة لازم يبان في `diag` فورًا، مش في السجل بس.
+- 🔴 **صفر صفوف مش دليل** (`ecommoda-constants` §7.0). `list_events` كان
+  بيبلع `no such table` ويرجّع `[]`، فالشاشة عرضت «مفيش أحداث» بدل «D1
+  مكسورة». دلوقتي بيرجّع **503** برسالة صريحة، وفيه بانر صحة منفصل.
 - **مفيش هيدر `Authorization` في `/webhook`** — التحقق بهيدر اسمه ديناميكي من
   `env.BOSTA_WEBHOOK_HEADER_NAME`. أي كود بيدوّر على `Authorization` هيرفض
   ١٠٠٪ من الأحداث بصمت.
@@ -136,11 +165,13 @@ Build watch paths : index.js + wrangler.toml
   `UNIQUE(bosta_id, state, bosta_timestamp)` هو الحارس الوحيد.
 - **الشحنات الأقدم من تسجيل رابط الويبهوك عمرها ما هتبعت حاجة** — مقصود
   ومقبول (قرار أحمد)، **ممنوع بناء أي backfill من `/deliveries/search`**.
-- **`WRITE_METAFIELDS` يبدأ `false`** — الأداة بتطابق S1/S2 وتسجّل النتيجة
-  في `bosta_webhook_events` (`write_status='dry_run_matched'`) من غير ما
-  تكتب فعليًا على شوبيفاي، لحد ما حد يراجع المطابقة على أحداث حقيقية ويحوّل
-  الفلاج لـ `"true"` في `wrangler.toml`.
-  🔴 **لما يتحوّل لـ `"true"`، الكتابة **مش** على الأربعة ميتافيلدات مع بعض —
+- 🔴 **`WRITE_METAFIELDS = "true"` من 21-09-2026 (قرار أحمد)** — الأداة
+  بتكتب على شوبيفاي فعليًا من أول حدث جاي.
+  ⚠️ **مرحلة `dry_run_matched` اتخطّت ومحصلتش أصلًا:** ولا حدث اتخزّن قبل
+  21-09-2026 بسبب عطل `SCHEMA_SQL`، فالمطابقة **ما اتراجعتش على أحداث
+  حقيقية ولا مرة**. أول أسبوع لازم يتراقب من الشاشة (عمودي «الجنب» و«طريقة
+  المطابقة») وبانر فشل المطابقة.
+  🔴 **والكتابة **مش** على الأربعة ميتافيلدات مع بعض —
   حدث واحد بيكتب **حقلين بس**، حسب الجنب اللي اتحدد له (S1 أو S2):
   ```
   حدث اتحدد له S1 → custom.bosta_webhook_status_update_s1 + custom.bosta_webhook_last_update_s1
@@ -178,7 +209,8 @@ Build watch paths : index.js + wrangler.toml
 ## استرجاع النسخ القديمة
 
 ```
-لا يوجد — هذا أول commit في الريبو.
+v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
+🔴 النسخة دي فيها عطل SCHEMA_SQL — أي رجوع ليها بيوقف تخزين الأحداث تاني.
 ```
 
 ## بصمة المهارات
@@ -190,9 +222,9 @@ Build watch paths : index.js + wrangler.toml
 | ecommoda-constants | v2.7.0 |
 | ecommoda-tool-migration-playbook | (بلا رقم إصدار ظاهر وقت القراءة) |
 
-آخر مطابقة: 20-09-2026 · `index.js` v1.0.0 · `index.html` v1.1.0
-🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md` — راجع قسم STOP فوق.
+آخر مطابقة: 21-09-2026 · `index.js` v1.1.0 · `index.html` v1.2.0
+🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
 
-آخر تحديث: 20-09-2026 — 08:10
+آخر تحديث: 21-09-2026
 
 </div>

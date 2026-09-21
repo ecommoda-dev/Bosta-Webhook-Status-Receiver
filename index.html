@@ -304,6 +304,19 @@ body {
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">21-09-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag fix">إصلاح</span><span>🔴 <b>سبب ضياع كل أحداث 20/21-09-2026.</b> <code>db.exec()</code> في D1 بيقسّم النص عند كل سطر جديد ويعتبر كل سطر عبارة كاملة، و<code>SCHEMA_SQL</code> كانت منسّقة على 26 سطر — فأمر إنشاء <code>bosta_webhook_events</code> كان بيفشل بـ "incomplete input"، والجدول عمره ما اتعمل. بقت عبارة واحدة لكل سطر.</span></li>
+          <li class="cl-item"><span class="cl-tag fix">إصلاح</span><span><code>list_events</code> كان بيبلع خطأ "no such table" ويرجّع <code>events: []</code> — يعني عطل D1 كان بيبان "مفيش أحداث". بقى يرجّع 503 برسالة صريحة (ecommoda-constants §7.0 — صفر صفوف مش دليل).</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>بانر صحة أحمر منفصل فوق بانر السكوت — بيفرّق بين "الأداة مكسورة" و"بوسطة ساكتة"، ودول كانوا بيتعرضوا بنفس الرسالة.</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span><code>diag</code> بقى يعدّ الأحداث المرفوضة بـ 401 والأحداث اللي فشل تخزينها في D1 خلال آخر 24 ساعة — الرقمين دول هما اللي بيفصلوا بين "بوسطة مش بتبعت" و"إحنا بنرفض/بنضيّع".</span></li>
+          <li class="cl-item"><span class="cl-tag fix">إصلاح</span><span>عدّادات <code>logs</code> في <code>diag</code> اتفصلت عن استعلامات جدول الأحداث — كانوا في <code>try</code> واحد فأول فشل كان بيصفّرهم كلهم ويخفي السبب.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.1.0</span>
           <span class="cl-ver-date">20-09-2026</span>
         </div>
         <ul class="cl-items">
@@ -439,6 +452,7 @@ body {
      §TOOL — شاشة الأحداث
      ══════════════════════════════════════════════════════ -->
 <main id="appContent" style="display:none;">
+  <div class="banner banner-red" id="healthBanner"></div>
   <div class="banner banner-red" id="silenceBanner"></div>
   <div class="banner banner-amber" id="matchFailBanner"></div>
 
@@ -475,8 +489,10 @@ body {
 // ══════════════════════════════════════════════════════
 // §CONFIG
 // ══════════════════════════════════════════════════════
-const MIN_WORKER_VERSION = '1.0.0';
-const TOOL_VERSION       = 'v1.1.0';
+// 🔴 1.1.0 = أول نسخة Worker بترجّع eventsTableOk / unauthorized24h /
+//    storeFailed24h. مع Worker أقدم، بانر الصحة بيفضل مطفي بصمت.
+const MIN_WORKER_VERSION = '1.1.0';
+const TOOL_VERSION       = 'v1.2.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -927,20 +943,43 @@ function clearFilters() {
   loadEvents();
 }
 
+// 🔴 ترتيب البانرات مقصود: عطل الأداة نفسها بيسبق "مفيش أحداث".
+//    قبل كده كان فيه بانر واحد بيقول "مفيش أي حدث من بوسطة على الإطلاق"
+//    في الحالتين — فعطل D1 اتقرا غلط كأن بوسطة مش بتبعت (20/21-09-2026).
 async function refreshDiagBanners() {
   try {
     const d = await apiGet('diag');
+    const healthBanner  = document.getElementById('healthBanner');
     const silenceBanner = document.getElementById('silenceBanner');
-    const matchBanner = document.getElementById('matchFailBanner');
-    let silent = true;
-    if (d.lastEvent && d.lastEvent.received_at) {
-      const gapH = (Date.now() - Date.parse(d.lastEvent.received_at)) / 3600000;
-      silent = gapH >= (d.silenceThresholdHours || 3);
-      if (silent) silenceBanner.textContent = `🔴 مفيش حدث من بوسطة منذ ${gapH.toFixed(1)} ساعة — راجع تسجيل الويبهوك في داشبورد بوسطة`;
-    } else {
-      silenceBanner.textContent = '🔴 مفيش أي حدث اتسجّل من بوسطة على الإطلاق';
+    const matchBanner   = document.getElementById('matchFailBanner');
+
+    // (1) أعطال الأداة نفسها — الأولوية القصوى
+    const faults = [];
+    if (d.eventsTableOk === false)
+      faults.push('جدول bosta_webhook_events مش موجود في D1 — كل حدث جاي من بوسطة بيضيع. شغّل الـ CREATE TABLE من CLAUDE.md فورًا.');
+    if (d.logsTableOk === false)
+      faults.push('جدول logs مش متاح — عدّادات المراقبة كلها غير موثوقة.');
+    if ((d.storeFailed24h || 0) > 0)
+      faults.push(`${d.storeFailed24h} حدث وصل من بوسطة وفشل تخزينه في D1 خلال آخر 24 ساعة — اترد عليهم 200 وضاعوا.`);
+    if ((d.unauthorized24h || 0) > 0)
+      faults.push(`${d.unauthorized24h} حدث اترفض بـ 401 خلال آخر 24 ساعة — بوسطة بتبعت بجد، والتحقق بيرفض. راجع BOSTA_WEBHOOK_HEADER_NAME/VALUE.`);
+    healthBanner.innerHTML = faults.map(f => `🔴 ${esc(f)}`).join('<br>');
+    healthBanner.classList.toggle('show', faults.length > 0);
+
+    // (2) السكوت — له معنى بس لما التخزين نفسه سليم
+    let silent = false;
+    if (d.eventsTableOk !== false) {
+      if (d.lastEvent && d.lastEvent.received_at) {
+        const gapH = (Date.now() - Date.parse(d.lastEvent.received_at)) / 3600000;
+        silent = gapH >= (d.silenceThresholdHours || 3);
+        if (silent) silenceBanner.textContent = `🔴 مفيش حدث من بوسطة منذ ${gapH.toFixed(1)} ساعة — راجع تسجيل الويبهوك في داشبورد بوسطة`;
+      } else if (faults.length === 0) {
+        silent = true;
+        silenceBanner.textContent = '🔴 مفيش أي حدث اتسجّل من بوسطة على الإطلاق — الجدول سليم، فراجع تسجيل الويبهوك في داشبورد بوسطة';
+      }
     }
     silenceBanner.classList.toggle('show', silent);
+
     const hasMatchFailed = (d.matchFailed24h || 0) > 0;
     if (hasMatchFailed) matchBanner.textContent = `⚠️ ${d.matchFailed24h} حدث فشلت مطابقته لأوردر (S1/S2) في آخر 24 ساعة`;
     matchBanner.classList.toggle('show', hasMatchFailed);

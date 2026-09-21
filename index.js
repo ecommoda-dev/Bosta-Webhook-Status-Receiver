@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.0.0';
+const WORKER_VERSION = '1.1.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -362,36 +362,19 @@ const SET_METAFIELDS_MUTATION = `
 // ══════════════════════════════════════════════════════════════
 // §D1-SCHEMA — جدول إضافي غير logs/employees المشتركين، موثّق في CLAUDE.md
 // ══════════════════════════════════════════════════════════════
-const SCHEMA_SQL = `
-CREATE TABLE IF NOT EXISTS bosta_webhook_events (
-  id                     INTEGER PRIMARY KEY AUTOINCREMENT,
-  bosta_id               TEXT    NOT NULL,
-  state                  INTEGER NOT NULL,
-  bosta_timestamp        INTEGER NOT NULL,
-  tracking_number        TEXT    NOT NULL,
-  business_reference     TEXT    NOT NULL,
-  order_number           TEXT,
-  bosta_type             TEXT,
-  description            TEXT,
-  event_type             TEXT,
-  delivery_promise_date  TEXT,
-  number_of_attempts     INTEGER,
-  cod                    REAL,
-  is_confirmed_delivery  INTEGER,
-  exception_reason       TEXT,
-  exception_code         TEXT,
-  matched_slot           TEXT,
-  match_method           TEXT,
-  write_status           TEXT    NOT NULL DEFAULT 'processing',
-  metafields_written     INTEGER NOT NULL DEFAULT 0,
-  raw_payload            TEXT    NOT NULL,
-  received_at            TEXT    NOT NULL,
-  UNIQUE(bosta_id, state, bosta_timestamp)
-);
-CREATE INDEX IF NOT EXISTS idx_bwe_order       ON bosta_webhook_events(order_number);
-CREATE INDEX IF NOT EXISTS idx_bwe_tracking    ON bosta_webhook_events(tracking_number);
-CREATE INDEX IF NOT EXISTS idx_bwe_received_at ON bosta_webhook_events(received_at);
-`;
+// 🔴 عقد db.exec() في D1: بيقسّم النص عند كل سطر جديد ويعتبر كل سطر عبارة
+//    كاملة. يعني كل CREATE لازم يبقى **سطر واحد**، والعبارات تتفصل بـ \n بس.
+//    SQL منسّق على أكتر من سطر بيرجّع "incomplete input" والجدول ما بيتعملش —
+//    وده اللي خلّى كل أحداث 20/21-09-2026 تضيع (نفس قاعدة ecommoda-constants §8).
+const SCHEMA_SQL = [
+  "CREATE TABLE IF NOT EXISTS bosta_webhook_events (id INTEGER PRIMARY KEY AUTOINCREMENT, bosta_id TEXT NOT NULL, state INTEGER NOT NULL, bosta_timestamp INTEGER NOT NULL, tracking_number TEXT NOT NULL, business_reference TEXT NOT NULL, order_number TEXT, bosta_type TEXT, description TEXT, event_type TEXT, delivery_promise_date TEXT, number_of_attempts INTEGER, cod REAL, is_confirmed_delivery INTEGER, exception_reason TEXT, exception_code TEXT, matched_slot TEXT, match_method TEXT, write_status TEXT NOT NULL DEFAULT 'processing', metafields_written INTEGER NOT NULL DEFAULT 0, raw_payload TEXT NOT NULL, received_at TEXT NOT NULL, UNIQUE(bosta_id, state, bosta_timestamp))",
+  "CREATE INDEX IF NOT EXISTS idx_bwe_order ON bosta_webhook_events(order_number)",
+  "CREATE INDEX IF NOT EXISTS idx_bwe_tracking ON bosta_webhook_events(tracking_number)",
+  "CREATE INDEX IF NOT EXISTS idx_bwe_received_at ON bosta_webhook_events(received_at)",
+].join('\n');
+
+// نص ثابت لملاحظة فشل تخزين الحدث — diag بيعدّ بيه (§5)، فممنوع يتغيّر في مكان واحد بس.
+const STORE_FAIL_NOTE = 'فشل تسجيل الحدث الخام في D1';
 
 // ─── §WEBHOOK::claimBostaEvent — الادّعاء الذرّي على التكرار (idempotency) ───
 // UNIQUE(bosta_id, state, bosta_timestamp) هو الحارس — بوسطة بتبعت نفس الحدث
@@ -630,7 +613,7 @@ async function handleWebhook(request, env, ctx) {
   } catch (e) {
     await writeLog(env.DB, {
       tool: TOOL_NAME, type: 'status_event',
-      notes: `فشل تسجيل الحدث الخام في D1: ${e.message}`,
+      notes: `${STORE_FAIL_NOTE}: ${e.message}`,
       extra: { result: 'error', bostaId },
     }).catch(() => {});
     return json({ ok: true }, 200);
@@ -790,11 +773,19 @@ export default {
         if (dateTo)          { sql += ' AND substr(received_at, 1, 10) <= ?'; b.push(dateTo); }
         sql += ' ORDER BY received_at DESC LIMIT ? OFFSET ?';
 
+        // 🔴 ممنوع ترجيع [] لما الجدول مش موجود — ده بيخلّي "D1 مكسورة" تبان
+        //    "مفيش أحداث"، وهو اللي ضيّع يوم كامل في 20/21-09-2026
+        //    (ecommoda-constants §7.0 — صفر صفوف مش دليل).
         try {
           const { results } = await env.DB.prepare(sql).bind(...b, limit, offset).all();
           return json({ ok: true, events: results }, 200, request);
         } catch (e) {
-          if (/no such table/i.test(e.message)) return json({ ok: true, events: [] }, 200, request);
+          if (/no such table/i.test(e.message)) {
+            return json({
+              ok: false, errorCode: 'events_table_missing',
+              error: 'جدول bosta_webhook_events مش موجود في D1 — أي حدث جاي من بوسطة بيضيع. شغّل الـ CREATE TABLE من CLAUDE.md في D1 Console.',
+            }, 503, request);
+          }
           throw e;
         }
       }
@@ -810,21 +801,51 @@ export default {
         checks.push({ ok: true, label: 'SILENCE_THRESHOLD_HOURS', detail: String(env.SILENCE_THRESHOLD_HOURS ?? DEFAULT_SILENCE_THRESHOLD_HOURS) });
 
         let lastEvent = null, count24h = 0, dup24h = 0, matchFailed24h = 0;
+        let unauthorized24h = 0, storeFailed24h = 0;
+        let eventsTableOk = false, logsTableOk = false;
+        const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+
+        // 🔴 الاستعلامين منفصلين عن قصد: عدّادات `logs` لازم تفضل شغّالة حتى
+        //    لو جدول الأحداث نفسه مكسور — العكس هو اللي خفى سبب عطل
+        //    20/21-09-2026 (كل العدّادات كانت جوه try واحد ووقفت مع أول فشل).
+        try {
+          const countType = async (type) => (await env.DB.prepare(
+            'SELECT COUNT(*) as n FROM logs WHERE tool = ? AND type = ? AND timestamp >= ?'
+          ).bind(TOOL_NAME, type, since).first())?.n ?? 0;
+          dup24h          = await countType('duplicate_skipped');
+          matchFailed24h  = await countType('match_failed');
+          unauthorized24h = await countType('unauthorized');
+          storeFailed24h  = (await env.DB.prepare(
+            'SELECT COUNT(*) as n FROM logs WHERE tool = ? AND timestamp >= ? AND notes LIKE ?'
+          ).bind(TOOL_NAME, since, STORE_FAIL_NOTE + '%').first())?.n ?? 0;
+          logsTableOk = true;
+          checks.push({ ok: true, label: 'D1 · جدول logs', detail: 'متصل' });
+        } catch (e) {
+          checks.push({ ok: false, label: 'D1 · جدول logs', detail: 'FAILED: ' + e.message });
+        }
+
         try {
           lastEvent = await env.DB.prepare(
             'SELECT received_at, business_reference, state, write_status FROM bosta_webhook_events ORDER BY received_at DESC LIMIT 1'
           ).first();
-          const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-          const c = await env.DB.prepare('SELECT COUNT(*) as n FROM bosta_webhook_events WHERE received_at >= ?').bind(since).first();
-          count24h = c?.n ?? 0;
-          const d = await env.DB.prepare(`SELECT COUNT(*) as n FROM logs WHERE tool = ? AND type = 'duplicate_skipped' AND timestamp >= ?`).bind(TOOL_NAME, since).first();
-          dup24h = d?.n ?? 0;
-          const mfRow = await env.DB.prepare(`SELECT COUNT(*) as n FROM logs WHERE tool = ? AND type = 'match_failed' AND timestamp >= ?`).bind(TOOL_NAME, since).first();
-          matchFailed24h = mfRow?.n ?? 0;
-          checks.push({ ok: true, label: 'D1', detail: 'متصلة' });
+          count24h = (await env.DB.prepare(
+            'SELECT COUNT(*) as n FROM bosta_webhook_events WHERE received_at >= ?'
+          ).bind(since).first())?.n ?? 0;
+          eventsTableOk = true;
+          checks.push({ ok: true, label: 'D1 · جدول bosta_webhook_events', detail: 'موجود' });
         } catch (e) {
-          checks.push({ ok: false, label: 'D1', detail: 'FAILED: ' + e.message });
+          checks.push({ ok: false, label: 'D1 · جدول bosta_webhook_events', detail: 'FAILED: ' + e.message + ' — أي حدث جاي من بوسطة بيضيع' });
         }
+
+        // §5 — حالتان حمراوان كانوا بيعدّوا من غير ما حد يشوفهم
+        checks.push({
+          ok: unauthorized24h === 0, label: 'أحداث مرفوضة (401) آخر 24 ساعة',
+          detail: unauthorized24h === 0 ? '0' : `${unauthorized24h} — بوسطة بتبعت والتحقق بيرفض: راجع BOSTA_WEBHOOK_HEADER_NAME/VALUE`,
+        });
+        checks.push({
+          ok: storeFailed24h === 0, label: 'أحداث فشل تخزينها في D1 آخر 24 ساعة',
+          detail: storeFailed24h === 0 ? '0' : `${storeFailed24h} — الحدث وصل واترد عليه 200 وضاع: راجع جدول bosta_webhook_events`,
+        });
 
         let shopifyOk = null;
         try {
@@ -840,6 +861,7 @@ export default {
         return json({
           ok: true, checks, workerVersion: WORKER_VERSION,
           lastEvent, count24h, dup24h, matchFailed24h, accessScopes: shopifyOk,
+          unauthorized24h, storeFailed24h, eventsTableOk, logsTableOk,
           silenceThresholdHours: Number(env.SILENCE_THRESHOLD_HOURS) || DEFAULT_SILENCE_THRESHOLD_HOURS,
         }, 200, request);
       }
