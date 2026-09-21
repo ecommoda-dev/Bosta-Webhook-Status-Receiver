@@ -1,0 +1,46 @@
+{
+  "tool": "bosta_webhook_status",
+  "since": null,
+  "types": {
+    "login": {
+      "result": null,
+      "stage": null,
+      "desc": "دخول موظف"
+    },
+    "logout": {
+      "result": null,
+      "stage": null,
+      "desc": "خروج موظف"
+    },
+    "duplicate_skipped": {
+      "result": "already",
+      "stage": null,
+      "desc": "نفس الحدث وصل قبل كده — اتجاهل"
+    },
+    "match_failed": {
+      "result": "rejected",
+      "stage": null,
+      "desc": "مش عارفين S1 ولا S2 — الأوردر مش متطابق على شوبيفاي"
+    },
+    "shopify_write_failed": {
+      "result": "error",
+      "stage": null,
+      "desc": "الكتابة على شوبيفاي فشلت (توكن أو نداء GraphQL)"
+    },
+    "status_event": {
+      "result": [
+        "error",
+        "rejected",
+        "success",
+        "warning"
+      ],
+      "stage": null,
+      "desc": "حدث حالة وصل من بوسطة واتعالج"
+    },
+    "unauthorized": {
+      "result": "rejected",
+      "stage": null,
+      "desc": "ترويسة التوثيق ناقصة أو غلط — الطلب اترفض"
+    }
+  }
+}
