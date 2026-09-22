@@ -304,6 +304,15 @@ body {
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">22-09-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag fix">إصلاح</span><span>🔴 <b>سبب فشل كل الكتابات على شوبيفاي من أول حدث.</b> <code>findOrder</code> كان بيطلب <code>metafields(identifiers: [...]) { key value }</code> على <code>Order</code> — الحقل ده نوعه <code>MetafieldConnection</code> ومش بيقبل <code>identifiers</code> ولا بيرجّع <code>{ key value }</code> مباشرة، فالاستعلام كان بيرمي خطأ GraphQL على **كل** حدث قبل ما يوصل لمرحلة تحديد S1/S2 (ولذلك عمودي الجنب وطريقة المطابقة كانوا فاضيين على كل صف). بقى بيستخدم <code>metafield(namespace, key)</code> المفرد بـ alias لكل حقل (٤ ميتافيلدز).</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.2.0</span>
           <span class="cl-ver-date">21-09-2026</span>
         </div>
         <ul class="cl-items">
@@ -492,7 +501,7 @@ body {
 // 🔴 1.1.0 = أول نسخة Worker بترجّع eventsTableOk / unauthorized24h /
 //    storeFailed24h. مع Worker أقدم، بانر الصحة بيفضل مطفي بصمت.
 const MIN_WORKER_VERSION = '1.1.0';
-const TOOL_VERSION       = 'v1.2.0';
+const TOOL_VERSION       = 'v1.2.1';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
