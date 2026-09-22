@@ -227,6 +227,16 @@ Production branch : main · Builds for non-production branches: ON
 - **ممنوع كتابة `custom.status_1`/`custom.status_2`** — دول بيشغّلوا إجراءات
   مخزون في أداة تانية (`Order-Status-Updater`)، وكتابة أوتوماتيك هنا = مخزون
   ما رجعش.
+  🔴 **استثناء واعٍ ومحدود (قرار أحمد 22-09-2026):** لما `type=SEND` +
+  `matched_slot=S1` + `state=45` + `description="Delivered"` حرفيًا (مش
+  `"45 · Delivered"`) بيتكتب كمان على `custom.manual_status` (قيمة `Delivered`
+  فقط) و`custom.package_whereabouts_s1` (قيمة `Client`) — إضافة على الحقلين
+  المعتاديين، مش بدل منهم. القيمة `Client` **مش** من enum
+  `ecommoda-order-lifecycle` (`Warehouse`/`Office`/`Courier`) وقناة بوسطة
+  (`Other_Regions`) خارج نطاق `package_whereabouts` أصلًا حسب Rule 17 من نفس
+  المهارة — الاتنين استثناء مقصود بطلب أحمد، مش سهو. الكود في
+  `matchAndWriteMetafields` (`§4.3`) — نفس شرط `WRITE_METAFIELDS`/الترتيب
+  الزمني اللي بيحكم باقي الحقول، مفيش مسار كتابة منفصل.
 - **رقم التتبع أولًا، بعدين `type` كـ fallback** (§4.1 في البريف الأصلي) —
   فشل الاتنين = `match_failed` + صفر كتابة، مش تخمين.
 - **قيم `type` في payload الويبهوك شكل تالت** (`SEND`/`EXCHANGE`/...) مختلف
@@ -285,8 +295,31 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 | ecommoda-html-builder | v7.2.0 |
 | ecommoda-tool-migration-playbook | (بلا رقم إصدار ظاهر وقت القراءة) |
 
-آخر مطابقة: 22-09-2026 · `index.js` v1.2.0 · `index.html` v1.3.1
+آخر مطابقة: 22-09-2026 · `index.js` v1.3.0 · `index.html` v1.3.1
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
+
+### 22-09-2026 — إضافة: كتابة `manual_status`/`package_whereabouts_s1` عند Delivered (SEND+S1+45)
+
+- **ميزة جديدة، مش إصلاح** — بطلب أحمد. لما حدث ويبهوك يطابق الأربعة شروط مع
+  بعض (`type=SEND`، `matched_slot=S1`، `state=45`، `description="Delivered"`
+  حرفيًا) بيتكتب كمان — **إضافة** على `bosta_webhook_status_update_s1`/
+  `bosta_webhook_last_update_s1` المعتاديين، مش بدل منهم —:
+  ```
+  custom.manual_status          ← "Delivered"   (كلمة واحدة فقط، مش "45 · Delivered")
+  custom.package_whereabouts_s1 ← "Client"
+  ```
+- الحقلين دول بينضافوا لنفس `metafieldsSet` call الموجود، فبيورثوا نفس بوابات
+  `WRITE_METAFIELDS`/حارس الترتيب الزمني (§4.2) اللي بيحكموا باقي الحقول —
+  مفيش مسار كتابة أو استعلام إضافي.
+- 🔴 **استثناء واعٍ من قاعدتين موجودتين، اتأكدوا من أحمد صراحة قبل الكتابة:**
+  (١) `custom.manual_status` هو حقل S1 اللي قاعدة "ممنوع كتابة
+  status_1/status_2" في هذا الملف بتحذّر منه (بيشغّل إجراءات مخزون في
+  `Order-Status-Updater`)؛ (٢) `custom.package_whereabouts_s1` خارج نطاقه
+  الرسمي حسب Rule 17 من `ecommoda-order-lifecycle` (بوسطة/`Other_Regions`
+  مستثناة من الحقل ده أصلًا، والقيمة `Client` مش من الـ enum الرسمي
+  `Warehouse`/`Office`/`Courier`). القرارين موثّقين في "فخاخ الأداة دي" فوق.
+- `WORKER_VERSION` اتصعّد لـ `1.3.0`. مفيش تغيير في `index.html` (الميزة كلها
+  Worker-side، الشاشة بتعرض نفس الأعمدة زي ما هي).
 
 ### 22-09-2026 — إصلاح: عمود "موعد التسليم المتوقع" كان بيوقّع الجدول كله (`Invalid time value`)
 

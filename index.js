@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.2.0';
+const WORKER_VERSION = '1.3.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -598,12 +598,27 @@ async function matchAndWriteMetafields(env, rowId, n) {
     { ownerId: orderNode.id, namespace: 'custom', key: `bosta_webhook_last_update_${slot}`,   type: 'date_time',              value: newIso },
   ];
 
+  // §4.3 — أكشنز إضافية (قرار أحمد 22-09-2026): SEND + S1 + كود 45 + وصف
+  // "Delivered" حرفيًا (مش "45 · Delivered") بيكتبوا كمان على custom.manual_status
+  // و custom.package_whereabouts_s1. استثناء واعٍ من قاعدة "ممنوع كتابة
+  // custom.status_1/status_2" في CLAUDE.md، ومن نطاق package_whereabouts
+  // المحصور أصلًا في قناة المناديب (Rule 17 من ecommoda-order-lifecycle) —
+  // "Client" مش من enum المهارة (Warehouse/Office/Courier)، مقصودة.
+  const isDeliveredS1Send = n.bostaType === 'SEND' && slot === 's1' && n.state === 45
+    && String(n.description || '').trim() === 'Delivered';
+  if (isDeliveredS1Send) {
+    metafieldsInput.push(
+      { ownerId: orderNode.id, namespace: 'custom', key: 'manual_status',            type: 'single_line_text_field', value: 'Delivered' },
+      { ownerId: orderNode.id, namespace: 'custom', key: 'package_whereabouts_s1',   type: 'single_line_text_field', value: 'Client' },
+    );
+  }
+
   try {
     const data   = await shopifyGQL(env, token, SET_METAFIELDS_MUTATION, { metafields: metafieldsInput }, 'metafieldsSet');
     const result = data.data?.metafieldsSet;
     const errs   = result?.userErrors || [];
     if (errs.length) throw new Error('metafieldsSet: ' + errs.map(e => e.message).join(' | '));
-    if (!result?.metafields || result.metafields.length < 2) throw new Error('metafieldsSet: شوبيفاي ما أكدتش كتابة الحقلين');
+    if (!result?.metafields || result.metafields.length < metafieldsInput.length) throw new Error('metafieldsSet: شوبيفاي ما أكدتش كتابة كل الحقول');
   } catch (e) {
     await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: 'shopify_write_failed', shopify_order_id: orderNode.legacyResourceId });
     await writeLog(env.DB, {
@@ -619,8 +634,10 @@ async function matchAndWriteMetafields(env, rowId, n) {
   await writeLog(env.DB, {
     tool: TOOL_NAME, type: 'status_event',
     orderId: orderNode.legacyResourceId, orderName: n.businessReference,
-    notes: `${slot.toUpperCase()} ← ${statusValue}`,
-    extra: { result: 'success', slot, matchMethod, bostaId: n.bostaId, trackingNumber: cleanTracking },
+    notes: isDeliveredS1Send
+      ? `${slot.toUpperCase()} ← ${statusValue} + manual_status←Delivered + package_whereabouts_s1←Client`
+      : `${slot.toUpperCase()} ← ${statusValue}`,
+    extra: { result: 'success', slot, matchMethod, bostaId: n.bostaId, trackingNumber: cleanTracking, extraDeliveredWrite: isDeliveredS1Send },
   }).catch(() => {});
 }
 
