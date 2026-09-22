@@ -440,6 +440,15 @@ body {
           <span class="cl-ver-date">22-09-2026</span>
         </div>
         <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag fix">إصلاح</span><span>🔴 <b>عمود "موعد التسليم المتوقع" كان بيوقّع الجدول كله لو حدث فيه قيمة <code>deliveryPromiseDate</code> بصيغة مش ISO.</b> بوسطة مش بتضمن صيغة تاريخ نضيفة لكل حقل — <code>new Date()</code> على قيمة زي "25-09-2026" بترجّع Invalid Date، و<code>Intl.DateTimeFormat.formatToParts()</code> عليها بترمي <code>RangeError: Invalid time value</code>، وده بيوقف رسم الـ 200 صف كلهم ويبان بدال الجدول سطر خطأ واحد فوق "النتائج: 200". دالة <code>toValidDate()</code> جديدة بترجّع <code>—</code> بدل ما تكسر الجدول، وبتتستخدم في <code>formatDateTime</code>/<code>formatDateOnly</code> ومفاتيح الترتيب.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.3.0</span>
+          <span class="cl-ver-date">22-09-2026</span>
+        </div>
+        <ul class="cl-items">
           <li class="cl-item"><span class="cl-tag change">تغيير</span><span>الجدول والفلاتر اتحوّلوا بالكامل لمعيار <code>ecommoda-html-builder</code> (<code>data-table-standard.md</code>) — كارت موحّد للفلاتر والجدول، فلاتر اختيار متعدد (النوع/الحالة/النتيجة)، فترة سريعة بدون افتراضي، Chips، وترتيب على الأعمدة بثلاث حالات (تصاعدي/تنازلي/بلا).</span></li>
           <li class="cl-item"><span class="cl-tag new">جديد</span><span>رقم الأوردر بقى هايبرلينك يفتح صفحة الأوردر على شوبيفاي أدمن مباشرة (يحتاج <code>shopify_order_id</code> من الـ Worker — راجع <code>MIN_WORKER_VERSION</code>).</span></li>
           <li class="cl-item"><span class="cl-tag new">جديد</span><span>رقم التتبع بقى هايبرلينك يفتح داشبورد بوسطة (<code>https://business.bosta.co/orders/&lt;رقم التتبع&gt;</code>).</span></li>
@@ -553,6 +562,7 @@ body {
             <li>بانر السكوت وبانر فشل المطابقة بيتحدّثوا من <code>diag</code> كل دقيقة أثناء فتح الشاشة.</li>
             <li>فلاتر النوع/الحالة/النتيجة وقوايمها (checkbox dropdown) بتتبنى من الـ <code>rawEvents</code> المحمّلة فعليًا — مش استعلام سيرفر إضافي. فلاتر الأوردر/التتبع والتاريخ لسه بتتبعت للـ Worker (<code>list_events</code>).</li>
             <li>رقم الأوردر بيبقى نص عادي (بدون لينك) لو <code>shopify_order_id</code> فاضي — بيحصل ده للأحداث اللي فشلت مطابقتها أو حصلت قبل ترقية الـ Worker لـ v1.2.0 (fallback <code>.order-num</code>، design-system.md).</li>
+            <li><code>toValidDate()</code> بترجّع <code>—</code> بدل ما ترمي استثناء لو <code>delivery_promise_date</code> (أو أي تاريخ تاني راجع من بوسطة) مش بصيغة يقدر <code>Date</code> يفهمها — فحدث واحد بتاريخ غريب بيفضل يعرض بقية الـ 200 صف، مش يوقف الجدول كله (v1.3.1).</li>
           </ul>
         </div>
       </details>
@@ -786,7 +796,7 @@ body {
 // 🔴 1.2.0 = أول نسخة Worker بترجّع shopify_order_id في list_events —
 //    من غيره رقم الأوردر بيفضل نص عادي (fallback .order-num) مش هايبرلينك.
 const MIN_WORKER_VERSION = '1.2.0';
-const TOOL_VERSION       = 'v1.3.0';
+const TOOL_VERSION       = 'v1.3.1';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -814,17 +824,29 @@ function cairoParts(d) {
   if (o.hour === '24') o.hour = '00';
   return o;
 }
+// ─── §CONFIG::toValidDate — بوسطة مش بتضمن صيغة ISO نضيفة لكل حقل تاريخ ───
+// (deliveryPromiseDate خصوصًا) — new Date() على قيمة مش مفهومة بترجع Invalid
+// Date، وIntl.DateTimeFormat.formatToParts() عليها بترمي RangeError ويوقّف
+// رسم الجدول كله (باج حقيقي — 22-09-2026، عمود "موعد التسليم المتوقع").
+// كل حاجة بتعدّي على new Date(iso) قبل ما توصل لـ cairoParts لازم تعدّي هنا الأول.
+function toValidDate(v) {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
 function formatDateTime(iso) {
-  if (!iso) return '—';
-  const p = cairoParts(new Date(iso));
+  const d = toValidDate(iso);
+  if (!d) return '—';
+  const p = cairoParts(d);
   let h = +p.hour;
   const ampm = h >= 12 ? 'مساءً' : 'صباحاً';
   h = h % 12 || 12;
   return `📅 ${p.day}/${p.month}/${p.year} 🕐 ${String(h).padStart(2,'0')}:${p.minute} ${ampm}`;
 }
 function formatDateOnly(iso) {
-  if (!iso) return '—';
-  const p = cairoParts(new Date(iso));
+  const d = toValidDate(iso);
+  if (!d) return '—';
+  const p = cairoParts(d);
   return `📅 ${p.day}/${p.month}/${p.year}`;
 }
 function cairoNow() { return cairoParts(new Date()); }
@@ -1524,8 +1546,8 @@ function applyFiltersAndRender() {
   const decorated = filtered.map(ev => ({
     ...ev,
     _sort_order: ev.business_reference, _sort_tracking: ev.tracking_number, _sort_type: ev.bosta_type,
-    _sort_stateCode: Number(ev.state), _sort_promise: ev.delivery_promise_date ? new Date(ev.delivery_promise_date) : null,
-    _sort_attempts: ev.number_of_attempts, _sort_time: new Date(ev.received_at),
+    _sort_stateCode: Number(ev.state), _sort_promise: toValidDate(ev.delivery_promise_date),
+    _sort_attempts: ev.number_of_attempts, _sort_time: toValidDate(ev.received_at),
     _sort_slot: ev.matched_slot || '—', _sort_matchMethod: ev.match_method, _sort_result: ev.write_status,
   }));
   const sorted = applySort(decorated);
