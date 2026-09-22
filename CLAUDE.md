@@ -2,14 +2,14 @@
 
 # مستقبل حالة شحنات بوسطة (`Bosta-Webhook-Status-Receiver`)
 
-![version](https://img.shields.io/badge/version-v1.2.1-blue)
+![version](https://img.shields.io/badge/version-v1.3.0-blue)
 
 > بيتحمّل أوتوماتيك في كل جلسة Claude — في Claude Code وCowork.
 
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.1.2` · الواجهة `v1.2.1`
+**الإصدار:** Worker `v1.2.0` · الواجهة `v1.3.0`
 
 ---
 
@@ -100,7 +100,7 @@
 |---|---|---|
 | `POST /webhook` | هيدر مخصص (اسمه = `BOSTA_WEBHOOK_HEADER_NAME`) | استقبال حدث بوسطة — **قبل** بوابة `WORKER_SECRET` في ترتيب الـ handlers |
 | `check_employee` · `register_pin` · `verify_employee` · `log_logout` · `get_employees` | `WORKER_SECRET` | Universal D1 Auth القياسي |
-| `list_events` | `WORKER_SECRET` | للشاشة — فلتر بـ `order` / `tracking` / `dateFrom` / `dateTo` |
+| `list_events` | `WORKER_SECRET` | للشاشة — فلتر بـ `order` / `tracking` / `dateFrom` / `dateTo`، بيرجّع `shopify_order_id` (من v1.2.0) لهايبرلينك رقم الأوردر |
 | `diag` | `WORKER_SECRET` | آخر حدث امتى · عدد آخر ٢٤ ساعة · `duplicate_skipped`/`match_failed` · وجود الأسرار (`!!` بس) · Shopify OAuth |
 | `get_config` | `WORKER_SECRET` | `WORKER_VERSION` + حالة `WRITE_METAFIELDS` |
 | `get_logs` / `get_logs_count` / `get_logs_export` | `WORKER_SECRET` | سجل `logs` المشترك (تلقائي من §SHARED) |
@@ -121,8 +121,18 @@ bosta_timestamp)` + نتيجة المطابقة/الكتابة لكل حدث). �
 D1 Console الأول (سطر واحد، بدون تعليقات — قاعدة `ecommoda-constants` §8):
 
 ```sql
-CREATE TABLE IF NOT EXISTS bosta_webhook_events (id INTEGER PRIMARY KEY AUTOINCREMENT, bosta_id TEXT NOT NULL, state INTEGER NOT NULL, bosta_timestamp INTEGER NOT NULL, tracking_number TEXT NOT NULL, business_reference TEXT NOT NULL, order_number TEXT, bosta_type TEXT, description TEXT, event_type TEXT, delivery_promise_date TEXT, number_of_attempts INTEGER, cod REAL, is_confirmed_delivery INTEGER, exception_reason TEXT, exception_code TEXT, matched_slot TEXT, match_method TEXT, write_status TEXT NOT NULL DEFAULT 'processing', metafields_written INTEGER NOT NULL DEFAULT 0, raw_payload TEXT NOT NULL, received_at TEXT NOT NULL, UNIQUE(bosta_id, state, bosta_timestamp)); CREATE INDEX IF NOT EXISTS idx_bwe_order ON bosta_webhook_events(order_number); CREATE INDEX IF NOT EXISTS idx_bwe_tracking ON bosta_webhook_events(tracking_number); CREATE INDEX IF NOT EXISTS idx_bwe_received_at ON bosta_webhook_events(received_at);
+CREATE TABLE IF NOT EXISTS bosta_webhook_events (id INTEGER PRIMARY KEY AUTOINCREMENT, bosta_id TEXT NOT NULL, state INTEGER NOT NULL, bosta_timestamp INTEGER NOT NULL, tracking_number TEXT NOT NULL, business_reference TEXT NOT NULL, order_number TEXT, bosta_type TEXT, description TEXT, event_type TEXT, delivery_promise_date TEXT, number_of_attempts INTEGER, cod REAL, is_confirmed_delivery INTEGER, exception_reason TEXT, exception_code TEXT, matched_slot TEXT, match_method TEXT, write_status TEXT NOT NULL DEFAULT 'processing', metafields_written INTEGER NOT NULL DEFAULT 0, shopify_order_id TEXT, raw_payload TEXT NOT NULL, received_at TEXT NOT NULL, UNIQUE(bosta_id, state, bosta_timestamp)); CREATE INDEX IF NOT EXISTS idx_bwe_order ON bosta_webhook_events(order_number); CREATE INDEX IF NOT EXISTS idx_bwe_tracking ON bosta_webhook_events(tracking_number); CREATE INDEX IF NOT EXISTS idx_bwe_received_at ON bosta_webhook_events(received_at);
 ```
+
+> 🔴 **`shopify_order_id` (v1.2.0)** — عمود جديد على جدول موجود بالفعل في
+> الإنتاج. الـ `CREATE TABLE IF NOT EXISTS` فوق بيغطي التركيب من الصفر بس؛
+> على القاعدة الحالية العمود بيتضاف **ذاتيًا** أول مرة `updateEventRow`
+> تواجه `no such column` (نفس نمط self-healing بتاع `SCHEMA_SQL`) —
+> **مفيش خطوة يدوية مطلوبة في D1 Console**. القيمة هي `legacyResourceId`
+> بتاع الأوردر على شوبيفاي، بتتسجّل في أي حدث اتلاقاله أوردر (حتى لو فشلت
+> بعد كده مطابقة S1/S2 أو الكتابة) — الأحداث اللي `الأوردر مش موجود على
+> شوبيفاي` (`match_failed` من غير `orderNode`) بتفضل من غير قيمة، ورقم
+> الأوردر في الشاشة بيبقى نص عادي بلا هايبرلينك ليها.
 
 ## الأسرار — لسه محتاجة تتسجّل على Cloudflare (Dashboard → Settings → Variables → Secret)
 
@@ -222,6 +232,12 @@ Production branch : main · Builds for non-production branches: ON
 - **قيم `type` في payload الويبهوك شكل تالت** (`SEND`/`EXCHANGE`/...) مختلف
   تمامًا عن `type.code` في `/deliveries/*` — الجدولين منفصلين
   (`TYPE_TO_SLOT_FALLBACK` في الكود).
+- ⚠️ **تسمية أعمدة الشاشة اتغيّرت في v1.3.0 — الإشارات التاريخية فوق (درس
+  21→22-09-2026، جدول استرجاع النسخ) بتستخدم الاسم القديم لأنها بتوصف وقت
+  حصولها.** الاسم الحالي: عمود `matched_slot` (S1/S2) بقى معنون **"الحالة"**
+  (كان "الجنب")، وعمود كود بوسطة الرقمي الخام (`state`) بقى معنون **"كود
+  الحالة"** (كان "الحالة") — عشان الاسمين ما يتلخبطوش مع بعض. البيانات في D1
+  ما اتغيّرتش، التسمية في الواجهة بس.
 
 ## مسائل مفتوحة (§2.4 من التكليف الأصلي — تتقفل بالتشغيل)
 
@@ -254,13 +270,45 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 
 | المهارة | الإصدار وقت آخر تعديل |
 |---|---|
-| ecommoda-worker-builder | v3.7.0 |
+| ecommoda-worker-builder | v3.7.1 |
 | bosta-api-helper | v6.0.0 |
 | ecommoda-constants | v3.1.0 |
+| ecommoda-html-builder | v7.2.0 |
 | ecommoda-tool-migration-playbook | (بلا رقم إصدار ظاهر وقت القراءة) |
 
-آخر مطابقة: 22-09-2026 · `index.js` v1.1.2 · `index.html` v1.2.1
+آخر مطابقة: 22-09-2026 · `index.js` v1.2.0 · `index.html` v1.3.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
+
+### 22-09-2026 — تحويل الشاشة لمعيار `data-table-standard.md` + هايبرلينكات + أعمدة جديدة
+
+- **الجدول والفلاتر** اتحوّلوا بالكامل من كارتين منفصلين (فلاتر + جدول) لكارت
+  واحد موحّد (`.unified-section`) بمعيار `ecommoda-html-builder`
+  `data-table-standard.md`: هيدر فلاتر قابل للطي، فلاتر اختيار متعدد
+  (checkbox dropdown) على النوع/الحالة(الجنب)/النتيجة، فترة سريعة **بدون
+  افتراضي** + "✕ مسح الاختيار"، Chips سطر منفصل لكل فلتر، وترتيب 3 حالات
+  على كل عمود (تصاعدي/تنازلي/بلا) مستقل عن الفلاتر. فلاتر النوع/الحالة/
+  النتيجة **client-side** على الـ batch المحمّل من `list_events` (مفيش
+  Worker endpoint جديد لها) — فلاتر الأوردر/التتبع/التاريخ لسه server-side
+  زي ما كانت.
+- **رقم الأوردر بقى هايبرلينك لشوبيفاي** (`orderLink()`، design-system.md)
+  — محتاج `shopify_order_id` رقمي راجع من الـ Worker. العمود ده **جديد على
+  `bosta_webhook_events`** (كان بيتحسب بس وقت المطابقة ويتبعت لجدول `logs`
+  المشترك، مش بيتخزّن على الحدث نفسه) — بقى يتخزّن على الصف نفسه في أي
+  مسار بعد ما `findOrder` يلاقي الأوردر (حتى لو المطابقة/الكتابة فشلت بعد
+  كده)، وبيترقّى ذاتيًا (`ALTER TABLE ... ADD COLUMN`) أول `no such column`.
+  `MIN_WORKER_VERSION` في الواجهة اتحدّث لـ `1.2.0` عشان كده — Worker أقدم
+  هيدّي تحذير "نسخة قديمة" بدل ما يعرض رقم أوردر بلا لينك بصمت.
+- **رقم التتبع بقى هايبرلينك لداشبورد بوسطة**
+  (`https://business.bosta.co/orders/<رقم التتبع>`) — مباشرة من العمود
+  الموجود أصلاً، مفيش تغيير Worker.
+- **تسمية عمودين اتغيّرت** (راجع "فخاخ الأداة دي" فوق) لحل تعارض الاسم —
+  البيانات نفسها ما اتلمستش.
+- بادج النتيجة `written` بقى نصه **"تم التسجيل"** بدل "اتكتب".
+- **3 أعمدة جديدة** من حقول كانت موجودة في `bosta_webhook_events` بالفعل
+  ومفيش أي تعديل Worker محتاج لها: النوع (`bosta_type`)، موعد التسليم
+  المتوقع (`delivery_promise_date`)، عدد المحاولات (`number_of_attempts`).
+- `--container-max` اتحدّث من Tier M (`1200px`) لـ Tier L (`1400px`) — 11
+  عمود دلوقتي بدل 8 (`design-system.md` § Container Width Tiers).
 
 ### 22-09-2026 — إصلاح `FIND_ORDER_QUERY`: 100% من الكتابات كانت بتفشل من أول يوم
 

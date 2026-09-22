@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════════════
 // §CONSTANTS
 // Worker: bosta-webhook-status-receiver-worker — EcomModa
-// skills: ecommoda-worker-builder v3.7.0 · bosta-api-helper v6.0.0 ·
+// skills: ecommoda-worker-builder v3.7.1 · bosta-api-helper v6.0.0 ·
 //         ecommoda-constants v3.1.0 · ecommoda-tool-migration-playbook
 //
 // 🔴 STOP — قبل أول push للإنتاج: 'bosta_webhook_status' وقيم type
@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.1.2';
+const WORKER_VERSION = '1.2.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -436,11 +436,17 @@ const SET_METAFIELDS_MUTATION = `
 //    SQL منسّق على أكتر من سطر بيرجّع "incomplete input" والجدول ما بيتعملش —
 //    وده اللي خلّى كل أحداث 20/21-09-2026 تضيع (نفس قاعدة ecommoda-constants §8).
 const SCHEMA_SQL = [
-  "CREATE TABLE IF NOT EXISTS bosta_webhook_events (id INTEGER PRIMARY KEY AUTOINCREMENT, bosta_id TEXT NOT NULL, state INTEGER NOT NULL, bosta_timestamp INTEGER NOT NULL, tracking_number TEXT NOT NULL, business_reference TEXT NOT NULL, order_number TEXT, bosta_type TEXT, description TEXT, event_type TEXT, delivery_promise_date TEXT, number_of_attempts INTEGER, cod REAL, is_confirmed_delivery INTEGER, exception_reason TEXT, exception_code TEXT, matched_slot TEXT, match_method TEXT, write_status TEXT NOT NULL DEFAULT 'processing', metafields_written INTEGER NOT NULL DEFAULT 0, raw_payload TEXT NOT NULL, received_at TEXT NOT NULL, UNIQUE(bosta_id, state, bosta_timestamp))",
+  "CREATE TABLE IF NOT EXISTS bosta_webhook_events (id INTEGER PRIMARY KEY AUTOINCREMENT, bosta_id TEXT NOT NULL, state INTEGER NOT NULL, bosta_timestamp INTEGER NOT NULL, tracking_number TEXT NOT NULL, business_reference TEXT NOT NULL, order_number TEXT, bosta_type TEXT, description TEXT, event_type TEXT, delivery_promise_date TEXT, number_of_attempts INTEGER, cod REAL, is_confirmed_delivery INTEGER, exception_reason TEXT, exception_code TEXT, matched_slot TEXT, match_method TEXT, write_status TEXT NOT NULL DEFAULT 'processing', metafields_written INTEGER NOT NULL DEFAULT 0, shopify_order_id TEXT, raw_payload TEXT NOT NULL, received_at TEXT NOT NULL, UNIQUE(bosta_id, state, bosta_timestamp))",
   "CREATE INDEX IF NOT EXISTS idx_bwe_order ON bosta_webhook_events(order_number)",
   "CREATE INDEX IF NOT EXISTS idx_bwe_tracking ON bosta_webhook_events(tracking_number)",
   "CREATE INDEX IF NOT EXISTS idx_bwe_received_at ON bosta_webhook_events(received_at)",
 ].join('\n');
+
+// 🔴 v1.2.0 — عمود جديد على جدول موجود بالفعل في الإنتاج. SCHEMA_SQL فوق
+//    بيغطي التركيب من الصفر بس (CREATE TABLE IF NOT EXISTS ما بيلمسش جدول
+//    موجود). الترقية الفعلية هنا: updateEventRow بيمسك "no such column"
+//    ويضيفه مرة واحدة ذاتيًا — بدون أي خطوة يدوية في D1 Console.
+const ADD_SHOPIFY_ORDER_ID_SQL = "ALTER TABLE bosta_webhook_events ADD COLUMN shopify_order_id TEXT";
 
 // نص ثابت لملاحظة فشل تخزين الحدث — diag بيعدّ بيه (§5)، فممنوع يتغيّر في مكان واحد بس.
 const STORE_FAIL_NOTE = 'فشل تسجيل الحدث الخام في D1';
@@ -474,8 +480,14 @@ async function claimBostaEvent(db, fields) {
 async function updateEventRow(db, rowId, fields) {
   const keys = Object.keys(fields);
   const sets = keys.map(k => `${k} = ?`).join(', ');
-  await db.prepare(`UPDATE bosta_webhook_events SET ${sets} WHERE id = ?`)
-    .bind(...keys.map(k => fields[k]), rowId).run();
+  const bind = [...keys.map(k => fields[k]), rowId];
+  try {
+    await db.prepare(`UPDATE bosta_webhook_events SET ${sets} WHERE id = ?`).bind(...bind).run();
+  } catch (e) {
+    if (!/no such column/i.test(e.message)) throw e;
+    await db.exec(ADD_SHOPIFY_ORDER_ID_SQL);
+    await db.prepare(`UPDATE bosta_webhook_events SET ${sets} WHERE id = ?`).bind(...bind).run();
+  }
 }
 
 // ─── §WEBHOOK::matchAndWriteMetafields — تحديد S1/S2 + الكتابة (ctx.waitUntil) ───
@@ -540,7 +552,7 @@ async function matchAndWriteMetafields(env, rowId, n) {
   }
 
   if (!slot) {
-    await updateEventRow(env.DB, rowId, { write_status: 'match_failed' });
+    await updateEventRow(env.DB, rowId, { write_status: 'match_failed', shopify_order_id: orderNode.legacyResourceId });
     await writeLog(env.DB, {
       tool: TOOL_NAME, type: 'match_failed',
       orderId: orderNode.legacyResourceId, orderName: n.businessReference,
@@ -556,7 +568,7 @@ async function matchAndWriteMetafields(env, rowId, n) {
   if (lastUpdateIso) {
     const lastMs = Date.parse(lastUpdateIso);
     if (Number.isFinite(lastMs) && lastMs > n.bostaTimestamp) {
-      await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: 'stale_skipped' });
+      await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: 'stale_skipped', shopify_order_id: orderNode.legacyResourceId });
       await writeLog(env.DB, {
         tool: TOOL_NAME, type: 'status_event',
         orderId: orderNode.legacyResourceId, orderName: n.businessReference,
@@ -571,7 +583,7 @@ async function matchAndWriteMetafields(env, rowId, n) {
 
   // §9 خطوة 3 — الكتابة الفعلية خلف فلاج، يبدأ false.
   if (String(env.WRITE_METAFIELDS).toLowerCase() !== 'true') {
-    await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: 'dry_run_matched' });
+    await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: 'dry_run_matched', shopify_order_id: orderNode.legacyResourceId });
     await writeLog(env.DB, {
       tool: TOOL_NAME, type: 'status_event',
       orderId: orderNode.legacyResourceId, orderName: n.businessReference,
@@ -593,7 +605,7 @@ async function matchAndWriteMetafields(env, rowId, n) {
     if (errs.length) throw new Error('metafieldsSet: ' + errs.map(e => e.message).join(' | '));
     if (!result?.metafields || result.metafields.length < 2) throw new Error('metafieldsSet: شوبيفاي ما أكدتش كتابة الحقلين');
   } catch (e) {
-    await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: 'shopify_write_failed' });
+    await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: 'shopify_write_failed', shopify_order_id: orderNode.legacyResourceId });
     await writeLog(env.DB, {
       tool: TOOL_NAME, type: 'shopify_write_failed',
       orderId: orderNode.legacyResourceId, orderName: n.businessReference,
@@ -603,7 +615,7 @@ async function matchAndWriteMetafields(env, rowId, n) {
     return;
   }
 
-  await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: 'written', metafields_written: 1 });
+  await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: 'written', metafields_written: 1, shopify_order_id: orderNode.legacyResourceId });
   await writeLog(env.DB, {
     tool: TOOL_NAME, type: 'status_event',
     orderId: orderNode.legacyResourceId, orderName: n.businessReference,

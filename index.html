@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>مستقبل حالة شحنات بوسطة</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<!-- skills: ecommoda-html-builder v7.2.0 · ecommoda-worker-builder v3.4.0 · ecommoda-constants v2.7.0 — 20-09-2026 -->
+<!-- skills: ecommoda-html-builder v7.2.0 · ecommoda-worker-builder v3.7.1 · ecommoda-constants v3.1.0 — 22-09-2026 -->
 <style>
 /* ══════════════════════════════════════════════════════
    §STYLES — design tokens (design-system.md) + shell + login + tool
@@ -50,7 +50,7 @@
   --shadow:         0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
   --font-body:      'Noto Sans Arabic', -apple-system, sans-serif;
   --font-mono:      'Noto Sans Arabic', -apple-system, sans-serif;
-  --container-max:  1200px;   /* Tier M — جدول رئيسي واحد */
+  --container-max:  1400px;   /* Tier L — 11 عمود بعد إضافة النوع/الموعد/المحاولات */
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -209,15 +209,6 @@ body {
 .login-secondary:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
 
 /* ── §TOOL — أحداث الويبهوك ───────────────────────────────────── */
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px; }
-.filters-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
-.field-group { display: flex; flex-direction: column; gap: 5px; }
-.field-group label { font-size: 11px; font-weight: 700; color: var(--text-secondary); }
-.field-input { border: 1.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 9px 11px; font-family: inherit; font-size: 13px; color: var(--text-primary); background: var(--surface); outline: none; transition: border-color .15s, background .15s; }
-.field-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
-.field-input.has-value { border-color: var(--accent); background: var(--accent-light); }
-.btn-primary { padding: 9px 16px; border-radius: var(--radius-sm); border: none; background: var(--accent); color: var(--on-accent); font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s; }
-.btn-primary:hover { background: var(--accent-dark); }
 .btn-ghost { padding: 9px 16px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary); font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; }
 .btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
 
@@ -226,14 +217,156 @@ body {
 .banner-red { background: var(--red-light); border: 1px solid var(--red-border); color: var(--red); }
 .banner-amber { background: var(--amber-light); border: 1px solid var(--amber-border); color: var(--amber-dark); }
 
+/* ─── §TOOL::unifiedTable — data-table-standard.md ─── */
+.unified-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;}
+.section-divider{border-top:1px solid var(--border);}
+
+.flt-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;
+  background:var(--surface-2);cursor:pointer;user-select:none;transition:background .12s;
+  border-radius:var(--radius) var(--radius) 0 0;}
+.flt-header:hover{background:var(--surface-hover);}
+.flt-header-right{display:flex;align-items:center;gap:10px;}
+.flt-icon{width:34px;height:22.5px;color:var(--text-muted);transition:color .2s;flex-shrink:0;}
+.flt-icon.active{color:var(--accent);}
+.flt-toggle{font-size:13px;color:var(--text-muted);transition:transform .25s;}
+.flt-toggle.open{transform:rotate(180deg);}
+.flt-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+.flt-body.collapsed{display:none;}
+
+.clear-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius-sm);
+  font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;
+  white-space:nowrap;height:34px;
+  border:1px solid var(--red-border);color:var(--red);background:var(--red-light);}
+.clear-btn:hover{background:var(--red);color:var(--on-accent);border-color:var(--red);}
+.clear-btn.inactive{border-color:var(--border);color:var(--text-muted);
+  background:var(--surface-2);cursor:not-allowed;opacity:.6;}
+.clear-btn.inactive:hover{background:var(--surface-2);color:var(--text-muted);border-color:var(--border);}
+
+.flt-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+
+/* بحث نصي (رقم أوردر / رقم تتبع) */
+.search-wrap{position:relative;max-width:220px;flex:1;min-width:170px;}
+.search-flabel{font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;display:block;margin-bottom:3px;}
+.search-input{width:100%;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:8px 12px 8px 34px;font-family:var(--font-mono);direction:ltr;text-align:right;font-size:13px;height:36px;box-sizing:border-box;outline:none;
+  background:var(--surface);transition:border-color .15s,background .15s;}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.08);}
+.search-input.has-value{border-color:var(--accent);background:var(--accent-light);}
+.search-icon{position:absolute;left:10px;top:calc(50% + 8px);transform:translateY(-50%);
+  font-size:14px;color:var(--text-muted);pointer-events:none;}
+
+/* multi-select (§ ecommoda-html-builder/multi-select-filter.md) */
+.ms-wrap{position:relative;}
+.ms-flabel{font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;display:block;margin-bottom:3px;}
+.ms-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  min-width:170px;height:36px;padding:6px 10px;
+  border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+  background:var(--surface);font-family:inherit;font-size:12.5px;font-weight:600;
+  color:var(--text-primary);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.ms-btn:hover{border-color:var(--accent);}
+.ms-btn.has-selection{border-color:var(--accent);color:var(--accent-dark);background:var(--accent-light);}
+.ms-btn.open{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.08);}
+.ms-btn .ms-count{font-family:var(--font-mono);font-size:10.5px;font-weight:700;color:var(--on-accent);
+  background:var(--accent);border-radius:20px;padding:1px 7px;min-width:18px;text-align:center;}
+.ms-btn .ms-arrow{font-size:9px;color:var(--text-muted);transition:transform .2s;flex-shrink:0;}
+.ms-btn.open .ms-arrow{transform:rotate(180deg);}
+.ms-menu{position:absolute;top:calc(100% + 4px);right:0;z-index:200;
+  width:220px;max-width:80vw;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+  box-shadow:0 8px 28px rgba(0,0,0,.14);display:none;flex-direction:column;overflow:hidden;}
+.ms-menu.open{display:flex;}
+.ms-selectall-row{display:flex;align-items:center;gap:8px;padding:7px 12px;
+  border-bottom:1px solid var(--border);background:var(--surface-2);font-size:12px;font-weight:700;
+  cursor:pointer;user-select:none;}
+.ms-selectall-row:hover{background:var(--surface-hover);}
+.ms-list{max-height:220px;overflow-y:auto;padding:4px;}
+.ms-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;
+  font-size:12.5px;cursor:pointer;user-select:none;transition:background .1s;}
+.ms-item:hover{background:var(--surface-2);}
+.ms-item.checked{background:var(--accent-light);}
+.ms-item input[type=checkbox],.ms-selectall-row input[type=checkbox]{
+  width:15px;height:15px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;}
+.ms-item .ms-item-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ms-empty{padding:18px;text-align:center;font-size:12px;color:var(--text-muted);}
+.ms-ftr-top{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:7px 10px;border-bottom:1px solid var(--border);background:var(--surface-2);}
+.ms-ftr-clear{font-size:11.5px;font-weight:700;color:var(--red);background:none;border:none;
+  cursor:pointer;padding:4px 6px;border-radius:5px;}
+.ms-ftr-clear:hover{background:var(--red-light);}
+.ms-ftr-count{font-size:11px;color:var(--text-muted);}
+
+/* Chips */
+.ms-chips-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.ms-chips-row:empty{display:none;}
+.chips-label{font-size:11.5px;font-weight:700;color:var(--text-secondary);white-space:nowrap;}
+.ms-chip{display:flex;align-items:center;gap:5px;background:var(--accent-light);color:var(--accent-dark);
+  border:1px solid var(--accent-border);border-radius:20px;padding:3px 6px 3px 10px;font-size:11.5px;font-weight:600;}
+.ms-chip button{border:none;background:rgba(37,99,235,.15);color:var(--accent-dark);
+  width:16px;height:16px;border-radius:50%;font-size:11px;cursor:pointer;line-height:1;}
+.ms-chip button:hover{background:var(--accent);color:var(--on-accent);}
+
+/* فترة سريعة + من/إلى تاريخ */
+.range-fg{display:flex;flex-direction:column;gap:3px;}
+.range-flabel{font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
+.range-date-wrap input[type=date]{width:150px;height:36px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:6px 10px;font-family:var(--font-mono);font-size:12px;color:var(--text-primary);
+  background:var(--surface);outline:none;cursor:pointer;}
+.range-preset-wrap{position:relative;}
+.range-preset-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);font-family:var(--font-body);font-size:12px;font-weight:600;
+  color:var(--text-secondary);background:var(--surface);cursor:pointer;height:36px;white-space:nowrap;}
+.range-preset-btn.has-preset{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.range-preset-menu{position:absolute;top:calc(100% + 4px);right:0;background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);box-shadow:0 4px 20px rgba(0,0,0,.12);z-index:200;min-width:170px;padding:4px;display:none;}
+.range-preset-menu.open{display:block;}
+.range-preset-clear-row{padding:6px 8px;border-bottom:1px solid var(--border);}
+.range-preset-clear-row button{font-size:11.5px;font-weight:700;color:var(--red);
+  background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:5px;}
+.range-preset-clear-row button:hover{background:var(--red-light);}
+.range-preset-item{padding:7px 12px;font-size:12px;cursor:pointer;border-radius:6px;color:var(--text-primary);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.range-preset-item:hover{background:var(--surface-2);}
+.range-preset-item.active{background:var(--accent-light);color:var(--accent);}
+.range-preset-item .pr-check{font-size:11px;color:var(--accent);display:none;}
+.range-preset-item.active .pr-check{display:block;}
+.range-preset-sep{height:1px;background:var(--border);margin:3px 4px;}
+
+/* صف الجدول — النتائج + الطي */
+.tbl-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;
+  background:var(--surface-2);cursor:pointer;user-select:none;transition:background .12s;flex-wrap:wrap;}
+.tbl-bar:hover{background:var(--surface-hover);}
+.tbl-bar-right,.tbl-bar-left{display:flex;align-items:center;gap:8px;}
+.tbl-toggle{font-size:13px;color:var(--text-muted);transition:transform .25s;}
+.tbl-toggle.open{transform:rotate(180deg);}
+.tbl-body-wrap{max-height:2000px;overflow:hidden;transition:max-height .3s ease;
+  border-radius:0 0 var(--radius) var(--radius);}
+.tbl-body-wrap.collapsed{max-height:0;}
+.results-wrap{display:flex;align-items:center;gap:8px;}
+.results-label{font-size:14px;font-weight:800;color:var(--text-primary);white-space:nowrap;}
+.results-count{display:inline-flex;align-items:center;justify-content:center;
+  min-width:44px;height:34px;padding:0 10px;
+  font-family:var(--font-mono);font-size:17px;font-weight:800;
+  color:var(--purple);background:var(--purple-light);
+  border:1.5px solid var(--purple-border);border-radius:var(--radius-sm);}
+
 .data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .data-table thead th { text-align: center; padding: 8px 10px; color: var(--text-secondary); font-weight: 700; border-bottom: 1.5px solid var(--border-strong); background: var(--surface-2); border-inline-start: 1px solid var(--border); }
 .data-table thead th:first-child { border-inline-start: none; }
 .data-table tbody td { text-align: center; padding: 8px 10px; border-bottom: 1px solid var(--border); border-inline-start: 1px solid var(--border); }
 .data-table tbody td:first-child { border-inline-start: none; }
 .data-table tbody tr:hover { background: var(--surface-hover); }
-.table-wrap { overflow-x: auto; max-height: 62vh; overflow-y: auto; }
-.results-row { margin-top: 10px; font-size: 12.5px; color: var(--text-secondary); }
+.table-wrap { overflow-x: auto; max-height: 62vh; overflow-y: auto; border-radius: 0 0 var(--radius) var(--radius); }
+
+.sortable-th{cursor:pointer;user-select:none;transition:background .12s,color .12s;}
+.sortable-th:hover{background:var(--accent-light);color:var(--accent-dark);}
+.sortable-th.sorted{background:var(--accent-light);color:var(--accent-dark);}
+.sort-icon{display:inline-block;font-size:10px;color:var(--accent);font-weight:900;}
+.sort-icon.active{margin-inline-start:4px;}
+
+.order-link{font-family:var(--font-mono);font-weight:600;color:var(--accent);text-decoration:none;}
+.order-link:hover{text-decoration:underline;}
+.order-num{font-family:var(--font-mono);font-weight:600;}
+.tracking-link{font-family:var(--font-mono);font-weight:600;color:var(--accent);text-decoration:none;direction:ltr;}
+.tracking-link:hover{text-decoration:underline;}
 
 .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
 .badge-success { background: var(--green-light); color: var(--green-dark); }
@@ -307,6 +440,20 @@ body {
           <span class="cl-ver-date">22-09-2026</span>
         </div>
         <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>الجدول والفلاتر اتحوّلوا بالكامل لمعيار <code>ecommoda-html-builder</code> (<code>data-table-standard.md</code>) — كارت موحّد للفلاتر والجدول، فلاتر اختيار متعدد (النوع/الحالة/النتيجة)، فترة سريعة بدون افتراضي، Chips، وترتيب على الأعمدة بثلاث حالات (تصاعدي/تنازلي/بلا).</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>رقم الأوردر بقى هايبرلينك يفتح صفحة الأوردر على شوبيفاي أدمن مباشرة (يحتاج <code>shopify_order_id</code> من الـ Worker — راجع <code>MIN_WORKER_VERSION</code>).</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>رقم التتبع بقى هايبرلينك يفتح داشبورد بوسطة (<code>https://business.bosta.co/orders/&lt;رقم التتبع&gt;</code>).</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>عمود "الجنب" (S1/S2) اتسمى "الحالة"، وعمود كود بوسطة الرقمي (اللي كان اسمه "الحالة") اتسمى "كود الحالة" عشان مايتلخبطش الاسمين.</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>بادج النتيجة "اتكتب" بقت "تم التسجيل".</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>3 أعمدة جديدة من بيانات الويبهوك الموجودة بالفعل: النوع (<code>type</code> — SEND/RTO/EXCHANGE...)، موعد التسليم المتوقع (<code>deliveryPromiseDate</code>)، عدد المحاولات (<code>numberOfAttempts</code>).</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.2.1</span>
+          <span class="cl-ver-date">22-09-2026</span>
+        </div>
+        <ul class="cl-items">
           <li class="cl-item"><span class="cl-tag fix">إصلاح</span><span>🔴 <b>سبب فشل كل الكتابات على شوبيفاي من أول حدث.</b> <code>findOrder</code> كان بيطلب <code>metafields(identifiers: [...]) { key value }</code> على <code>Order</code> — الحقل ده نوعه <code>MetafieldConnection</code> ومش بيقبل <code>identifiers</code> ولا بيرجّع <code>{ key value }</code> مباشرة، فالاستعلام كان بيرمي خطأ GraphQL على **كل** حدث قبل ما يوصل لمرحلة تحديد S1/S2 (ولذلك عمودي الجنب وطريقة المطابقة كانوا فاضيين على كل صف). بقى بيستخدم <code>metafield(namespace, key)</code> المفرد بـ alias لكل حقل (٤ ميتافيلدز).</span></li>
         </ul>
       </div>
@@ -371,7 +518,7 @@ body {
           <table>
             <tr><th>action</th><th>الوصف</th></tr>
             <tr><td><code>POST /webhook</code></td><td>استقبال حدث بوسطة (بوابة منفصلة، مش action=)</td></tr>
-            <tr><td><code>list_events</code></td><td>أحداث D1 بفلاتر الأوردر/التتبع/التاريخ</td></tr>
+            <tr><td><code>list_events</code></td><td>أحداث D1 بفلاتر الأوردر/التتبع/التاريخ — بترجّع <code>shopify_order_id</code> لهايبرلينك رقم الأوردر (لو الحدث اتطابق مع أوردر)</td></tr>
             <tr><td><code>diag</code></td><td>فحص ذاتي — الأسرار موجودة؟ آخر حدث امتى؟ اتصال شوبيفاي؟</td></tr>
             <tr><td><code>get_config</code></td><td>نسخة الـ Worker + حالة WRITE_METAFIELDS</td></tr>
             <tr><td><code>check_employee</code> / <code>verify_employee</code> / <code>register_pin</code> / <code>log_logout</code> / <code>get_employees</code></td><td>Universal D1 Auth القياسي</td></tr>
@@ -385,7 +532,11 @@ body {
           <h4>FEATURE MAP</h4>
           <ul>
             <li><code>§SHELL</code> — App Shell + Login + Settings/About/Changelog modals</li>
-            <li><code>§TOOL / §TOOL-JS</code> — فلاتر وجدول الأحداث + بانرات المراقبة</li>
+            <li><code>§TOOL / §TOOL-JS</code> — القسم الموحّد (فلاتر + جدول) وبانرات المراقبة</li>
+            <li><code>§TOOL-JS::filterState</code> — فلاتر اختيار متعدد (النوع/الحالة/النتيجة) client-side على البيانات المحمّلة</li>
+            <li><code>§TOOL-JS::dateRange</code> — فترة سريعة + من/إلى تاريخ (بدون افتراضي — <code>data-table-standard.md</code> §5)</li>
+            <li><code>§TOOL-JS::sort</code> — ترتيب 3 حالات على كل الأعمدة، مستقل عن الفلاتر</li>
+            <li><code>§CONFIG::orderLink</code> / <code>trackingLink</code> — هايبرلينك رقم الأوردر (شوبيفاي) ورقم التتبع (بوسطة)</li>
           </ul>
           <h4>KEY VARIABLES</h4>
           <ul>
@@ -393,11 +544,15 @@ body {
             <li><code>WORKER_URL</code> — ثابت في §CONFIG، مش localStorage (Standards #28)</li>
             <li><code>LS_SECRET = 'bosta_webhook_status_worker_secret'</code> — السر الوحيد في localStorage. 🔴 هيتغيّر لمفتاح مجموعة <code>delivery_cod_ops_worker_secret</code> لما التسجيل في <code>ecommoda-constants</code> يخلص (راجع CLAUDE.md)</li>
             <li><code>TOOL_NAME = 'bosta_webhook_status'</code> — قيمة tool في جدول logs</li>
+            <li><code>SHOP_DOMAIN = '6c7e1a-53.myshopify.com'</code> — لبناء رابط الأوردر على شوبيفاي</li>
+            <li><code>rawEvents</code> — آخر batch من <code>list_events</code> (بفلاتر السيرفر: أوردر/تتبع/تاريخ) قبل فلاتر الاختيار المتعدد والترتيب</li>
           </ul>
           <h4>NOTES</h4>
           <ul>
             <li>الأداة مالهاش أي زرار تنفيذ فعل — كل الكتابة على شوبيفاي بتحصل من الـ Worker وحده عند استقبال ويبهوك.</li>
             <li>بانر السكوت وبانر فشل المطابقة بيتحدّثوا من <code>diag</code> كل دقيقة أثناء فتح الشاشة.</li>
+            <li>فلاتر النوع/الحالة/النتيجة وقوايمها (checkbox dropdown) بتتبنى من الـ <code>rawEvents</code> المحمّلة فعليًا — مش استعلام سيرفر إضافي. فلاتر الأوردر/التتبع والتاريخ لسه بتتبعت للـ Worker (<code>list_events</code>).</li>
+            <li>رقم الأوردر بيبقى نص عادي (بدون لينك) لو <code>shopify_order_id</code> فاضي — بيحصل ده للأحداث اللي فشلت مطابقتها أو حصلت قبل ترقية الـ Worker لـ v1.2.0 (fallback <code>.order-num</code>، design-system.md).</li>
           </ul>
         </div>
       </details>
@@ -465,30 +620,160 @@ body {
   <div class="banner banner-red" id="silenceBanner"></div>
   <div class="banner banner-amber" id="matchFailBanner"></div>
 
-  <div class="card">
-    <div class="filters-row">
-      <div class="field-group"><label>رقم الأوردر</label><input class="field-input" id="fOrder" placeholder="#12345" oninput="toggleHasValue(this)"></div>
-      <div class="field-group"><label>رقم التتبع</label><input class="field-input" id="fTracking" placeholder="8485106207" oninput="toggleHasValue(this)"></div>
-      <div class="field-group"><label>من تاريخ</label><input class="field-input" id="fFrom" type="date" onclick="this.showPicker&&this.showPicker();"></div>
-      <div class="field-group"><label>إلى تاريخ</label><input class="field-input" id="fTo" type="date" onclick="this.showPicker&&this.showPicker();"></div>
-      <div class="field-group"><label>&nbsp;</label><button class="btn-primary" onclick="loadEvents()">فلترة</button></div>
-      <div class="field-group"><label>&nbsp;</label><button class="btn-ghost" onclick="clearFilters()">تفريغ</button></div>
+  <!-- ─── §TOOL::unifiedTable — فلاتر + جدول في كارت واحد (data-table-standard.md) ─── -->
+  <div class="unified-section">
+    <div class="flt-header" onclick="toggleFilters()">
+      <div class="flt-header-right">
+        <span class="flt-toggle open" id="fltToggleIcon">▲</span>
+        <svg class="flt-icon" id="fltIcon" viewBox="0 0 36 24" fill="none"
+             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="2 3 13 3 8.3 10.2 8.3 19 6.7 19 6.7 10.2 2 3"></polygon>
+          <line x1="18" y1="5"  x2="33" y2="5"></line>
+          <line x1="18" y1="11" x2="29" y2="11"></line>
+          <line x1="18" y1="17" x2="25" y2="17"></line>
+        </svg>
+      </div>
+      <button class="clear-btn inactive" id="clearAllBtn"
+        onclick="event.stopPropagation(); clearAllFilters();">✕ مسح كل الفلاتر</button>
+    </div>
+    <div class="flt-body" id="fltBody">
+      <!-- صف 1 — فلاتر الاختيار المتعدد -->
+      <div class="flt-row">
+        <div class="ms-wrap" id="msWrap-type">
+          <span class="ms-flabel">النوع</span>
+          <button class="ms-btn" id="msBtn-type" onclick="msToggle('type')">
+            <span id="msBtnLabel-type">الكل</span><span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-menu" id="msMenu-type">
+            <div class="ms-ftr-top">
+              <button class="ms-ftr-clear" onclick="msClear('type')">مسح الاختيار</button>
+              <span class="ms-ftr-count" id="msFtrCount-type"></span>
+            </div>
+            <div class="ms-selectall-row" onclick="msToggleSelectAll('type')">
+              <input type="checkbox" id="msSelectAll-type" onclick="event.stopPropagation()" onchange="msToggleSelectAll('type', this.checked)">
+              <span id="msSelectAllLabel-type">تحديد الكل</span>
+            </div>
+            <div class="ms-list" id="msList-type"></div>
+          </div>
+        </div>
+        <div class="ms-wrap" id="msWrap-slot">
+          <span class="ms-flabel">الحالة</span>
+          <button class="ms-btn" id="msBtn-slot" onclick="msToggle('slot')">
+            <span id="msBtnLabel-slot">الكل</span><span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-menu" id="msMenu-slot">
+            <div class="ms-ftr-top">
+              <button class="ms-ftr-clear" onclick="msClear('slot')">مسح الاختيار</button>
+              <span class="ms-ftr-count" id="msFtrCount-slot"></span>
+            </div>
+            <div class="ms-selectall-row" onclick="msToggleSelectAll('slot')">
+              <input type="checkbox" id="msSelectAll-slot" onclick="event.stopPropagation()" onchange="msToggleSelectAll('slot', this.checked)">
+              <span id="msSelectAllLabel-slot">تحديد الكل</span>
+            </div>
+            <div class="ms-list" id="msList-slot"></div>
+          </div>
+        </div>
+        <div class="ms-wrap" id="msWrap-result">
+          <span class="ms-flabel">النتيجة</span>
+          <button class="ms-btn" id="msBtn-result" onclick="msToggle('result')">
+            <span id="msBtnLabel-result">الكل</span><span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-menu" id="msMenu-result">
+            <div class="ms-ftr-top">
+              <button class="ms-ftr-clear" onclick="msClear('result')">مسح الاختيار</button>
+              <span class="ms-ftr-count" id="msFtrCount-result"></span>
+            </div>
+            <div class="ms-selectall-row" onclick="msToggleSelectAll('result')">
+              <input type="checkbox" id="msSelectAll-result" onclick="event.stopPropagation()" onchange="msToggleSelectAll('result', this.checked)">
+              <span id="msSelectAllLabel-result">تحديد الكل</span>
+            </div>
+            <div class="ms-list" id="msList-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- صف 2 — بحث ← فترة سريعة ← من ← إلى -->
+      <div class="flt-row">
+        <div class="search-wrap">
+          <span class="search-flabel">رقم الأوردر</span>
+          <input type="text" class="search-input" id="fOrder" placeholder="#12345" oninput="onLookupInput(this)">
+          <span class="search-icon">🔍</span>
+        </div>
+        <div class="search-wrap">
+          <span class="search-flabel">رقم التتبع</span>
+          <input type="text" class="search-input" id="fTracking" placeholder="8485106207" oninput="onLookupInput(this)">
+          <span class="search-icon">🔍</span>
+        </div>
+        <div class="range-fg">
+          <span class="range-flabel">فترة سريعة</span>
+          <div class="range-preset-wrap" id="rangePresetWrap">
+            <button class="range-preset-btn" id="rangePresetBtn" onclick="toggleRangePresetMenu(event)">
+              <span id="rangePresetLabel">⚡ اختار فترة</span><span class="pr-arrow">▾</span>
+            </button>
+            <div class="range-preset-menu" id="rangePresetMenu">
+              <div class="range-preset-clear-row"><button onclick="resetDateFilter(); applyFiltersAndRender();">✕ مسح الاختيار</button></div>
+              <div class="range-preset-item" data-preset="today"     onclick="applyRangePreset('today')">    <span>اليوم</span>       <span class="pr-check">✓</span></div>
+              <div class="range-preset-item" data-preset="yesterday" onclick="applyRangePreset('yesterday')"><span>أمس</span>         <span class="pr-check">✓</span></div>
+              <div class="range-preset-sep"></div>
+              <div class="range-preset-item" data-preset="last7"     onclick="applyRangePreset('last7')">    <span>آخر 7 أيام</span>  <span class="pr-check">✓</span></div>
+              <div class="range-preset-item" data-preset="last30"    onclick="applyRangePreset('last30')">   <span>آخر 30 يوم</span>  <span class="pr-check">✓</span></div>
+              <div class="range-preset-sep"></div>
+              <div class="range-preset-item" data-preset="thisMonth" onclick="applyRangePreset('thisMonth')"><span>الشهر الحالي</span><span class="pr-check">✓</span></div>
+              <div class="range-preset-item" data-preset="lastMonth" onclick="applyRangePreset('lastMonth')"><span>الشهر السابق</span><span class="pr-check">✓</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="range-fg">
+          <span class="range-flabel">من تاريخ</span>
+          <div class="range-date-wrap"><input type="date" id="fFrom" onclick="this.showPicker&&this.showPicker();" onchange="onRangeDateChange()"></div>
+        </div>
+        <div class="range-fg">
+          <span class="range-flabel">إلى تاريخ</span>
+          <div class="range-date-wrap"><input type="date" id="fTo" onclick="this.showPicker&&this.showPicker();" onchange="onRangeDateChange()"></div>
+        </div>
+      </div>
+
+      <!-- Chips -->
+      <div class="ms-chips-row" id="chipsRow-lookup"></div>
+      <div class="ms-chips-row" id="chipsRow-date"></div>
+      <div class="ms-chips-row" id="chipsRow-type"></div>
+      <div class="ms-chips-row" id="chipsRow-slot"></div>
+      <div class="ms-chips-row" id="chipsRow-result"></div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="table-wrap">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>الأوردر</th><th>رقم التتبع</th><th>الحالة</th><th>الوصف</th>
-            <th>الوقت</th><th>الجنب</th><th>طريقة المطابقة</th><th>النتيجة</th>
-          </tr>
-        </thead>
-        <tbody id="eventsBody"></tbody>
-      </table>
+  <div class="unified-section">
+    <div class="tbl-bar" onclick="toggleTable()">
+      <div class="tbl-bar-right">
+        <span class="tbl-toggle open" id="tblToggleIcon">▲</span>
+        <div class="results-wrap">
+          <span class="results-label">النتائج:</span>
+          <span class="results-count" id="filteredCount">—</span>
+        </div>
+      </div>
     </div>
-    <div class="results-row" id="eventsMeta"></div>
+    <div class="tbl-body-wrap" id="tblBodyWrap">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="sortable-th" data-sort-key="order" onclick="toggleSort('order')">الأوردر<span class="sort-icon" data-sort-key="order"></span></th>
+              <th class="sortable-th" data-sort-key="tracking" onclick="toggleSort('tracking')">رقم التتبع<span class="sort-icon" data-sort-key="tracking"></span></th>
+              <th class="sortable-th" data-sort-key="type" onclick="toggleSort('type')">النوع<span class="sort-icon" data-sort-key="type"></span></th>
+              <th class="sortable-th" data-sort-key="stateCode" onclick="toggleSort('stateCode')">كود الحالة<span class="sort-icon" data-sort-key="stateCode"></span></th>
+              <th>الوصف</th>
+              <th class="sortable-th" data-sort-key="promise" onclick="toggleSort('promise')">موعد التسليم المتوقع<span class="sort-icon" data-sort-key="promise"></span></th>
+              <th class="sortable-th" data-sort-key="attempts" onclick="toggleSort('attempts')">عدد المحاولات<span class="sort-icon" data-sort-key="attempts"></span></th>
+              <th class="sortable-th" data-sort-key="time" onclick="toggleSort('time')">الوقت<span class="sort-icon" data-sort-key="time"></span></th>
+              <th class="sortable-th" data-sort-key="slot" onclick="toggleSort('slot')">الحالة<span class="sort-icon" data-sort-key="slot"></span></th>
+              <th class="sortable-th" data-sort-key="matchMethod" onclick="toggleSort('matchMethod')">طريقة المطابقة<span class="sort-icon" data-sort-key="matchMethod"></span></th>
+              <th class="sortable-th" data-sort-key="result" onclick="toggleSort('result')">النتيجة<span class="sort-icon" data-sort-key="result"></span></th>
+            </tr>
+          </thead>
+          <tbody id="eventsBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -498,10 +783,10 @@ body {
 // ══════════════════════════════════════════════════════
 // §CONFIG
 // ══════════════════════════════════════════════════════
-// 🔴 1.1.0 = أول نسخة Worker بترجّع eventsTableOk / unauthorized24h /
-//    storeFailed24h. مع Worker أقدم، بانر الصحة بيفضل مطفي بصمت.
-const MIN_WORKER_VERSION = '1.1.0';
-const TOOL_VERSION       = 'v1.2.1';
+// 🔴 1.2.0 = أول نسخة Worker بترجّع shopify_order_id في list_events —
+//    من غيره رقم الأوردر بيفضل نص عادي (fallback .order-num) مش هايبرلينك.
+const MIN_WORKER_VERSION = '1.2.0';
+const TOOL_VERSION       = 'v1.3.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -535,7 +820,39 @@ function formatDateTime(iso) {
   let h = +p.hour;
   const ampm = h >= 12 ? 'مساءً' : 'صباحاً';
   h = h % 12 || 12;
-  return `${p.day}/${p.month}/${p.year} ${String(h).padStart(2,'0')}:${p.minute} ${ampm}`;
+  return `📅 ${p.day}/${p.month}/${p.year} 🕐 ${String(h).padStart(2,'0')}:${p.minute} ${ampm}`;
+}
+function formatDateOnly(iso) {
+  if (!iso) return '—';
+  const p = cairoParts(new Date(iso));
+  return `📅 ${p.day}/${p.month}/${p.year}`;
+}
+function cairoNow() { return cairoParts(new Date()); }
+function cairoTodayStr() { const p = cairoNow(); return `${p.year}-${p.month}-${p.day}`; }
+function addDays(dateStr, n) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  const pad = x => String(x).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+}
+
+// ─── §CONFIG::orderLink — رقم الأوردر = هايبرلينك لشوبيفاي (design-system.md) ───
+const SHOP_DOMAIN = '6c7e1a-53.myshopify.com';
+function shopifyOrderUrl(orderId) {
+  const id = String(orderId).includes('gid://') ? orderId.split('/').pop() : orderId;
+  return `https://${SHOP_DOMAIN}/admin/orders/${id}`;
+}
+function orderLink(orderNumber, orderId) {
+  const label = String(orderNumber || '').startsWith('#') ? orderNumber : `#${orderNumber || '—'}`;
+  if (!orderId) return `<span class="order-num">${esc(label)}</span>`;
+  return `<a href="${shopifyOrderUrl(orderId)}" target="_blank" rel="noopener" class="order-link">${esc(label)}</a>`;
+}
+
+// ─── §CONFIG::trackingLink — رقم التتبع = هايبرلينك لداشبورد بوسطة ───
+function bostaOrderUrl(trackingNumber) { return `https://business.bosta.co/orders/${trackingNumber}`; }
+function trackingLink(trackingNumber) {
+  if (!trackingNumber) return '—';
+  return `<a href="${bostaOrderUrl(trackingNumber)}" target="_blank" rel="noopener" class="tracking-link">${esc(trackingNumber)}</a>`;
 }
 
 // ─── §CONFIG::apiRequest — مهلة إلزامية (H-7) ───
@@ -630,8 +947,6 @@ function showToast(msg, type = 'neutral', duration = 3500) {
   document.getElementById('toastContainer').appendChild(t);
   setTimeout(() => t.remove(), duration);
 }
-
-function toggleHasValue(el) { el.classList.toggle('has-value', el.value.trim().length > 0); }
 
 // ── حارس نسخة الـ Worker (Standards #29) ──
 let workerVersion = null;
@@ -900,23 +1215,336 @@ function updateLoginSettingsBtn() {
 // ══════════════════════════════════════════════════════
 // §TOOL-JS
 // ══════════════════════════════════════════════════════
+const RESULT_LABELS = {
+  written:              'تم التسجيل',
+  dry_run_matched:      'تطابق (بدون كتابة)',
+  stale_skipped:        'أقدم من المكتوب',
+  match_failed:         'فشلت المطابقة',
+  shopify_write_failed: 'فشلت الكتابة',
+  processing:           'قيد المعالجة',
+};
 function resultBadge(status) {
-  const map = {
-    written:              ['badge-success', 'اتكتب'],
-    dry_run_matched:      ['badge-warn',    'تطابق (بدون كتابة)'],
-    stale_skipped:        ['badge-neutral', 'أقدم من المكتوب'],
-    match_failed:         ['badge-danger',  'فشلت المطابقة'],
-    shopify_write_failed: ['badge-danger',  'فشلت الكتابة'],
-    processing:           ['badge-neutral', 'قيد المعالجة'],
+  const clsMap = {
+    written: 'badge-success', dry_run_matched: 'badge-warn', stale_skipped: 'badge-neutral',
+    match_failed: 'badge-danger', shopify_write_failed: 'badge-danger', processing: 'badge-neutral',
   };
-  const [cls, label] = map[status] || ['badge-neutral', status || '—'];
+  const cls = clsMap[status] || 'badge-neutral';
+  const label = RESULT_LABELS[status] || status || '—';
   return `<span class="badge ${cls}">${esc(label)}</span>`;
+}
+
+// ─── §TOOL-JS::filterState — فلاتر اختيار متعدد على البيانات المحمّلة (multi-select-filter.md) ───
+const msState = {
+  type:   { items: [], selected: new Set() },
+  slot:   { items: [], selected: new Set() },
+  result: { items: [], selected: new Set() },
+};
+const filterLabels = { type: 'النوع', slot: 'الحالة', result: 'النتيجة' };
+let rawEvents = [];
+let dateFilterActive = false;
+
+function msRenderList(key) {
+  const st = msState[key];
+  const listEl = document.getElementById(`msList-${key}`);
+  listEl.innerHTML = !st.items.length
+    ? '<div class="ms-empty">لا توجد قيم في البيانات الحالية</div>'
+    : st.items.map(it => {
+        const checked = st.selected.has(it.value);
+        return `<div class="ms-item ${checked ? 'checked' : ''}" onclick="msToggleItem('${key}','${it.value}')">
+          <input type="checkbox" ${checked ? 'checked' : ''} onclick="event.stopPropagation(); msToggleItem('${key}','${it.value}')">
+          <span class="ms-item-label">${esc(it.label)}</span>
+        </div>`;
+      }).join('');
+  const allChecked = st.items.length > 0 && st.items.every(it => st.selected.has(it.value));
+  const selAll = document.getElementById(`msSelectAll-${key}`);
+  if (selAll) selAll.checked = allChecked;
+  msUpdateButtonLabel(key);
+  document.getElementById(`msFtrCount-${key}`).textContent = `${st.selected.size} مختار`;
+}
+function msUpdateButtonLabel(key) {
+  const st = msState[key];
+  const btn = document.getElementById(`msBtn-${key}`);
+  const lbl = document.getElementById(`msBtnLabel-${key}`);
+  const n = st.selected.size;
+  btn.classList.toggle('has-selection', n > 0);
+  if (n === 0) lbl.textContent = 'الكل';
+  else if (n === 1) lbl.textContent = st.items.find(it => it.value === [...st.selected][0])?.label || [...st.selected][0];
+  else lbl.innerHTML = `${n} محددين <span class="ms-count">${n}</span>`;
+}
+function msToggle(key) {
+  const menu = document.getElementById(`msMenu-${key}`), btn = document.getElementById(`msBtn-${key}`);
+  const willOpen = !menu.classList.contains('open');
+  Object.keys(msState).forEach(k => {
+    document.getElementById(`msMenu-${k}`).classList.remove('open');
+    document.getElementById(`msBtn-${k}`).classList.remove('open');
+  });
+  if (willOpen) { menu.classList.add('open'); btn.classList.add('open'); }
+}
+function msToggleItem(key, value) {
+  const st = msState[key];
+  st.selected.has(value) ? st.selected.delete(value) : st.selected.add(value);
+  msRenderList(key); applyFiltersAndRender();
+}
+function msToggleSelectAll(key, forceState) {
+  const st = msState[key];
+  const allChecked = st.items.length > 0 && st.items.every(it => st.selected.has(it.value));
+  const shouldCheck = forceState !== undefined ? forceState : !allChecked;
+  st.items.forEach(it => shouldCheck ? st.selected.add(it.value) : st.selected.delete(it.value));
+  msRenderList(key); applyFiltersAndRender();
+}
+function msClear(key) {
+  msState[key].selected.clear();
+  msRenderList(key); applyFiltersAndRender();
+}
+document.addEventListener('click', (e) => {
+  if (!document.contains(e.target)) return;
+  Object.keys(msState).forEach(k => {
+    const wrap = document.getElementById(`msWrap-${k}`);
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById(`msMenu-${k}`).classList.remove('open');
+      document.getElementById(`msBtn-${k}`).classList.remove('open');
+    }
+  });
+});
+
+function renderMsChips() {
+  Object.keys(msState).forEach(key => {
+    const row = document.getElementById(`chipsRow-${key}`);
+    if (!row) return;
+    const label = filterLabels[key] || key;
+    const chips = [...msState[key].selected].map(val => {
+      const item = msState[key].items.find(it => it.value === val);
+      const v = item ? item.label : val;
+      return `<span class="ms-chip">${esc(v)}<button onclick="msToggleItem('${key}','${val.replace(/'/g, "\\'")}')">✕</button></span>`;
+    }).join('');
+    row.innerHTML = chips ? `<span class="chips-label">${label}:</span>${chips}` : '';
+  });
+}
+function renderLookupChips() {
+  const row = document.getElementById('chipsRow-lookup');
+  const chips = [];
+  const orderVal = document.getElementById('fOrder').value.trim();
+  const trackVal = document.getElementById('fTracking').value.trim();
+  if (orderVal) chips.push(`<span class="ms-chip">${esc(orderVal)}<button onclick="clearLookupField('fOrder')">✕</button></span>`);
+  if (trackVal) chips.push(`<span class="ms-chip">${esc(trackVal)}<button onclick="clearLookupField('fTracking')">✕</button></span>`);
+  row.innerHTML = chips.length ? `<span class="chips-label">بحث:</span>${chips.join('')}` : '';
+
+  const dateRow = document.getElementById('chipsRow-date');
+  if (dateFilterActive) {
+    const from = document.getElementById('fFrom').value, to = document.getElementById('fTo').value;
+    dateRow.innerHTML = `<span class="chips-label">الفترة:</span><span class="ms-chip">${esc(from)} → ${esc(to)}<button onclick="resetDateFilter(); applyFiltersAndRender();">✕</button></span>`;
+  } else {
+    dateRow.innerHTML = '';
+  }
+}
+function clearLookupField(id) {
+  const el = document.getElementById(id);
+  el.value = ''; el.classList.remove('has-value');
+  applyFiltersAndRender();
+}
+
+// ─── §TOOL-JS::filterIcon — anyFilterActive بـ !!value مش !== null (data-table-standard.md §3) ───
+function anyFilterActive() {
+  const msActive = Object.keys(msState).some(k => msState[k].selected.size > 0);
+  const orderVal = document.getElementById('fOrder').value.trim();
+  const trackVal = document.getElementById('fTracking').value.trim();
+  return msActive || !!orderVal || !!trackVal || dateFilterActive;
+}
+function updateFilterIconState() {
+  const active = anyFilterActive();
+  document.getElementById('fltIcon').classList.toggle('active', active);
+  document.getElementById('clearAllBtn').classList.toggle('inactive', !active);
+}
+function clearAllFilters() {
+  ['fOrder', 'fTracking'].forEach(id => { const el = document.getElementById(id); el.value = ''; el.classList.remove('has-value'); });
+  Object.keys(msState).forEach(k => msState[k].selected.clear());
+  resetDateFilter();
+  Object.keys(msState).forEach(k => msRenderList(k));
+  applyFiltersAndRender();
+}
+function toggleFilters() {
+  document.getElementById('fltBody').classList.toggle('collapsed');
+  document.getElementById('fltToggleIcon').classList.toggle('open');
+}
+function toggleTable() {
+  document.getElementById('tblBodyWrap').classList.toggle('collapsed');
+  document.getElementById('tblToggleIcon').classList.toggle('open');
+}
+
+// ─── §TOOL-JS::dateRange — فترة سريعة + من/إلى (date-range-filter.md، بلا افتراضي) ───
+const RANGE_PRESET_LABELS = { today: 'اليوم', yesterday: 'أمس', last7: 'آخر 7 أيام', last30: 'آخر 30 يوم', thisMonth: 'الشهر الحالي', lastMonth: 'الشهر السابق' };
+let activeRangePreset = '';
+let lookupDebounce = null;
+
+function toggleRangePresetMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('rangePresetMenu'), btn = document.getElementById('rangePresetBtn');
+  const isOpen = menu.classList.contains('open');
+  menu.classList.toggle('open', !isOpen); btn.classList.toggle('open', !isOpen);
+}
+document.addEventListener('click', () => {
+  document.getElementById('rangePresetMenu')?.classList.remove('open');
+  document.getElementById('rangePresetBtn')?.classList.remove('open');
+});
+function computePresetRange(preset) {
+  const today = cairoTodayStr();
+  switch (preset) {
+    case 'today':     return { from: today, to: today };
+    case 'yesterday': { const y = addDays(today, -1); return { from: y, to: y }; }
+    case 'last7':     return { from: addDays(today, -6), to: today };
+    case 'last30':    return { from: addDays(today, -29), to: today };
+    case 'thisMonth': { const p = cairoNow(); return { from: `${p.year}-${p.month}-01`, to: today }; }
+    case 'lastMonth': {
+      const p = cairoNow();
+      const firstThis = new Date(Date.UTC(+p.year, +p.month - 1, 1));
+      const lastPrev = new Date(firstThis); lastPrev.setUTCDate(0);
+      const pad = n => String(n).padStart(2, '0');
+      const firstPrev = `${lastPrev.getUTCFullYear()}-${pad(lastPrev.getUTCMonth()+1)}-01`;
+      const lastPrevStr = `${lastPrev.getUTCFullYear()}-${pad(lastPrev.getUTCMonth()+1)}-${pad(lastPrev.getUTCDate())}`;
+      return { from: firstPrev, to: lastPrevStr };
+    }
+    default: return null;
+  }
+}
+function applyRangePreset(preset) {
+  document.getElementById('rangePresetMenu').classList.remove('open');
+  document.getElementById('rangePresetBtn').classList.remove('open');
+  const range = computePresetRange(preset);
+  if (!range) return;
+  activeRangePreset = preset;
+  dateFilterActive = true;
+  document.getElementById('fFrom').value = range.from;
+  document.getElementById('fTo').value = range.to;
+  document.querySelectorAll('.range-preset-item').forEach(el => el.classList.toggle('active', el.dataset.preset === preset));
+  document.getElementById('rangePresetLabel').textContent = `⚡ ${RANGE_PRESET_LABELS[preset]}`;
+  document.getElementById('rangePresetBtn').classList.add('has-preset');
+  loadEvents();
+}
+function onRangeDateChange() {
+  activeRangePreset = '';
+  document.querySelectorAll('.range-preset-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('rangePresetLabel').textContent = '⚡ اختار فترة';
+  document.getElementById('rangePresetBtn').classList.remove('has-preset');
+  const fromVal = document.getElementById('fFrom').value, toVal = document.getElementById('fTo').value;
+  dateFilterActive = !!(fromVal || toVal);
+  if (fromVal && toVal && fromVal > toVal) return;
+  loadEvents();
+}
+function resetDateFilter() {
+  activeRangePreset = ''; dateFilterActive = false;
+  document.getElementById('fFrom').value = '';
+  document.getElementById('fTo').value = '';
+  document.getElementById('rangePresetLabel').textContent = '⚡ اختار فترة';
+  document.getElementById('rangePresetBtn').classList.remove('has-preset');
+  document.querySelectorAll('.range-preset-item').forEach(el => el.classList.remove('active'));
+}
+
+// ─── §TOOL-JS::sort — 3 حالات، مستقل عن الفلاتر (data-table-standard.md §8) ───
+const sortConfig = {
+  order: { type: 'string' }, tracking: { type: 'string' }, type: { type: 'string' },
+  stateCode: { type: 'number' }, promise: { type: 'date' }, attempts: { type: 'number' },
+  time: { type: 'date' }, slot: { type: 'string' }, matchMethod: { type: 'string' }, result: { type: 'string' },
+};
+let sortState = { key: null, dir: null };
+function toggleSort(key) {
+  if (sortState.key !== key) { sortState.key = key; sortState.dir = 'asc'; }
+  else if (sortState.dir === 'asc') { sortState.dir = 'desc'; }
+  else { sortState.key = null; sortState.dir = null; }
+  updateSortHeaderUI();
+  applyFiltersAndRender();
+}
+function updateSortHeaderUI() {
+  document.querySelectorAll('.sort-icon').forEach(el => {
+    const isActive = sortState.key === el.dataset.sortKey;
+    el.textContent = isActive ? (sortState.dir === 'asc' ? '▲' : '▼') : '';
+    el.classList.toggle('active', isActive);
+  });
+  document.querySelectorAll('.sortable-th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.sortKey === sortState.key);
+  });
+}
+function applySort(rows) {
+  if (!sortState.key) return rows;
+  const cfg = sortConfig[sortState.key];
+  const dir = sortState.dir === 'asc' ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    let av = a[`_sort_${sortState.key}`], bv = b[`_sort_${sortState.key}`];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1; if (bv == null) return -1;
+    if (cfg.type === 'date') return (av.getTime() - bv.getTime()) * dir;
+    if (cfg.type === 'string') return String(av).localeCompare(String(bv)) * dir;
+    return (av - bv) * dir;
+  });
+}
+
+// ─── §TOOL-JS::eventRow — بناء صف الجدول (الهايبرلينكات + الأعمدة الجديدة) ───
+function eventRowHtml(ev) {
+  return `
+    <tr>
+      <td>${orderLink(ev.business_reference, ev.shopify_order_id)}</td>
+      <td>${trackingLink(ev.tracking_number)}</td>
+      <td>${esc(ev.bosta_type || '—')}</td>
+      <td>${esc(ev.state)}</td>
+      <td>${esc(ev.description || '—')}</td>
+      <td>${ev.delivery_promise_date ? formatDateOnly(ev.delivery_promise_date) : '—'}</td>
+      <td>${ev.number_of_attempts ?? '—'}</td>
+      <td>${formatDateTime(ev.received_at)}</td>
+      <td>${esc((ev.matched_slot || '—').toUpperCase())}</td>
+      <td>${esc(ev.match_method || '—')}</td>
+      <td>${resultBadge(ev.write_status)}</td>
+    </tr>`;
+}
+
+function buildMsItems(events) {
+  const typeVals = new Set(), slotVals = new Set(), resultVals = new Set();
+  events.forEach(ev => {
+    if (ev.bosta_type) typeVals.add(ev.bosta_type);
+    slotVals.add(ev.matched_slot || '—');
+    resultVals.add(ev.write_status || 'processing');
+  });
+  msState.type.items = [...typeVals].sort().map(v => ({ value: v, label: v }));
+  msState.slot.items = [...slotVals].sort().map(v => ({ value: v, label: v === '—' ? '— (بدون تطابق)' : v.toUpperCase() }));
+  msState.result.items = [...resultVals].sort().map(v => ({ value: v, label: RESULT_LABELS[v] || v }));
+  Object.keys(msState).forEach(k => msRenderList(k));
+}
+
+function applyFiltersAndRender() {
+  const body = document.getElementById('eventsBody');
+  updateFilterIconState();
+  renderMsChips();
+  renderLookupChips();
+
+  const filtered = rawEvents.filter(ev => {
+    if (msState.type.selected.size && !msState.type.selected.has(ev.bosta_type || '')) return false;
+    if (msState.slot.selected.size && !msState.slot.selected.has(ev.matched_slot || '—')) return false;
+    if (msState.result.selected.size && !msState.result.selected.has(ev.write_status || 'processing')) return false;
+    return true;
+  });
+
+  const decorated = filtered.map(ev => ({
+    ...ev,
+    _sort_order: ev.business_reference, _sort_tracking: ev.tracking_number, _sort_type: ev.bosta_type,
+    _sort_stateCode: Number(ev.state), _sort_promise: ev.delivery_promise_date ? new Date(ev.delivery_promise_date) : null,
+    _sort_attempts: ev.number_of_attempts, _sort_time: new Date(ev.received_at),
+    _sort_slot: ev.matched_slot || '—', _sort_matchMethod: ev.match_method, _sort_result: ev.write_status,
+  }));
+  const sorted = applySort(decorated);
+
+  document.getElementById('filteredCount').textContent = filtered.length.toLocaleString('en-US');
+  body.innerHTML = sorted.length
+    ? sorted.map(eventRowHtml).join('')
+    : '<tr><td colspan="11">لا توجد أحداث مطابقة</td></tr>';
+}
+
+function onLookupInput(el) {
+  el.classList.toggle('has-value', el.value.trim().length > 0);
+  clearTimeout(lookupDebounce);
+  lookupDebounce = setTimeout(loadEvents, 400);
 }
 
 async function loadEvents() {
   const body = document.getElementById('eventsBody');
-  const meta = document.getElementById('eventsMeta');
-  body.innerHTML = '<tr><td colspan="8">...جاري التحميل</td></tr>';
+  body.innerHTML = '<tr><td colspan="11">...جاري التحميل</td></tr>';
   try {
     const params = {
       order:    document.getElementById('fOrder').value.trim(),
@@ -926,30 +1554,12 @@ async function loadEvents() {
       limit: 200,
     };
     const data = await apiGet('list_events', params);
-    const events = data.events || [];
-    if (!events.length) {
-      body.innerHTML = '<tr><td colspan="8">لا توجد أحداث مطابقة</td></tr>';
-    } else {
-      body.innerHTML = events.map(ev => `
-        <tr>
-          <td>${esc(ev.business_reference)}</td>
-          <td>${esc(ev.tracking_number)}</td>
-          <td>${esc(ev.state)}</td>
-          <td>${esc(ev.description || '—')}</td>
-          <td>${formatDateTime(ev.received_at)}</td>
-          <td>${esc((ev.matched_slot || '—').toUpperCase())}</td>
-          <td>${esc(ev.match_method || '—')}</td>
-          <td>${resultBadge(ev.write_status)}</td>
-        </tr>`).join('');
-    }
-    meta.textContent = `النتائج: ${events.length}`;
+    rawEvents = data.events || [];
+    buildMsItems(rawEvents);
+    applyFiltersAndRender();
   } catch (e) {
-    body.innerHTML = `<tr><td colspan="8">${esc(e.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="11">${esc(e.message)}</td></tr>`;
   }
-}
-function clearFilters() {
-  ['fOrder','fTracking','fFrom','fTo'].forEach(id => { const el = document.getElementById(id); el.value=''; el.classList.remove('has-value'); });
-  loadEvents();
 }
 
 // 🔴 ترتيب البانرات مقصود: عطل الأداة نفسها بيسبق "مفيش أحداث".
