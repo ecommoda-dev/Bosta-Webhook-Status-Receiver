@@ -295,6 +295,38 @@ body {
 .ms-ftr-clear:hover{background:var(--red-light);}
 .ms-ftr-count{font-size:11px;color:var(--text-muted);}
 
+/* فلاتر الأرقام — تبويبا قائمة/نطاق متبادلان (multi-select-filter.md) */
+.ms-modes{display:flex;border-bottom:1px solid var(--border);}
+.ms-mode-btn{flex:1;padding:7px 4px;font-family:inherit;font-size:11px;font-weight:700;
+  color:var(--text-secondary);background:var(--surface-2);border:none;
+  border-bottom:2px solid transparent;cursor:pointer;transition:all .15s;}
+.ms-mode-btn.active{color:var(--accent-dark);background:var(--surface);border-bottom-color:var(--accent);}
+.ms-mode-panel{display:none;}
+.ms-mode-panel.active{display:block;}
+.ms-range-body{padding:12px;display:flex;flex-direction:column;gap:8px;}
+.ms-range-row{display:flex;gap:8px;align-items:center;}
+.ms-range-g{display:flex;flex-direction:column;gap:3px;flex:1;}
+.ms-range-lbl{font-size:10px;font-weight:600;color:var(--text-secondary);}
+.ms-range-input{width:100%;height:32px;border:1px solid var(--border-strong);border-radius:6px;
+  padding:0 8px;font-family:var(--font-mono);direction:ltr;text-align:center;
+  font-size:12.5px;outline:none;}
+.ms-range-input:focus{border-color:var(--accent);}
+.ms-range-clear{align-self:flex-start;font-size:11px;font-weight:700;color:var(--red);
+  background:none;border:none;cursor:pointer;padding:2px 4px;}
+
+/* Main Tabs — full width, equal split (tabs-and-modals.md §1) */
+.main-tabs-bar{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:6px;margin-bottom:14px;box-shadow:var(--shadow);}
+.main-tab-btn{flex:1;padding:9px 10px;border:2px solid transparent;background:transparent;
+  border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:600;
+  color:var(--text-secondary);cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
+.main-tab-btn:hover{background:var(--surface-2);color:var(--text-primary);}
+.main-tab-btn.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent);
+  box-shadow:0 2px 8px rgba(37,99,235,.25);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
 /* Chips */
 .ms-chips-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .ms-chips-row:empty{display:none;}
@@ -440,6 +472,16 @@ body {
           <span class="cl-ver-date">22-09-2026</span>
         </div>
         <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>3 فلاتر اختيار متعدد جديدة على الجدول الرئيسي: الوصف، كود الحالة، عدد المحاولات — الأخيرين بتبويبين (قائمة قيم / نطاق من-إلى) زي فلاتر الأرقام القياسية.</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>تاب رئيسي جديد <b>✅ Delivered</b> — بيعرض بس الأحداث اللي اتسجّلت عليها الحالة Delivered (كود 45) بنجاح فعليًا على شوبيفاي (<code>write_status = written</code>)، من نفس البيانات المحمّلة فعلاً بدون نداء Worker إضافي.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.3.1</span>
+          <span class="cl-ver-date">22-09-2026</span>
+        </div>
+        <ul class="cl-items">
           <li class="cl-item"><span class="cl-tag fix">إصلاح</span><span>🔴 <b>عمود "موعد التسليم المتوقع" كان بيوقّع الجدول كله لو حدث فيه قيمة <code>deliveryPromiseDate</code> بصيغة مش ISO.</b> بوسطة مش بتضمن صيغة تاريخ نضيفة لكل حقل — <code>new Date()</code> على قيمة زي "25-09-2026" بترجّع Invalid Date، و<code>Intl.DateTimeFormat.formatToParts()</code> عليها بترمي <code>RangeError: Invalid time value</code>، وده بيوقف رسم الـ 200 صف كلهم ويبان بدال الجدول سطر خطأ واحد فوق "النتائج: 200". دالة <code>toValidDate()</code> جديدة بترجّع <code>—</code> بدل ما تكسر الجدول، وبتتستخدم في <code>formatDateTime</code>/<code>formatDateOnly</code> ومفاتيح الترتيب.</span></li>
         </ul>
       </div>
@@ -541,10 +583,13 @@ body {
           <h4>FEATURE MAP</h4>
           <ul>
             <li><code>§SHELL</code> — App Shell + Login + Settings/About/Changelog modals</li>
+            <li><code>§TOOL::mainTabs</code> — تابين رئيسيين: "كل الأحداث" (الفلاتر + الجدول الكامل) و"✅ Delivered" (جدول للقراءة فقط، مفلتر مسبقًا)</li>
             <li><code>§TOOL / §TOOL-JS</code> — القسم الموحّد (فلاتر + جدول) وبانرات المراقبة</li>
-            <li><code>§TOOL-JS::filterState</code> — فلاتر اختيار متعدد (النوع/الحالة/النتيجة) client-side على البيانات المحمّلة</li>
+            <li><code>§TOOL-JS::filterState</code> — فلاتر اختيار متعدد (النوع/الحالة/النتيجة/الوصف) client-side على البيانات المحمّلة</li>
+            <li><code>§TOOL-JS::numericFilter</code> — فلاتر كود الحالة وعدد المحاولات: تبويبا قائمة قيم/نطاق من-إلى متبادلان (<code>data-table-standard.md</code> §4)</li>
             <li><code>§TOOL-JS::dateRange</code> — فترة سريعة + من/إلى تاريخ (بدون افتراضي — <code>data-table-standard.md</code> §5)</li>
             <li><code>§TOOL-JS::sort</code> — ترتيب 3 حالات على كل الأعمدة، مستقل عن الفلاتر</li>
+            <li><code>renderDeliveredTab()</code> — بيفلتر <code>rawEvents</code> نفسها لـ <code>state === 45 && write_status === 'written'</code>، بدون نداء Worker إضافي</li>
             <li><code>§CONFIG::orderLink</code> / <code>trackingLink</code> — هايبرلينك رقم الأوردر (شوبيفاي) ورقم التتبع (بوسطة)</li>
           </ul>
           <h4>KEY VARIABLES</h4>
@@ -560,7 +605,8 @@ body {
           <ul>
             <li>الأداة مالهاش أي زرار تنفيذ فعل — كل الكتابة على شوبيفاي بتحصل من الـ Worker وحده عند استقبال ويبهوك.</li>
             <li>بانر السكوت وبانر فشل المطابقة بيتحدّثوا من <code>diag</code> كل دقيقة أثناء فتح الشاشة.</li>
-            <li>فلاتر النوع/الحالة/النتيجة وقوايمها (checkbox dropdown) بتتبنى من الـ <code>rawEvents</code> المحمّلة فعليًا — مش استعلام سيرفر إضافي. فلاتر الأوردر/التتبع والتاريخ لسه بتتبعت للـ Worker (<code>list_events</code>).</li>
+            <li>فلاتر النوع/الحالة/النتيجة/الوصف/كود الحالة/عدد المحاولات وقوايمها (checkbox dropdown) بتتبنى من الـ <code>rawEvents</code> المحمّلة فعليًا — مش استعلام سيرفر إضافي. فلاتر الأوردر/التتبع والتاريخ لسه بتتبعت للـ Worker (<code>list_events</code>).</li>
+            <li>تاب "Delivered" مش بيعمل نداء Worker منفصل — بيقرا نفس <code>rawEvents</code> اللي الجدول الرئيسي محمّلها، فبيتأثر بفلاتر الأوردر/التتبع/التاريخ (server-side) لكن مش بفلاتر النوع/الحالة/النتيجة (client-side على الجدول الأول بس).</li>
             <li>رقم الأوردر بيبقى نص عادي (بدون لينك) لو <code>shopify_order_id</code> فاضي — بيحصل ده للأحداث اللي فشلت مطابقتها أو حصلت قبل ترقية الـ Worker لـ v1.2.0 (fallback <code>.order-num</code>، design-system.md).</li>
             <li><code>toValidDate()</code> بترجّع <code>—</code> بدل ما ترمي استثناء لو <code>delivery_promise_date</code> (أو أي تاريخ تاني راجع من بوسطة) مش بصيغة يقدر <code>Date</code> يفهمها — فحدث واحد بتاريخ غريب بيفضل يعرض بقية الـ 200 صف، مش يوقف الجدول كله (v1.3.1).</li>
           </ul>
@@ -626,6 +672,13 @@ body {
      §TOOL — شاشة الأحداث
      ══════════════════════════════════════════════════════ -->
 <main id="appContent" style="display:none;">
+  <!-- ─── §TOOL::mainTabs (tabs-and-modals.md §1) ─── -->
+  <div class="main-tabs-bar">
+    <button class="main-tab-btn active" id="tabEvents"    onclick="switchMainTab('events')">📋 كل الأحداث</button>
+    <button class="main-tab-btn"        id="tabDelivered" onclick="switchMainTab('delivered')">✅ Delivered</button>
+  </div>
+
+  <div class="tab-panel active" id="panelEvents">
   <div class="banner banner-red" id="healthBanner"></div>
   <div class="banner banner-red" id="silenceBanner"></div>
   <div class="banner banner-amber" id="matchFailBanner"></div>
@@ -700,6 +753,87 @@ body {
             <div class="ms-list" id="msList-result"></div>
           </div>
         </div>
+        <div class="ms-wrap" id="msWrap-desc">
+          <span class="ms-flabel">الوصف</span>
+          <button class="ms-btn" id="msBtn-desc" onclick="msToggle('desc')">
+            <span id="msBtnLabel-desc">الكل</span><span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-menu" id="msMenu-desc">
+            <div class="ms-ftr-top">
+              <button class="ms-ftr-clear" onclick="msClear('desc')">مسح الاختيار</button>
+              <span class="ms-ftr-count" id="msFtrCount-desc"></span>
+            </div>
+            <div class="ms-selectall-row" onclick="msToggleSelectAll('desc')">
+              <input type="checkbox" id="msSelectAll-desc" onclick="event.stopPropagation()" onchange="msToggleSelectAll('desc', this.checked)">
+              <span id="msSelectAllLabel-desc">تحديد الكل</span>
+            </div>
+            <div class="ms-list" id="msList-desc"></div>
+          </div>
+        </div>
+        <div class="ms-wrap" id="msWrap-stateCode">
+          <span class="ms-flabel">كود الحالة</span>
+          <button class="ms-btn" id="msBtn-stateCode" onclick="msToggle('stateCode')">
+            <span id="msBtnLabel-stateCode">الكل</span><span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-menu" id="msMenu-stateCode">
+            <div class="ms-ftr-top">
+              <button class="ms-ftr-clear" onclick="msClear('stateCode')">مسح الاختيار</button>
+              <span class="ms-ftr-count" id="msFtrCount-stateCode"></span>
+            </div>
+            <div class="ms-modes">
+              <button class="ms-mode-btn active" id="msModeBtn-stateCode-list"  onclick="msSwitchMode('stateCode','list')">☰ قائمة قيم</button>
+              <button class="ms-mode-btn"        id="msModeBtn-stateCode-range" onclick="msSwitchMode('stateCode','range')">↔ نطاق من-إلى</button>
+            </div>
+            <div class="ms-mode-panel active" id="msPanel-stateCode-list">
+              <div class="ms-selectall-row" onclick="msToggleSelectAll('stateCode')">
+                <input type="checkbox" id="msSelectAll-stateCode" onclick="event.stopPropagation()" onchange="msToggleSelectAll('stateCode', this.checked)">
+                <span id="msSelectAllLabel-stateCode">تحديد الكل</span>
+              </div>
+              <div class="ms-list" id="msList-stateCode"></div>
+            </div>
+            <div class="ms-mode-panel" id="msPanel-stateCode-range">
+              <div class="ms-range-body">
+                <div class="ms-range-row">
+                  <div class="ms-range-g"><span class="ms-range-lbl">من</span><input type="number" class="ms-range-input" id="msRangeFrom-stateCode" oninput="msRangeChange('stateCode')"></div>
+                  <div class="ms-range-g"><span class="ms-range-lbl">إلى</span><input type="number" class="ms-range-input" id="msRangeTo-stateCode" oninput="msRangeChange('stateCode')"></div>
+                </div>
+                <button class="ms-range-clear" onclick="msRangeClear('stateCode')">مسح النطاق</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ms-wrap" id="msWrap-attempts">
+          <span class="ms-flabel">عدد المحاولات</span>
+          <button class="ms-btn" id="msBtn-attempts" onclick="msToggle('attempts')">
+            <span id="msBtnLabel-attempts">الكل</span><span class="ms-arrow">▾</span>
+          </button>
+          <div class="ms-menu" id="msMenu-attempts">
+            <div class="ms-ftr-top">
+              <button class="ms-ftr-clear" onclick="msClear('attempts')">مسح الاختيار</button>
+              <span class="ms-ftr-count" id="msFtrCount-attempts"></span>
+            </div>
+            <div class="ms-modes">
+              <button class="ms-mode-btn active" id="msModeBtn-attempts-list"  onclick="msSwitchMode('attempts','list')">☰ قائمة قيم</button>
+              <button class="ms-mode-btn"        id="msModeBtn-attempts-range" onclick="msSwitchMode('attempts','range')">↔ نطاق من-إلى</button>
+            </div>
+            <div class="ms-mode-panel active" id="msPanel-attempts-list">
+              <div class="ms-selectall-row" onclick="msToggleSelectAll('attempts')">
+                <input type="checkbox" id="msSelectAll-attempts" onclick="event.stopPropagation()" onchange="msToggleSelectAll('attempts', this.checked)">
+                <span id="msSelectAllLabel-attempts">تحديد الكل</span>
+              </div>
+              <div class="ms-list" id="msList-attempts"></div>
+            </div>
+            <div class="ms-mode-panel" id="msPanel-attempts-range">
+              <div class="ms-range-body">
+                <div class="ms-range-row">
+                  <div class="ms-range-g"><span class="ms-range-lbl">من</span><input type="number" class="ms-range-input" id="msRangeFrom-attempts" oninput="msRangeChange('attempts')"></div>
+                  <div class="ms-range-g"><span class="ms-range-lbl">إلى</span><input type="number" class="ms-range-input" id="msRangeTo-attempts" oninput="msRangeChange('attempts')"></div>
+                </div>
+                <button class="ms-range-clear" onclick="msRangeClear('attempts')">مسح النطاق</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- صف 2 — بحث ← فترة سريعة ← من ← إلى -->
@@ -749,6 +883,9 @@ body {
       <div class="ms-chips-row" id="chipsRow-type"></div>
       <div class="ms-chips-row" id="chipsRow-slot"></div>
       <div class="ms-chips-row" id="chipsRow-result"></div>
+      <div class="ms-chips-row" id="chipsRow-desc"></div>
+      <div class="ms-chips-row" id="chipsRow-stateCode"></div>
+      <div class="ms-chips-row" id="chipsRow-attempts"></div>
     </div>
   </div>
 
@@ -785,6 +922,35 @@ body {
       </div>
     </div>
   </div>
+  </div><!-- /panelEvents -->
+
+  <!-- ─── §TOOL::deliveredTab — أوردرات اتسجّل Delivered بنجاح على شوبيفاي ─── -->
+  <div class="tab-panel" id="panelDelivered">
+    <div class="unified-section">
+      <div class="tbl-bar">
+        <div class="tbl-bar-right">
+          <div class="results-wrap">
+            <span class="results-label">النتائج:</span>
+            <span class="results-count" id="deliveredCount">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="tbl-body-wrap">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>الأوردر</th><th>رقم التتبع</th><th>النوع</th><th>كود الحالة</th><th>الوصف</th>
+                <th>موعد التسليم المتوقع</th><th>عدد المحاولات</th><th>الوقت</th>
+                <th>الحالة</th><th>طريقة المطابقة</th><th>النتيجة</th>
+              </tr>
+            </thead>
+            <tbody id="deliveredBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </main>
 
 </div><!-- /.container -->
@@ -796,7 +962,7 @@ body {
 // 🔴 1.2.0 = أول نسخة Worker بترجّع shopify_order_id في list_events —
 //    من غيره رقم الأوردر بيفضل نص عادي (fallback .order-num) مش هايبرلينك.
 const MIN_WORKER_VERSION = '1.2.0';
-const TOOL_VERSION       = 'v1.3.1';
+const TOOL_VERSION       = 'v1.4.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1257,11 +1423,14 @@ function resultBadge(status) {
 
 // ─── §TOOL-JS::filterState — فلاتر اختيار متعدد على البيانات المحمّلة (multi-select-filter.md) ───
 const msState = {
-  type:   { items: [], selected: new Set() },
-  slot:   { items: [], selected: new Set() },
-  result: { items: [], selected: new Set() },
+  type:      { items: [], selected: new Set() },
+  slot:      { items: [], selected: new Set() },
+  result:    { items: [], selected: new Set() },
+  desc:      { items: [], selected: new Set() },
+  stateCode: { items: [], selected: new Set(), mode: 'list', rangeFrom: '', rangeTo: '' },
+  attempts:  { items: [], selected: new Set(), mode: 'list', rangeFrom: '', rangeTo: '' },
 };
-const filterLabels = { type: 'النوع', slot: 'الحالة', result: 'النتيجة' };
+const filterLabels = { type: 'النوع', slot: 'الحالة', result: 'النتيجة', desc: 'الوصف', stateCode: 'كود الحالة', attempts: 'عدد المحاولات' };
 let rawEvents = [];
 let dateFilterActive = false;
 
@@ -1287,11 +1456,71 @@ function msUpdateButtonLabel(key) {
   const st = msState[key];
   const btn = document.getElementById(`msBtn-${key}`);
   const lbl = document.getElementById(`msBtnLabel-${key}`);
+  if (st.mode === 'range') {
+    const rl = rangeLabel(key);
+    btn.classList.toggle('has-selection', !!rl);
+    lbl.textContent = rl || 'الكل';
+    return;
+  }
   const n = st.selected.size;
   btn.classList.toggle('has-selection', n > 0);
   if (n === 0) lbl.textContent = 'الكل';
   else if (n === 1) lbl.textContent = st.items.find(it => it.value === [...st.selected][0])?.label || [...st.selected][0];
   else lbl.innerHTML = `${n} محددين <span class="ms-count">${n}</span>`;
+}
+// ─── §TOOL-JS::numericFilter — فلاتر الأرقام: قائمة/نطاق متبادلان (data-table-standard.md §4) ───
+function msSwitchMode(key, mode) {
+  const st = msState[key];
+  if (st.mode === mode) return;
+  st.mode = mode;
+  if (mode === 'range') {
+    st.selected.clear();
+    msRenderList(key);
+  } else {
+    st.rangeFrom = ''; st.rangeTo = '';
+    const f = document.getElementById(`msRangeFrom-${key}`), t = document.getElementById(`msRangeTo-${key}`);
+    if (f) f.value = ''; if (t) t.value = '';
+  }
+  document.getElementById(`msModeBtn-${key}-list`).classList.toggle('active', mode === 'list');
+  document.getElementById(`msModeBtn-${key}-range`).classList.toggle('active', mode === 'range');
+  document.getElementById(`msPanel-${key}-list`).classList.toggle('active', mode === 'list');
+  document.getElementById(`msPanel-${key}-range`).classList.toggle('active', mode === 'range');
+  msUpdateButtonLabel(key); renderMsChips(); applyFiltersAndRender();
+}
+function msRangeChange(key) {
+  const st = msState[key];
+  st.rangeFrom = document.getElementById(`msRangeFrom-${key}`).value;
+  st.rangeTo   = document.getElementById(`msRangeTo-${key}`).value;
+  msUpdateButtonLabel(key); renderMsChips(); applyFiltersAndRender();
+}
+function msRangeClear(key) {
+  const st = msState[key];
+  st.rangeFrom = ''; st.rangeTo = '';
+  const f = document.getElementById(`msRangeFrom-${key}`), t = document.getElementById(`msRangeTo-${key}`);
+  if (f) f.value = ''; if (t) t.value = '';
+  msUpdateButtonLabel(key); renderMsChips(); applyFiltersAndRender();
+}
+function rangeLabel(key) {
+  const st = msState[key];
+  if (st.mode !== 'range') return '';
+  if (!st.rangeFrom && !st.rangeTo) return '';
+  if (st.rangeFrom && st.rangeTo) return `${st.rangeFrom} - ${st.rangeTo}`;
+  return st.rangeFrom ? `من ${st.rangeFrom}` : `إلى ${st.rangeTo}`;
+}
+function numericPass(key, value) {
+  const st = msState[key];
+  if (st.mode === 'range') {
+    const hasRange = !!st.rangeFrom || !!st.rangeTo;
+    if (!hasRange) return true;
+    if (value == null || value === '') return false;   // قيمة مفقودة (مثلاً عدد المحاولات فاضي) — مايطابقش أي نطاق، مش صفر
+    const v = Number(value);
+    if (!Number.isFinite(v)) return false;
+    const from = st.rangeFrom !== '' ? Number(st.rangeFrom) : -Infinity;
+    const to   = st.rangeTo   !== '' ? Number(st.rangeTo)   :  Infinity;
+    return v >= from && v <= to;
+  }
+  if (st.selected.size === 0) return true;
+  return st.selected.has(String(value));
 }
 function msToggle(key) {
   const menu = document.getElementById(`msMenu-${key}`), btn = document.getElementById(`msBtn-${key}`);
@@ -1334,11 +1563,14 @@ function renderMsChips() {
     const row = document.getElementById(`chipsRow-${key}`);
     if (!row) return;
     const label = filterLabels[key] || key;
-    const chips = [...msState[key].selected].map(val => {
+    const valueChips = [...msState[key].selected].map(val => {
       const item = msState[key].items.find(it => it.value === val);
       const v = item ? item.label : val;
       return `<span class="ms-chip">${esc(v)}<button onclick="msToggleItem('${key}','${val.replace(/'/g, "\\'")}')">✕</button></span>`;
     }).join('');
+    const rl = rangeLabel(key);
+    const rangeChip = rl ? `<span class="ms-chip">${esc(rl)}<button onclick="msRangeClear('${key}')">✕</button></span>` : '';
+    const chips = valueChips + rangeChip;
     row.innerHTML = chips ? `<span class="chips-label">${label}:</span>${chips}` : '';
   });
 }
@@ -1367,7 +1599,8 @@ function clearLookupField(id) {
 
 // ─── §TOOL-JS::filterIcon — anyFilterActive بـ !!value مش !== null (data-table-standard.md §3) ───
 function anyFilterActive() {
-  const msActive = Object.keys(msState).some(k => msState[k].selected.size > 0);
+  const msActive = Object.keys(msState).some(k =>
+    msState[k].selected.size > 0 || !!msState[k].rangeFrom || !!msState[k].rangeTo);
   const orderVal = document.getElementById('fOrder').value.trim();
   const trackVal = document.getElementById('fTracking').value.trim();
   return msActive || !!orderVal || !!trackVal || dateFilterActive;
@@ -1379,7 +1612,19 @@ function updateFilterIconState() {
 }
 function clearAllFilters() {
   ['fOrder', 'fTracking'].forEach(id => { const el = document.getElementById(id); el.value = ''; el.classList.remove('has-value'); });
-  Object.keys(msState).forEach(k => msState[k].selected.clear());
+  Object.keys(msState).forEach(k => {
+    const st = msState[k];
+    st.selected.clear();
+    if ('rangeFrom' in st) {
+      st.mode = 'list'; st.rangeFrom = ''; st.rangeTo = '';
+      const f = document.getElementById(`msRangeFrom-${k}`), t = document.getElementById(`msRangeTo-${k}`);
+      if (f) f.value = ''; if (t) t.value = '';
+      document.getElementById(`msModeBtn-${k}-list`).classList.add('active');
+      document.getElementById(`msModeBtn-${k}-range`).classList.remove('active');
+      document.getElementById(`msPanel-${k}-list`).classList.add('active');
+      document.getElementById(`msPanel-${k}-range`).classList.remove('active');
+    }
+  });
   resetDateFilter();
   Object.keys(msState).forEach(k => msRenderList(k));
   applyFiltersAndRender();
@@ -1517,16 +1762,42 @@ function eventRowHtml(ev) {
     </tr>`;
 }
 
+// ─── §TOOL::mainTabs — كل الأحداث / Delivered (tabs-and-modals.md §1) ───
+function switchMainTab(tab) {
+  document.getElementById('tabEvents').classList.toggle('active', tab === 'events');
+  document.getElementById('tabDelivered').classList.toggle('active', tab === 'delivered');
+  document.getElementById('panelEvents').classList.toggle('active', tab === 'events');
+  document.getElementById('panelDelivered').classList.toggle('active', tab === 'delivered');
+}
+// أوردرات اتسجّل عليها الحالة Delivered فعليًا وبنجاح على شوبيفاي — نفس batch
+// list_events المحمّل بالفعل (فلاتر الأوردر/التتبع/التاريخ لسه سارية)، بدون
+// نداء Worker إضافي.
+function renderDeliveredTab() {
+  const rows = rawEvents.filter(ev => Number(ev.state) === 45 && ev.write_status === 'written');
+  document.getElementById('deliveredCount').textContent = rows.length.toLocaleString('en-US');
+  const body = document.getElementById('deliveredBody');
+  body.innerHTML = rows.length
+    ? rows.map(eventRowHtml).join('')
+    : '<tr><td colspan="11">لا توجد أوردرات اتسجّلت Delivered لسه</td></tr>';
+}
+
 function buildMsItems(events) {
   const typeVals = new Set(), slotVals = new Set(), resultVals = new Set();
+  const descVals = new Set(), stateVals = new Set(), attemptVals = new Set();
   events.forEach(ev => {
     if (ev.bosta_type) typeVals.add(ev.bosta_type);
     slotVals.add(ev.matched_slot || '—');
     resultVals.add(ev.write_status || 'processing');
+    descVals.add(ev.description || '—');
+    if (ev.state != null) stateVals.add(String(ev.state));
+    if (ev.number_of_attempts != null) attemptVals.add(String(ev.number_of_attempts));
   });
   msState.type.items = [...typeVals].sort().map(v => ({ value: v, label: v }));
   msState.slot.items = [...slotVals].sort().map(v => ({ value: v, label: v === '—' ? '— (بدون تطابق)' : v.toUpperCase() }));
   msState.result.items = [...resultVals].sort().map(v => ({ value: v, label: RESULT_LABELS[v] || v }));
+  msState.desc.items = [...descVals].sort().map(v => ({ value: v, label: v }));
+  msState.stateCode.items = [...stateVals].sort((a, b) => Number(a) - Number(b)).map(v => ({ value: v, label: v }));
+  msState.attempts.items = [...attemptVals].sort((a, b) => Number(a) - Number(b)).map(v => ({ value: v, label: v }));
   Object.keys(msState).forEach(k => msRenderList(k));
 }
 
@@ -1540,6 +1811,9 @@ function applyFiltersAndRender() {
     if (msState.type.selected.size && !msState.type.selected.has(ev.bosta_type || '')) return false;
     if (msState.slot.selected.size && !msState.slot.selected.has(ev.matched_slot || '—')) return false;
     if (msState.result.selected.size && !msState.result.selected.has(ev.write_status || 'processing')) return false;
+    if (msState.desc.selected.size && !msState.desc.selected.has(ev.description || '—')) return false;
+    if (!numericPass('stateCode', ev.state)) return false;
+    if (!numericPass('attempts', ev.number_of_attempts)) return false;
     return true;
   });
 
@@ -1579,6 +1853,7 @@ async function loadEvents() {
     rawEvents = data.events || [];
     buildMsItems(rawEvents);
     applyFiltersAndRender();
+    renderDeliveredTab();
   } catch (e) {
     body.innerHTML = `<tr><td colspan="11">${esc(e.message)}</td></tr>`;
   }
