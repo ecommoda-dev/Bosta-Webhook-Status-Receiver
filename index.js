@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.1.1';
+const WORKER_VERSION = '1.1.2';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -398,6 +398,11 @@ async function shopifyGQL(env, token, query, variables = {}, opName = 'shopify',
   throw lastErr || new Error(`${opName}: فشل غير معروف`);
 }
 
+// 🔴 metafields على Order نوعها MetafieldConnection — مش بتقبل identifiers
+//    ومش بترجع { key value } مباشرة (ده اللي كان بيفشّل كل حدث من غير استثناء
+//    من أول يوم: findOrder: Field 'metafields' doesn't accept argument
+//    'identifiers'). الصيغة الصح: metafield(namespace, key) المفرد + alias
+//    لكل حقل (نفس نمط shopify-graphql-helper §Step 3.3).
 const FIND_ORDER_QUERY = `
   query FindOrderForBostaWebhook($q: String!) {
     orders(first: 1, query: $q) {
@@ -406,12 +411,10 @@ const FIND_ORDER_QUERY = `
           id
           legacyResourceId
           name
-          metafields(identifiers: [
-            { namespace: "custom", key: "bosta_tracking_number_s1" },
-            { namespace: "custom", key: "bosta_tracking_number_s2" },
-            { namespace: "custom", key: "bosta_webhook_last_update_s1" },
-            { namespace: "custom", key: "bosta_webhook_last_update_s2" }
-          ]) { key value }
+          bosta_tracking_number_s1: metafield(namespace: "custom", key: "bosta_tracking_number_s1") { value }
+          bosta_tracking_number_s2: metafield(namespace: "custom", key: "bosta_tracking_number_s2") { value }
+          bosta_webhook_last_update_s1: metafield(namespace: "custom", key: "bosta_webhook_last_update_s1") { value }
+          bosta_webhook_last_update_s2: metafield(namespace: "custom", key: "bosta_webhook_last_update_s2") { value }
         }
       }
     }
@@ -515,8 +518,12 @@ async function matchAndWriteMetafields(env, rowId, n) {
     return;
   }
 
-  const mfMap = {};
-  for (const mf of (orderNode.metafields || [])) { if (mf) mfMap[mf.key] = mf.value; }
+  const mfMap = {
+    bosta_tracking_number_s1: orderNode.bosta_tracking_number_s1?.value ?? null,
+    bosta_tracking_number_s2: orderNode.bosta_tracking_number_s2?.value ?? null,
+    bosta_webhook_last_update_s1: orderNode.bosta_webhook_last_update_s1?.value ?? null,
+    bosta_webhook_last_update_s2: orderNode.bosta_webhook_last_update_s2?.value ?? null,
+  };
 
   // §4.1 — رقم التتبع أولًا (طبّع الاتنين — bosta_tracking_number_s1/_s2 نوعها
   // number_integer عند بعض الأدوات)، وبعدين type كـ fallback.
