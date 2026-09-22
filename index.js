@@ -1,15 +1,15 @@
 // ══════════════════════════════════════════════════════════════
 // §CONSTANTS
 // Worker: bosta-webhook-status-receiver-worker — EcomModa
-// skills: ecommoda-worker-builder v3.4.0 · bosta-api-helper v6.0.0 ·
-//         ecommoda-constants v2.7.0 · ecommoda-tool-migration-playbook
+// skills: ecommoda-worker-builder v3.7.0 · bosta-api-helper v6.0.0 ·
+//         ecommoda-constants v3.1.0 · ecommoda-tool-migration-playbook
 //
 // 🔴 STOP — قبل أول push للإنتاج: 'bosta_webhook_status' وقيم type
 //    السبعة تحت لازم تتسجّل في ecommoda-constants §7 (Rule 7). راجع
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.1.0';
+const WORKER_VERSION = '1.1.1';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -32,6 +32,63 @@ const TYPE_TO_SLOT_FALLBACK = {
 
 // نافذة مراقبة السكوت (§7.1) — قابلة للتعديل من [vars] من غير كود جديد.
 const DEFAULT_SILENCE_THRESHOLD_HOURS = 3;
+
+// ════════════════════════════════════════════════════════════
+// §LOG-REG — الحارس الديناميكي لقيم اللوج (الطبقة ٥)
+// ════════════════════════════════════════════════════════════
+// قطعة الأداة دي بس من log-values.json اللي جنبها — بتتحدّث معاه في
+// نفس الـ commit. ممنوع شحن السجل الكامل بتاع كل الأدوات هنا (Step 7-ب
+// عن ليه: قيمة مزروعة في ٣٢ ملف = نفس مشكلة السكيل القديمة).
+const LOG_REGISTRY = {
+  bosta_webhook_status: new Set([
+    'login', 'logout', 'duplicate_skipped', 'match_failed',
+    'shopify_write_failed', 'status_event', 'unauthorized',
+  ]),
+};
+
+const isRegisteredLogValue = (tool, type) => !!LOG_REGISTRY[tool]?.has(type);
+
+// UPSERT على (source_tool, tool, type) — صف واحد لكل قيمة، hits بيعدّ.
+// الحدث الكامل مش بيضيع: الصف الأصلي موجود في logs وعليه _unregistered،
+// والجدول ده فهرس مش سجل تاني — عشان كده dedupe مش صف لكل حدث.
+const LOG_ALERT_SQL = `
+  INSERT INTO log_value_alerts
+    (source_tool, tool, type, first_seen, last_seen, hits,
+     worker_version, sample_order_name, sample_employee, sample_notes)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(source_tool, tool, type) DO UPDATE SET
+    last_seen         = excluded.last_seen,
+    hits              = log_value_alerts.hits + excluded.hits,
+    worker_version    = excluded.worker_version,
+    sample_order_name = excluded.sample_order_name,
+    sample_employee   = excluded.sample_employee,
+    sample_notes      = excluded.sample_notes,
+    status            = CASE WHEN log_value_alerts.status = 'ignored'
+                             THEN 'ignored' ELSE 'open' END
+`;
+
+// فشل التنبيه ممنوع يأثر على أي حاجة — try/catch صامت. بتجمّع التكرار
+// جوّه نفس الدفعة في صف واحد (hits) قبل ما تكتب.
+async function noteUnregisteredLogValues(db, entries) {
+  const byPair = new Map();
+  for (const e of entries) {
+    const key = `${e.tool}\u0000${e.type}`;
+    const acc = byPair.get(key);
+    if (acc) { acc.hits++; continue; }
+    byPair.set(key, { entry: e, hits: 1 });
+  }
+  const now = new Date().toISOString();
+  for (const { entry, hits } of byPair.values()) {
+    try {
+      await db.prepare(LOG_ALERT_SQL).bind(
+        TOOL_NAME, entry.tool ?? '(بدون tool)', entry.type ?? '(بدون type)',
+        now, now, hits, WORKER_VERSION ?? null,
+        entry.orderName ?? null, entry.employee ?? null,
+        entry.notes ? String(entry.notes).slice(0, 200) : null,
+      ).run();
+    } catch (e) { /* متعمّد: التنبيه فهرس، وفشله أهون من تعطيل الأداة */ }
+  }
+}
 
 // ══════════════════════════════════════════════════════════════
 // §CORS — Option B (الأداة بتكتب على أوردرات حقيقية في شوبيفاي)
@@ -138,6 +195,13 @@ async function registerPin(db, username, pin) {
 }
 
 async function writeLog(db, entry) {
+  // §LOG-REG — الحارس الديناميكي (الطبقة ٥): مفيش رفض كتابة أبدًا. قيمة
+  // (tool, type) مش مسجّلة بتتكتب عادي + extra._unregistered = true.
+  const unregistered = !isRegisteredLogValue(entry.tool, entry.type);
+  const extra = unregistered
+    ? { ...(entry.extra || {}), _unregistered: true }
+    : entry.extra;
+
   await db.prepare(`
     INSERT INTO logs
       (timestamp, tool, type, employee, order_id, order_name,
@@ -156,8 +220,10 @@ async function writeLog(db, entry) {
     entry.valueBefore  ?? null,
     entry.valueAfter   ?? null,
     entry.notes        ?? null,
-    entry.extra ? JSON.stringify(entry.extra) : null
+    extra ? JSON.stringify(extra) : null
   ).run();
+
+  if (unregistered) await noteUnregisteredLogValues(db, [entry]);  // بعد الكتابة، مش قبلها
 }
 
 const LOG_EXPORT_MAX = 2000;
