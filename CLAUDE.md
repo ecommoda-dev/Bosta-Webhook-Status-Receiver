@@ -9,7 +9,7 @@
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.3.1` · الواجهة `v1.4.1`
+**الإصدار:** Worker `v1.4.0` · الواجهة `v1.4.1`
 
 ---
 
@@ -102,7 +102,7 @@
 | `check_employee` · `register_pin` · `verify_employee` · `log_logout` · `get_employees` | `WORKER_SECRET` | Universal D1 Auth القياسي |
 | `list_events` | `WORKER_SECRET` | للشاشة — فلتر بـ `order` / `tracking` / `dateFrom` / `dateTo`، بيرجّع `shopify_order_id` (من v1.2.0) لهايبرلينك رقم الأوردر |
 | `diag` | `WORKER_SECRET` | آخر حدث امتى · عدد آخر ٢٤ ساعة · `duplicate_skipped`/`match_failed` · وجود الأسرار (`!!` بس) · Shopify OAuth |
-| `get_config` | `WORKER_SECRET` | `WORKER_VERSION` + حالة `WRITE_METAFIELDS` |
+| `get_config` | `WORKER_SECRET` | `WORKER_VERSION` (الكتابة على شوبيفاي دائمة، مفيش فلاج يتفحص) |
 | `get_logs` / `get_logs_count` / `get_logs_export` | `WORKER_SECRET` | سجل `logs` المشترك (تلقائي من §SHARED) |
 
 ## D1
@@ -161,7 +161,8 @@ Secrets  : WORKER_SECRET · BOSTA_WEBHOOK_HEADER_NAME (19 حرف) ·     ✅
            BOSTA_WEBHOOK_HEADER_VALUE · BOSTA_API_KEY ·
            CLIENT_ID · CLIENT_SECRET
 Vars     : SHOP_DOMAIN=6c7e1a-53.myshopify.com ·                    ✅
-           WRITE_METAFIELDS="true" · SILENCE_THRESHOLD_HOURS="3"      ← من [vars] في wrangler.toml
+           SILENCE_THRESHOLD_HOURS="3"                                ← من [vars] في wrangler.toml
+           (WRITE_METAFIELDS اتشال نهائيًا من [vars] في 25-09-2026 — الكتابة بقت سلوك دائم بلا فلاج)
 Cron     : */30 * * * * (مراقبة السكوت — §7.1)                       ✅
 Build watch paths : index.js + wrangler.toml                         ✅
 Production branch : main · Builds for non-production branches: ON
@@ -199,8 +200,12 @@ Production branch : main · Builds for non-production branches: ON
   `UNIQUE(bosta_id, state, bosta_timestamp)` هو الحارس الوحيد.
 - **الشحنات الأقدم من تسجيل رابط الويبهوك عمرها ما هتبعت حاجة** — مقصود
   ومقبول (قرار أحمد)، **ممنوع بناء أي backfill من `/deliveries/search`**.
-- 🔴 **`WRITE_METAFIELDS = "true"` من 21-09-2026 (قرار أحمد)** — الأداة
-  بتكتب على شوبيفاي فعليًا من أول حدث جاي.
+- 🔴 **الفلاج `WRITE_METAFIELDS` اتشال نهائيًا من الكود في 25-09-2026** — كان
+  `"true"` من 21-09-2026 (قرار أحمد) وماكانش فيه نية رجوع لـ`false` أصلًا،
+  فاتحوّلت الكتابة لسلوك دائم بلا شرط: الأداة بتكتب على شوبيفاي فعليًا من
+  أول حدث جاي **دايمًا** — مفيش `env.WRITE_METAFIELDS` في `index.js` تاني،
+  ومفيش `[vars] WRITE_METAFIELDS` في `wrangler.toml`، ومسار `dry_run_matched`
+  بقى كود ميت (الليبل لسه في `index.html` بس لعرض أي صف قديم لو موجود).
   ⚠️ **مرحلة `dry_run_matched` اتخطّت ومحصلتش أصلًا، وبعدها المطابقة فشلت
   100% لحد 22-09-2026** بسبب باغ `FIND_ORDER_QUERY` (راجع درس 21→22-09-2026
   فوق) — يعني المطابقة **لسه ما اتراجعتش على أحداث حقيقية ناجحة ولا مرة**.
@@ -295,8 +300,35 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 | ecommoda-html-builder | v7.2.0 |
 | ecommoda-tool-migration-playbook | (بلا رقم إصدار ظاهر وقت القراءة) |
 
-آخر مطابقة: 25-09-2026 · `index.js` v1.3.1 · `index.html` v1.4.1
+آخر مطابقة: 25-09-2026 · `index.js` v1.4.0 · `index.html` v1.4.1
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
+
+### 25-09-2026 — إلغاء فلاج `WRITE_METAFIELDS`: الكتابة على شوبيفاي بقت سلوك دائم (`index.js` v1.4.0)
+
+- **بطلب أحمد** — الفلاج `WRITE_METAFIELDS` نفسه اتشال من الكود، مش بس
+  اتسيب على `"true"`. مفيش خيار إيقاف كتابة تاني، ومفيش شرط بيتفحص وقت
+  التشغيل.
+- `matchAndWriteMetafields` (§4.3) — الفرع اللي كان بيتحقق من
+  `String(env.WRITE_METAFIELDS).toLowerCase() !== 'true'` ويكتب
+  `write_status = 'dry_run_matched'` اتشال بالكامل. أي حدث اتحدد له S1/S2
+  دلوقتي بيعدّي على طول لمحاولة الكتابة الفعلية (`metafieldsSet`) — مفيش
+  مسار تاني.
+- `[vars] WRITE_METAFIELDS = "true"` اتشال من `wrangler.toml`.
+- `diag` مابقاش بيعرض بند `WRITE_METAFIELDS` في الفحوصات (مكانش بيفحص حاجة
+  فعليًا غير قيمة نصية).
+- `get_config` مابقاش بيرجّع `writeMetafields` — الواجهة أصلًا ماكانتش
+  بتستخدم الحقل ده (كانت بس بتقرا `version` لمقارنة `MIN_WORKER_VERSION`)،
+  فمفيش تغيير مطلوب في `index.html` غير تحديث سطرين توثيق في تاب "عن
+  الأداة" (نص القديم كان بيقول "لو WRITE_METAFIELDS=true...").
+- 🔴 **قيمة `dry_run_matched` في `write_status` بقت كود ميت** — مش هتتكتب
+  تاني من أي حدث جديد (ولا اتكتبت أصلًا على أي حدث حقيقي من قبل، راجع درس
+  21→22-09-2026 فوق). الليبل والبادج بتوعها اتسابوا في `index.html`
+  (`RESULT_LABELS`/`resultBadge`) للتوافق مع أي صف قديم لو ظهر، من غير أي
+  داعي لحذفهم.
+- **مفيش تغيير على منطق المطابقة (S1/S2) ولا على الحقلين الإضافيين
+  (`manual_status`/`package_whereabouts_s1`) ولا على SQL/Schema** — التعديل
+  محصور في شيل شرط الفلاج نفسه + شيل الـ var من `wrangler.toml` + تنضيف
+  الوثائق المرتبطة بيه.
 
 ### 25-09-2026 — إصلاح: تاب "كل الأحداث" كان بيقص على آخر 200 حدث + تاب "Delivered" كان بيستبعد write_status غير written
 

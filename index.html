@@ -572,7 +572,7 @@ body {
             <li>بوسطة تبعت حدث POST على <code>/webhook</code> بهيدر تحقق مخصص (مش Authorization).</li>
             <li>الـ Worker يتحقق من الهيدر، يمنع التكرار، ويسجّل الحدث الخام في D1 فورًا.</li>
             <li>يحدّد الشحنة S1 ولا S2 (رقم التتبع أولًا، بعدين نوع الشحنة كـ fallback).</li>
-            <li>لو <code>WRITE_METAFIELDS=true</code> ومفيش حارس ترتيب يوقفه، يكتب الحالة على شوبيفاي.</li>
+            <li>لو مفيش حارس ترتيب يوقفه، يكتب الحالة على شوبيفاي تلقائيًا — الكتابة دايمًا مفعّلة، مفيش فلاج إيقاف.</li>
             <li>الشاشة دي بتعرض النتيجة — مش بتنفّذ أي حاجة بنفسها.</li>
           </ol>
           <h4>الـ Endpoints الرئيسية</h4>
@@ -581,7 +581,7 @@ body {
             <tr><td><code>POST /webhook</code></td><td>استقبال حدث بوسطة (بوابة منفصلة، مش action=)</td></tr>
             <tr><td><code>list_events</code></td><td>أحداث D1 بفلاتر الأوردر/التتبع/التاريخ — بترجّع <code>shopify_order_id</code> لهايبرلينك رقم الأوردر (لو الحدث اتطابق مع أوردر)</td></tr>
             <tr><td><code>diag</code></td><td>فحص ذاتي — الأسرار موجودة؟ آخر حدث امتى؟ اتصال شوبيفاي؟</td></tr>
-            <tr><td><code>get_config</code></td><td>نسخة الـ Worker + حالة WRITE_METAFIELDS</td></tr>
+            <tr><td><code>get_config</code></td><td>نسخة الـ Worker</td></tr>
             <tr><td><code>check_employee</code> / <code>verify_employee</code> / <code>register_pin</code> / <code>log_logout</code> / <code>get_employees</code></td><td>Universal D1 Auth القياسي</td></tr>
             <tr><td><code>get_logs</code> / <code>get_logs_count</code> / <code>get_logs_export</code></td><td>سجل <code>logs</code> المشترك (login/logout وأنواع status_event/duplicate_skipped/match_failed/...)</td></tr>
           </table>

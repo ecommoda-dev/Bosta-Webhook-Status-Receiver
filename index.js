@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.3.1';
+const WORKER_VERSION = '1.4.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -581,18 +581,6 @@ async function matchAndWriteMetafields(env, rowId, n) {
 
   const statusValue = `${n.state} · ${n.description || STATE_MAP[n.state] || 'Unknown'}`;
 
-  // §9 خطوة 3 — الكتابة الفعلية خلف فلاج، يبدأ false.
-  if (String(env.WRITE_METAFIELDS).toLowerCase() !== 'true') {
-    await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: 'dry_run_matched', shopify_order_id: orderNode.legacyResourceId });
-    await writeLog(env.DB, {
-      tool: TOOL_NAME, type: 'status_event',
-      orderId: orderNode.legacyResourceId, orderName: n.businessReference,
-      notes: `WRITE_METAFIELDS=false — تم التطابق (${slot}) من غير كتابة فعلية: ${statusValue}`,
-      extra: { result: 'success', slot, matchMethod, dryRun: true, bostaId: n.bostaId },
-    }).catch(() => {});
-    return;
-  }
-
   const metafieldsInput = [
     { ownerId: orderNode.id, namespace: 'custom', key: `bosta_webhook_status_update_${slot}`, type: 'single_line_text_field', value: statusValue },
     { ownerId: orderNode.id, namespace: 'custom', key: `bosta_webhook_last_update_${slot}`,   type: 'date_time',              value: newIso },
@@ -902,7 +890,6 @@ export default {
         checks.push({ ok: !!env.BOSTA_WEBHOOK_HEADER_VALUE, label: 'BOSTA_WEBHOOK_HEADER_VALUE', detail: env.BOSTA_WEBHOOK_HEADER_VALUE ? 'موجود' : '❌ غايب' });
         checks.push({ ok: !!env.SHOP_DOMAIN, label: 'SHOP_DOMAIN', detail: env.SHOP_DOMAIN || '❌ غايب' });
         checks.push({ ok: !!env.CLIENT_ID && !!env.CLIENT_SECRET, label: 'Shopify credentials', detail: (env.CLIENT_ID && env.CLIENT_SECRET) ? 'موجودة' : '❌ ناقصة' });
-        checks.push({ ok: true, label: 'WRITE_METAFIELDS', detail: String(env.WRITE_METAFIELDS ?? 'false') });
         checks.push({ ok: true, label: 'SILENCE_THRESHOLD_HOURS', detail: String(env.SILENCE_THRESHOLD_HOURS ?? DEFAULT_SILENCE_THRESHOLD_HOURS) });
 
         let lastEvent = null, count24h = 0, dup24h = 0, matchFailed24h = 0;
@@ -972,10 +959,7 @@ export default {
       }
 
       if (action === 'get_config') {
-        return json({
-          ok: true, version: WORKER_VERSION,
-          writeMetafields: String(env.WRITE_METAFIELDS).toLowerCase() === 'true',
-        }, 200, request);
+        return json({ ok: true, version: WORKER_VERSION }, 200, request);
       }
       // ────────────────────────────────────────────────────────────────
 
