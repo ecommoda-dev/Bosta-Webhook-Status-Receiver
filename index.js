@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.3.0';
+const WORKER_VERSION = '1.3.1';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -860,7 +860,10 @@ export default {
         const dateTo          = url.searchParams.get('dateTo') || null;
         const limitRaw  = parseInt(url.searchParams.get('limit')  || '100', 10);
         const offsetRaw = parseInt(url.searchParams.get('offset') || '0',   10);
-        const limit  = Number.isFinite(limitRaw)  ? Math.min(Math.max(limitRaw, 1), 200) : 100;
+        // 🔴 مفيش سقف أقصى هنا عن قصد (كان 200) — الواجهة بتسحب كل الأحداث
+        //    المطابقة على batches عبر offset، وسقف صغير هنا كان بيخلّي
+        //    الشاشة تقص أحداث أقدم من غير أي إشارة (راجع CLAUDE.md).
+        const limit  = Number.isFinite(limitRaw)  ? Math.max(limitRaw, 1) : 100;
         const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
 
         let sql = 'SELECT * FROM bosta_webhook_events WHERE 1=1';

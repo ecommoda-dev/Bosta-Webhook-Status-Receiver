@@ -469,6 +469,16 @@ body {
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">25-09-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>تاب "كل الأحداث" كان بيعرض آخر 200 حدث بس (سقف ثابت على الطلب)</b> — أي حدث أقدم كان بيتقص من الشاشة تمامًا من غير أي إشارة، حتى مع فلاتر النوع/الحالة/النتيجة (client-side على نفس الـ 200 صف). دلوقتي <code>loadEvents()</code> بتسحب كل الصفحات (batches من 500) بنفس فلاتر الأوردر/التتبع/التاريخ لحد ما ترجع صفحة أقل من 500 — يعني كل الأحداث المطابقة بتتحمّل، مش أول/آخر 200 بس. يتطلب <code>Worker ≥ v1.3.1</code> (الحد الأقصى للـ <code>limit</code> اتشال من <code>list_events</code>).</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>تاب <b>✅ Delivered</b> بقى بيعرض كل الأحداث بكود حالة 45 (Delivered) بغض النظر عن <code>write_status</code> — قبل كده كان مقصور على <code>write_status = 'written'</code> بس، فأي حدث Delivered فشلت كتابته على شوبيفاي (أو لسه <code>processing</code>) كان بيختفي من التاب بدل ما يبان كمشكلة محتاجة متابعة.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.4.0</span>
           <span class="cl-ver-date">22-09-2026</span>
         </div>
         <ul class="cl-items">
@@ -589,7 +599,7 @@ body {
             <li><code>§TOOL-JS::numericFilter</code> — فلاتر كود الحالة وعدد المحاولات: تبويبا قائمة قيم/نطاق من-إلى متبادلان (<code>data-table-standard.md</code> §4)</li>
             <li><code>§TOOL-JS::dateRange</code> — فترة سريعة + من/إلى تاريخ (بدون افتراضي — <code>data-table-standard.md</code> §5)</li>
             <li><code>§TOOL-JS::sort</code> — ترتيب 3 حالات على كل الأعمدة، مستقل عن الفلاتر</li>
-            <li><code>renderDeliveredTab()</code> — بيفلتر <code>rawEvents</code> نفسها لـ <code>state === 45 && write_status === 'written'</code>، بدون نداء Worker إضافي</li>
+            <li><code>renderDeliveredTab()</code> — بيفلتر <code>rawEvents</code> نفسها لـ <code>state === 45</code> (أي write_status)، بدون نداء Worker إضافي</li>
             <li><code>§CONFIG::orderLink</code> / <code>trackingLink</code> — هايبرلينك رقم الأوردر (شوبيفاي) ورقم التتبع (بوسطة)</li>
           </ul>
           <h4>KEY VARIABLES</h4>
@@ -599,16 +609,16 @@ body {
             <li><code>LS_SECRET = 'bosta_webhook_status_worker_secret'</code> — السر الوحيد في localStorage. 🔴 هيتغيّر لمفتاح مجموعة <code>delivery_cod_ops_worker_secret</code> لما التسجيل في <code>ecommoda-constants</code> يخلص (راجع CLAUDE.md)</li>
             <li><code>TOOL_NAME = 'bosta_webhook_status'</code> — قيمة tool في جدول logs</li>
             <li><code>SHOP_DOMAIN = '6c7e1a-53.myshopify.com'</code> — لبناء رابط الأوردر على شوبيفاي</li>
-            <li><code>rawEvents</code> — آخر batch من <code>list_events</code> (بفلاتر السيرفر: أوردر/تتبع/تاريخ) قبل فلاتر الاختيار المتعدد والترتيب</li>
+            <li><code>rawEvents</code> — كل الأحداث المطابقة لفلاتر السيرفر (أوردر/تتبع/تاريخ) بعد سحب <code>list_events</code> على batches من <code>LOAD_PAGE_SIZE</code> (500)، قبل فلاتر الاختيار المتعدد والترتيب — مفيش سقف عدد صفوف (راجع changelog v1.4.1)</li>
           </ul>
           <h4>NOTES</h4>
           <ul>
             <li>الأداة مالهاش أي زرار تنفيذ فعل — كل الكتابة على شوبيفاي بتحصل من الـ Worker وحده عند استقبال ويبهوك.</li>
             <li>بانر السكوت وبانر فشل المطابقة بيتحدّثوا من <code>diag</code> كل دقيقة أثناء فتح الشاشة.</li>
             <li>فلاتر النوع/الحالة/النتيجة/الوصف/كود الحالة/عدد المحاولات وقوايمها (checkbox dropdown) بتتبنى من الـ <code>rawEvents</code> المحمّلة فعليًا — مش استعلام سيرفر إضافي. فلاتر الأوردر/التتبع والتاريخ لسه بتتبعت للـ Worker (<code>list_events</code>).</li>
-            <li>تاب "Delivered" مش بيعمل نداء Worker منفصل — بيقرا نفس <code>rawEvents</code> اللي الجدول الرئيسي محمّلها، فبيتأثر بفلاتر الأوردر/التتبع/التاريخ (server-side) لكن مش بفلاتر النوع/الحالة/النتيجة (client-side على الجدول الأول بس).</li>
+            <li>تاب "Delivered" مش بيعمل نداء Worker منفصل — بيقرا نفس <code>rawEvents</code> اللي الجدول الرئيسي محمّلها، فبيتأثر بفلاتر الأوردر/التتبع/التاريخ (server-side) لكن مش بفلاتر النوع/الحالة/النتيجة (client-side على الجدول الأول بس). بيعرض كل حدث <code>state === 45</code> بغض النظر عن <code>write_status</code> (v1.4.1) — عمود "النتيجة" في الصف بيوضح لو الكتابة على شوبيفاي فعليًا نجحت.</li>
             <li>رقم الأوردر بيبقى نص عادي (بدون لينك) لو <code>shopify_order_id</code> فاضي — بيحصل ده للأحداث اللي فشلت مطابقتها أو حصلت قبل ترقية الـ Worker لـ v1.2.0 (fallback <code>.order-num</code>، design-system.md).</li>
-            <li><code>toValidDate()</code> بترجّع <code>—</code> بدل ما ترمي استثناء لو <code>delivery_promise_date</code> (أو أي تاريخ تاني راجع من بوسطة) مش بصيغة يقدر <code>Date</code> يفهمها — فحدث واحد بتاريخ غريب بيفضل يعرض بقية الـ 200 صف، مش يوقف الجدول كله (v1.3.1).</li>
+            <li><code>toValidDate()</code> بترجّع <code>—</code> بدل ما ترمي استثناء لو <code>delivery_promise_date</code> (أو أي تاريخ تاني راجع من بوسطة) مش بصيغة يقدر <code>Date</code> يفهمها — فحدث واحد بتاريخ غريب بيفضل يعرض بقية الصفوف، مش يوقف الجدول كله (v1.3.1).</li>
           </ul>
         </div>
       </details>
@@ -961,8 +971,11 @@ body {
 // ══════════════════════════════════════════════════════
 // 🔴 1.2.0 = أول نسخة Worker بترجّع shopify_order_id في list_events —
 //    من غيره رقم الأوردر بيفضل نص عادي (fallback .order-num) مش هايبرلينك.
-const MIN_WORKER_VERSION = '1.2.0';
-const TOOL_VERSION       = 'v1.4.0';
+// 🔴 1.3.1 = أول نسخة Worker شالت سقف الـ 200 القديم من list_events — نسخة
+//    أقدم بترجّع 200 صف بس لكل صفحة، فـ loadEvents() هتقصّ برضه بصمت
+//    (page.length < LOAD_PAGE_SIZE بيوقف السحب بدري) من غير أي تحذير هنا.
+const MIN_WORKER_VERSION = '1.3.1';
+const TOOL_VERSION       = 'v1.4.1';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1769,11 +1782,13 @@ function switchMainTab(tab) {
   document.getElementById('panelEvents').classList.toggle('active', tab === 'events');
   document.getElementById('panelDelivered').classList.toggle('active', tab === 'delivered');
 }
-// أوردرات اتسجّل عليها الحالة Delivered فعليًا وبنجاح على شوبيفاي — نفس batch
-// list_events المحمّل بالفعل (فلاتر الأوردر/التتبع/التاريخ لسه سارية)، بدون
-// نداء Worker إضافي.
+// أوردرات وصلت لكود حالة Delivered (45) — بغض النظر عن write_status (يشمل
+// شكل الأداة اللي لسه processing أو فشلت كتابتها على شوبيفاي، عشان تبان
+// كمشكلة محتاجة متابعة بدل ما تختفي من التاب). نفس batch list_events
+// المحمّل بالفعل (فلاتر الأوردر/التتبع/التاريخ لسه سارية)، بدون نداء Worker
+// إضافي.
 function renderDeliveredTab() {
-  const rows = rawEvents.filter(ev => Number(ev.state) === 45 && ev.write_status === 'written');
+  const rows = rawEvents.filter(ev => Number(ev.state) === 45);
   document.getElementById('deliveredCount').textContent = rows.length.toLocaleString('en-US');
   const body = document.getElementById('deliveredBody');
   body.innerHTML = rows.length
@@ -1838,19 +1853,33 @@ function onLookupInput(el) {
   lookupDebounce = setTimeout(loadEvents, 400);
 }
 
+// 🔴 مفيش سقف تحميل هنا خالص — list_events بترجع 500 كحد أقصى للنداء
+// الواحد (الحد الأقصى القديم 200 اتشال من الـ Worker)، فبنسحب كل الصفحات
+// المطابقة بالتتابع لحد ما نوصل لصفحة أقل من LOAD_PAGE_SIZE. أي سقف تاني
+// هنا بيرجّعنا لنفس مشكلة "آخر 200 حدث بس" اللي كانت بتقص أحداث قديمة من
+// الشاشة من غير أي إشارة.
+const LOAD_PAGE_SIZE = 500;
+
 async function loadEvents() {
   const body = document.getElementById('eventsBody');
   body.innerHTML = '<tr><td colspan="11">...جاري التحميل</td></tr>';
   try {
-    const params = {
+    const baseParams = {
       order:    document.getElementById('fOrder').value.trim(),
       tracking: document.getElementById('fTracking').value.trim(),
       dateFrom: document.getElementById('fFrom').value,
       dateTo:   document.getElementById('fTo').value,
-      limit: 200,
     };
-    const data = await apiGet('list_events', params);
-    rawEvents = data.events || [];
+    let all = [];
+    let offset = 0;
+    while (true) {
+      const data = await apiGet('list_events', { ...baseParams, limit: LOAD_PAGE_SIZE, offset });
+      const page = data.events || [];
+      all = all.concat(page);
+      if (page.length < LOAD_PAGE_SIZE) break;
+      offset += LOAD_PAGE_SIZE;
+    }
+    rawEvents = all;
     buildMsItems(rawEvents);
     applyFiltersAndRender();
     renderDeliveredTab();
