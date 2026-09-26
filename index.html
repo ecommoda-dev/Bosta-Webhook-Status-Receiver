@@ -472,8 +472,16 @@ body {
           <span class="cl-ver-date">26-09-2026</span>
         </div>
         <ul class="cl-items">
-          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>التابات بقت 4 مستقلة تمامًا بدل تابين مشتركين في الفلاتر</b> — كل تاب (فلاتره/بحثه/فترته/ترتيبه) منفصل عن التاب التاني تمامًا، مفيش state متشارك خالص. التاب الأول (كان "📋 كل الأحداث") اتسمّى <b>🚚 الأوردرات تحت التوصيل</b> وبقى بيستبعد أحداث Delivered/Exception/Returned to business (بقى ليهم تابات مستقلة). الفلترة بقت client-side بالكامل بعد تحميل واحد لكل الأحداث — مفيش نداء Worker منفصل لكل تاب.</span></li>
-          <li class="cl-item"><span class="cl-tag new">جديد</span><span>تاب <b>🗄 الأرشيف</b> (آخر تاب في الترتيب) — الأحداث اللي وصلت لكود حالة 45 (Delivered)، محل تاب "✅ Delivered" القديم.</span></li>
+          <li class="cl-item"><span class="cl-tag fix">إصلاح</span><span>🔴 <b>تصحيح لتسليم v1.5.0 نفس اليوم — الأرشيف كان مجرد إعادة تسمية لتاب Delivered، مش تجميع فعلي.</b> تاب <b>✅ Delivered</b> رجع باسمه ومكانه الأصلي (كود حالة 45 بس، زي ما كان دايمًا). تاب <b>🗄 الأرشيف</b> بقى تاب **جديد ومنفصل تمامًا** (آخر تاب في الترتيب): بمجرد ما رقم تتبع يوصله حدث Delivered (كود 45) ولو مرة واحدة، **كل سجلاته على الإطلاق** (كل الحالات اللي مرّ بيها — 21/24/30/41/45/...) بتتجمّع في تاب الأرشيف، وبتتشال بالكامل من تاب <b>🚚 الأوردرات تحت التوصيل</b>. تابات ✅ Delivered وExceptionوReturned to business **مش** بيستبعدوا أرقام التتبع المؤرشفة — لسه بيعرضوا كل حدث مطابق للحالة زي ما هما، الأرشيف عرض تجميعي إضافي مش بديل عنهم. الحساب بـ <code>computeArchivedTrackingNumbers()</code> — client-side بالكامل، مفيش تعديل Worker.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.5.0</span>
+          <span class="cl-ver-date">26-09-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>التابات بقت مستقلة تمامًا بدل تابين مشتركين في الفلاتر</b> — كل تاب (فلاتره/بحثه/فترته/ترتيبه) منفصل عن التاب التاني تمامًا، مفيش state متشارك خالص. التاب الأول (كان "📋 كل الأحداث") اتسمّى <b>🚚 الأوردرات تحت التوصيل</b>. الفلترة بقت client-side بالكامل بعد تحميل واحد لكل الأحداث — مفيش نداء Worker منفصل لكل تاب.</span></li>
           <li class="cl-item"><span class="cl-tag new">جديد</span><span>تابين جدد: <b>⚠️ Exception</b> (كود حالة 47) و<b>↩️ Returned to business</b> (كود حالة 46) — كل تاب بفلاتره وجدوله الخاص، نفس بقية التابات.</span></li>
           <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>حدث Delivered تاني على نفس الأوردر مش بيكتب على شوبيفاي تاني.</b> لو أوردر اتسجّل عليه Delivered بنجاح فعليًا (<code>write_status='written'</code>) قبل كده على نفس الـ slot، أي حدث Delivered تاني بيتسجّل في السجل بس (<code>write_status='delivered_duplicate_skipped'</code>) — بدون أي نداء شوبيفاي تاني. يتطلب <code>Worker ≥ v1.5.0</code>.</span></li>
         </ul>
@@ -605,10 +613,11 @@ body {
           <h4>FEATURE MAP</h4>
           <ul>
             <li><code>§SHELL</code> — App Shell + Login + Settings/About/Changelog modals</li>
-            <li><code>§TOOL::tabs</code> — 4 تابات مستقلة تمامًا: 🚚 الأوردرات تحت التوصيل (كل حدث مش Delivered/Exception/Returned to business)، ⚠️ Exception (كود حالة 47)، ↩️ Returned to business (كود حالة 46)، 🗄 الأرشيف (كود حالة 45 — آخر تاب في الترتيب)</li>
-            <li><code>buildTabPanelHtml()</code> / <code>buildMsFilterHtml()</code> — بيولّدوا HTML الفلاتر والجدول لكل تاب في وقت التحميل (بدل تكرار 4 نسخ يدويًا في الـ HTML)، بـ id namespaced بـ <code>tabKey</code></li>
+            <li><code>§TOOL::tabs</code> — 5 تابات، كل واحدة بفلاتر/بحث/فترة/ترتيب مستقل بالكامل: 🚚 الأوردرات تحت التوصيل (كل حدث مش Delivered/Exception/Returned to business، وبيستبعد كمان أرقام التتبع المؤرشفة)، ⚠️ Exception (كود 47)، ↩️ Returned to business (كود 46)، ✅ Delivered (كود 45)، 🗄 الأرشيف (آخر تاب — كل سجلات أي رقم تتبع وصل لـ Delivered، بكل حالاته)</li>
+            <li><code>buildTabPanelHtml()</code> / <code>buildMsFilterHtml()</code> — بيولّدوا HTML الفلاتر والجدول لكل تاب في وقت التحميل (بدل تكرار 5 نسخ يدويًا في الـ HTML)، بـ id namespaced بـ <code>tabKey</code></li>
             <li><code>tabState[tabKey]</code> — فلاتر اختيار متعدد + بحث أوردر/تتبع + فترة تاريخ + ترتيب، لكل تاب نسخة مستقلة بالكامل (مفيش state متشارك بين التابات)</li>
-            <li><code>tabPartition(tabKey)</code> — بيفلتر <code>rawEvents</code> نفسها حسب <code>state</code> (partition — مفيش حدث بيظهر في أكتر من تاب)</li>
+            <li><code>computeArchivedTrackingNumbers()</code> — Set بكل <code>tracking_number</code> وصلها حدث بكود حالة 45 مرة واحدة على الأقل، بيتحسب مرة واحدة بعد كل تحميل ويتقرا من تابي "الأوردرات تحت التوصيل" (استبعاد) و"الأرشيف" (تجميع) — مش من تاب Delivered/Exception/Returned to business</li>
+            <li><code>tabPartition(tabKey)</code> — بيفلتر <code>rawEvents</code> حسب <code>state</code> (+ حالة الأرشفة لتابي main/archive)</li>
             <li><code>§TOOL-JS::numericFilter</code> — فلاتر كود الحالة وعدد المحاولات: تبويبا قائمة قيم/نطاق من-إلى متبادلان (<code>data-table-standard.md</code> §4)</li>
             <li><code>§TOOL-JS::dateRange</code> — فترة سريعة + من/إلى تاريخ لكل تاب (بدون افتراضي، client-side بالكامل)</li>
             <li><code>§TOOL-JS::sort</code> — ترتيب 3 حالات على كل الأعمدة، مستقل عن الفلاتر ومستقل عن التاب التاني</li>
@@ -628,6 +637,7 @@ body {
             <li>الأداة مالهاش أي زرار تنفيذ فعل — كل الكتابة على شوبيفاي بتحصل من الـ Worker وحده عند استقبال ويبهوك.</li>
             <li>بانر السكوت وبانر فشل المطابقة (في تاب "الأوردرات تحت التوصيل" بس) بيتحدّثوا من <code>diag</code> كل دقيقة أثناء فتح الشاشة.</li>
             <li>كل فلاتر التابات (اختيار متعدد + بحث أوردر/تتبع + فترة تاريخ) بقت client-side بالكامل على <code>rawEvents</code> المحمّلة مرة واحدة — <code>list_events</code> بيتنادى من غير أي فلتر سيرفر، فمفيش نداء Worker إضافي لأي تاب أو أي فلتر (v1.5.0).</li>
+            <li>الأرشفة بـ <code>tracking_number</code> مش <code>business_reference</code> — لو الأوردر عنده رقمين تتبع (S1 وS2) وواحد بس وصل Delivered، سجلات الرقم التاني (لسه شغّال) بتفضل في "الأوردرات تحت التوصيل" عادي (v1.6.0).</li>
             <li>رقم الأوردر بيبقى نص عادي (بدون لينك) لو <code>shopify_order_id</code> فاضي — بيحصل ده للأحداث اللي فشلت مطابقتها أو حصلت قبل ترقية الـ Worker لـ v1.2.0 (fallback <code>.order-num</code>، design-system.md).</li>
             <li><code>toValidDate()</code> بترجّع <code>—</code> بدل ما ترمي استثناء لو <code>delivery_promise_date</code> (أو أي تاريخ تاني راجع من بوسطة) مش بصيغة يقدر <code>Date</code> يفهمها — فحدث واحد بتاريخ غريب بيفضل يعرض بقية الصفوف، مش يوقف الجدول كله (v1.3.1).</li>
           </ul>
@@ -693,11 +703,12 @@ body {
      §TOOL — شاشة الأحداث
      ══════════════════════════════════════════════════════ -->
 <main id="appContent" style="display:none;">
-  <!-- ─── §TOOL::mainTabs (tabs-and-modals.md §1) — 4 تابات، كل واحدة بفلاتر وجدول مستقلين تمامًا ─── -->
+  <!-- ─── §TOOL::mainTabs (tabs-and-modals.md §1) — 5 تابات، كل واحدة بفلاتر وجدول مستقلين تمامًا ─── -->
   <div class="main-tabs-bar">
     <button class="main-tab-btn active" id="tab-main"      onclick="switchMainTab('main')">🚚 الأوردرات تحت التوصيل</button>
     <button class="main-tab-btn"        id="tab-exception" onclick="switchMainTab('exception')">⚠️ Exception</button>
     <button class="main-tab-btn"        id="tab-returned"  onclick="switchMainTab('returned')">↩️ Returned to business</button>
+    <button class="main-tab-btn"        id="tab-delivered" onclick="switchMainTab('delivered')">✅ Delivered</button>
     <button class="main-tab-btn"        id="tab-archive"   onclick="switchMainTab('archive')">🗄 الأرشيف</button>
   </div>
 
@@ -709,6 +720,7 @@ body {
   </div>
   <div class="tab-panel" id="panel-exception"><div id="tabRoot-exception"></div></div>
   <div class="tab-panel" id="panel-returned"><div id="tabRoot-returned"></div></div>
+  <div class="tab-panel" id="panel-delivered"><div id="tabRoot-delivered"></div></div>
   <div class="tab-panel" id="panel-archive"><div id="tabRoot-archive"></div></div>
 </main>
 
@@ -728,7 +740,7 @@ body {
 //    عادي على كل حدث Delivered (مفيش ضرر فعلي، القيمة نفسها)، بس الشاشة مش
 //    هتعرف تفرّق الحدث الأول عن التاني في عمود "النتيجة".
 const MIN_WORKER_VERSION = '1.5.0';
-const TOOL_VERSION       = 'v1.5.0';
+const TOOL_VERSION       = 'v1.6.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1189,15 +1201,27 @@ function resultBadge(status) {
   return `<span class="badge ${cls}">${esc(label)}</span>`;
 }
 
-// ─── §TOOL::tabs — 4 تابات، كل واحدة بيانات + فلاتر + جدول + ترتيب مستقلين تمامًا ───
-// كل تاب بيفلتر نفس rawEvents المحمّلة مرة واحدة (partition حسب state — مفيش
-// حدث بيظهر في أكتر من تاب)، وبعد كده فلاتره الخاصة (اختيار متعدد + بحث +
-// فترة) client-side بالكامل — مفيش نداء Worker منفصل لكل تاب.
+// ─── §TOOL::tabs — 5 تابات، كل واحدة بيانات + فلاتر + جدول + ترتيب مستقلين تمامًا ───
+// كل تاب (عدا الأرشيف) بيفلتر نفس rawEvents المحمّلة مرة واحدة حسب state.
+// تاب "🗄 الأرشيف" مختلف: مش بيفلتر بـ state — بيجمع **كل** سجلات أي رقم
+// تتبع وصلت حالته لـ Delivered (كود 45) مرة واحدة على الأقل، بكل حالاته
+// (21/24/30/41/45/...)، وتاب "🚚 الأوردرات تحت التوصيل" بيستبعد نفس أرقام
+// التتبع دي بالكامل (قرار أحمد 26-09-2026 — راجع CLAUDE.md). تاب "✅
+// Delivered" (كود 45 بس) و"⚠️ Exception"/"↩️ Returned to business" **مش**
+// بيستبعدوا أرقام التتبع المؤرشفة — لسه بيعرضوا كل حدث مطابق للحالة زي ما
+// هما، الأرشيف عرض تجميعي إضافي مش بديل عنهم.
+let archivedTrackingNumbers = new Set();
+function computeArchivedTrackingNumbers(events) {
+  const s = new Set();
+  events.forEach(ev => { if (Number(ev.state) === 45 && ev.tracking_number) s.add(String(ev.tracking_number)); });
+  return s;
+}
 const TABS = [
-  { key: 'main',      match: ev => ![45, 46, 47].includes(Number(ev.state)) },
+  { key: 'main',      match: ev => ![45, 46, 47].includes(Number(ev.state)) && !archivedTrackingNumbers.has(String(ev.tracking_number)) },
   { key: 'exception', match: ev => Number(ev.state) === 47 },
   { key: 'returned',  match: ev => Number(ev.state) === 46 },
-  { key: 'archive',   match: ev => Number(ev.state) === 45 },
+  { key: 'delivered', match: ev => Number(ev.state) === 45 },
+  { key: 'archive',   match: ev => archivedTrackingNumbers.has(String(ev.tracking_number)) },
 ];
 const FILTER_KEYS = ['type', 'slot', 'result', 'desc', 'stateCode', 'attempts'];
 const NUMERIC_FILTER_KEYS = new Set(['stateCode', 'attempts']);
@@ -1817,6 +1841,7 @@ async function loadEvents() {
       offset += LOAD_PAGE_SIZE;
     }
     rawEvents = all;
+    archivedTrackingNumbers = computeArchivedTrackingNumbers(rawEvents);
     TABS.forEach(t => {
       buildMsItems(t.key, tabPartition(t.key));
       applyFiltersAndRender(t.key);
