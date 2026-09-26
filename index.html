@@ -469,10 +469,22 @@ body {
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">26-09-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>التابات بقت 4 مستقلة تمامًا بدل تابين مشتركين في الفلاتر</b> — كل تاب (فلاتره/بحثه/فترته/ترتيبه) منفصل عن التاب التاني تمامًا، مفيش state متشارك خالص. التاب الأول (كان "📋 كل الأحداث") اتسمّى <b>🚚 الأوردرات تحت التوصيل</b> وبقى بيستبعد أحداث Delivered/Exception/Returned to business (بقى ليهم تابات مستقلة). الفلترة بقت client-side بالكامل بعد تحميل واحد لكل الأحداث — مفيش نداء Worker منفصل لكل تاب.</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>تاب <b>🗄 الأرشيف</b> (آخر تاب في الترتيب) — الأحداث اللي وصلت لكود حالة 45 (Delivered)، محل تاب "✅ Delivered" القديم.</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>تابين جدد: <b>⚠️ Exception</b> (كود حالة 47) و<b>↩️ Returned to business</b> (كود حالة 46) — كل تاب بفلاتره وجدوله الخاص، نفس بقية التابات.</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>حدث Delivered تاني على نفس الأوردر مش بيكتب على شوبيفاي تاني.</b> لو أوردر اتسجّل عليه Delivered بنجاح فعليًا (<code>write_status='written'</code>) قبل كده على نفس الـ slot، أي حدث Delivered تاني بيتسجّل في السجل بس (<code>write_status='delivered_duplicate_skipped'</code>) — بدون أي نداء شوبيفاي تاني. يتطلب <code>Worker ≥ v1.5.0</code>.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.4.1</span>
           <span class="cl-ver-date">25-09-2026</span>
         </div>
         <ul class="cl-items">
-          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>تاب "كل الأحداث" كان بيعرض آخر 200 حدث بس (سقف ثابت على الطلب)</b> — أي حدث أقدم كان بيتقص من الشاشة تمامًا من غير أي إشارة، حتى مع فلاتر النوع/الحالة/النتيجة (client-side على نفس الـ 200 صف). دلوقتي <code>loadEvents()</code> بتسحب كل الصفحات (batches من 500) بنفس فلاتر الأوردر/التتبع/التاريخ لحد ما ترجع صفحة أقل من 500 — يعني كل الأحداث المطابقة بتتحمّل، مش أول/آخر 200 بس. يتطلب <code>Worker ≥ v1.3.1</code> (الحد الأقصى للـ <code>limit</code> اتشال من <code>list_events</code>).</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>تاب "كل الأحداث" كان بيعرض آخر 200 حدث بس (سقف ثابت على الطلب)</b> — أي حدث أقدم كان بيتقص من الشاشة تمامًا من غير أي إشارة، حتى مع فلاتر النوع/الحالة/النتيجة (client-side على نفس الـ 200 صف). دلوقتي <code>loadEvents()</code> بتسحب كل الصفحات (batches من 500) لحد ما ترجع صفحة أقل من 500 — يعني كل الأحداث بتتحمّل، مش أول/آخر 200 بس. يتطلب <code>Worker ≥ v1.3.1</code> (الحد الأقصى للـ <code>limit</code> اتشال من <code>list_events</code>).</span></li>
           <li class="cl-item"><span class="cl-tag change">تغيير</span><span>تاب <b>✅ Delivered</b> بقى بيعرض كل الأحداث بكود حالة 45 (Delivered) بغض النظر عن <code>write_status</code> — قبل كده كان مقصور على <code>write_status = 'written'</code> بس، فأي حدث Delivered فشلت كتابته على شوبيفاي (أو لسه <code>processing</code>) كان بيختفي من التاب بدل ما يبان كمشكلة محتاجة متابعة.</span></li>
         </ul>
       </div>
@@ -572,7 +584,7 @@ body {
             <li>بوسطة تبعت حدث POST على <code>/webhook</code> بهيدر تحقق مخصص (مش Authorization).</li>
             <li>الـ Worker يتحقق من الهيدر، يمنع التكرار، ويسجّل الحدث الخام في D1 فورًا.</li>
             <li>يحدّد الشحنة S1 ولا S2 (رقم التتبع أولًا، بعدين نوع الشحنة كـ fallback).</li>
-            <li>لو مفيش حارس ترتيب يوقفه، يكتب الحالة على شوبيفاي تلقائيًا — الكتابة دايمًا مفعّلة، مفيش فلاج إيقاف.</li>
+            <li>لو مفيش حارس ترتيب يوقفه، يكتب الحالة على شوبيفاي تلقائيًا — الكتابة دايمًا مفعّلة، مفيش فلاج إيقاف. حدث Delivered تاني على نفس الأوردر/الـ slot بعد أول Delivered ناجح بيتسجّل في السجل بس، من غير أي كتابة تانية على شوبيفاي (v1.5.0).</li>
             <li>الشاشة دي بتعرض النتيجة — مش بتنفّذ أي حاجة بنفسها.</li>
           </ol>
           <h4>الـ Endpoints الرئيسية</h4>
@@ -593,13 +605,13 @@ body {
           <h4>FEATURE MAP</h4>
           <ul>
             <li><code>§SHELL</code> — App Shell + Login + Settings/About/Changelog modals</li>
-            <li><code>§TOOL::mainTabs</code> — تابين رئيسيين: "كل الأحداث" (الفلاتر + الجدول الكامل) و"✅ Delivered" (جدول للقراءة فقط، مفلتر مسبقًا)</li>
-            <li><code>§TOOL / §TOOL-JS</code> — القسم الموحّد (فلاتر + جدول) وبانرات المراقبة</li>
-            <li><code>§TOOL-JS::filterState</code> — فلاتر اختيار متعدد (النوع/الحالة/النتيجة/الوصف) client-side على البيانات المحمّلة</li>
+            <li><code>§TOOL::tabs</code> — 4 تابات مستقلة تمامًا: 🚚 الأوردرات تحت التوصيل (كل حدث مش Delivered/Exception/Returned to business)، ⚠️ Exception (كود حالة 47)، ↩️ Returned to business (كود حالة 46)، 🗄 الأرشيف (كود حالة 45 — آخر تاب في الترتيب)</li>
+            <li><code>buildTabPanelHtml()</code> / <code>buildMsFilterHtml()</code> — بيولّدوا HTML الفلاتر والجدول لكل تاب في وقت التحميل (بدل تكرار 4 نسخ يدويًا في الـ HTML)، بـ id namespaced بـ <code>tabKey</code></li>
+            <li><code>tabState[tabKey]</code> — فلاتر اختيار متعدد + بحث أوردر/تتبع + فترة تاريخ + ترتيب، لكل تاب نسخة مستقلة بالكامل (مفيش state متشارك بين التابات)</li>
+            <li><code>tabPartition(tabKey)</code> — بيفلتر <code>rawEvents</code> نفسها حسب <code>state</code> (partition — مفيش حدث بيظهر في أكتر من تاب)</li>
             <li><code>§TOOL-JS::numericFilter</code> — فلاتر كود الحالة وعدد المحاولات: تبويبا قائمة قيم/نطاق من-إلى متبادلان (<code>data-table-standard.md</code> §4)</li>
-            <li><code>§TOOL-JS::dateRange</code> — فترة سريعة + من/إلى تاريخ (بدون افتراضي — <code>data-table-standard.md</code> §5)</li>
-            <li><code>§TOOL-JS::sort</code> — ترتيب 3 حالات على كل الأعمدة، مستقل عن الفلاتر</li>
-            <li><code>renderDeliveredTab()</code> — بيفلتر <code>rawEvents</code> نفسها لـ <code>state === 45</code> (أي write_status)، بدون نداء Worker إضافي</li>
+            <li><code>§TOOL-JS::dateRange</code> — فترة سريعة + من/إلى تاريخ لكل تاب (بدون افتراضي، client-side بالكامل)</li>
+            <li><code>§TOOL-JS::sort</code> — ترتيب 3 حالات على كل الأعمدة، مستقل عن الفلاتر ومستقل عن التاب التاني</li>
             <li><code>§CONFIG::orderLink</code> / <code>trackingLink</code> — هايبرلينك رقم الأوردر (شوبيفاي) ورقم التتبع (بوسطة)</li>
           </ul>
           <h4>KEY VARIABLES</h4>
@@ -609,14 +621,13 @@ body {
             <li><code>LS_SECRET = 'bosta_webhook_status_worker_secret'</code> — السر الوحيد في localStorage. 🔴 هيتغيّر لمفتاح مجموعة <code>delivery_cod_ops_worker_secret</code> لما التسجيل في <code>ecommoda-constants</code> يخلص (راجع CLAUDE.md)</li>
             <li><code>TOOL_NAME = 'bosta_webhook_status'</code> — قيمة tool في جدول logs</li>
             <li><code>SHOP_DOMAIN = '6c7e1a-53.myshopify.com'</code> — لبناء رابط الأوردر على شوبيفاي</li>
-            <li><code>rawEvents</code> — كل الأحداث المطابقة لفلاتر السيرفر (أوردر/تتبع/تاريخ) بعد سحب <code>list_events</code> على batches من <code>LOAD_PAGE_SIZE</code> (500)، قبل فلاتر الاختيار المتعدد والترتيب — مفيش سقف عدد صفوف (راجع changelog v1.4.1)</li>
+            <li><code>rawEvents</code> — كل الأحداث من <code>list_events</code> (سحب واحد بلا فلاتر، على batches من <code>LOAD_PAGE_SIZE</code> = 500 لحد ما تنتهي الصفحات) — كل تاب بيفلترها بـ <code>tabPartition()</code> وبعدين بفلاتره الخاصة</li>
           </ul>
           <h4>NOTES</h4>
           <ul>
             <li>الأداة مالهاش أي زرار تنفيذ فعل — كل الكتابة على شوبيفاي بتحصل من الـ Worker وحده عند استقبال ويبهوك.</li>
-            <li>بانر السكوت وبانر فشل المطابقة بيتحدّثوا من <code>diag</code> كل دقيقة أثناء فتح الشاشة.</li>
-            <li>فلاتر النوع/الحالة/النتيجة/الوصف/كود الحالة/عدد المحاولات وقوايمها (checkbox dropdown) بتتبنى من الـ <code>rawEvents</code> المحمّلة فعليًا — مش استعلام سيرفر إضافي. فلاتر الأوردر/التتبع والتاريخ لسه بتتبعت للـ Worker (<code>list_events</code>).</li>
-            <li>تاب "Delivered" مش بيعمل نداء Worker منفصل — بيقرا نفس <code>rawEvents</code> اللي الجدول الرئيسي محمّلها، فبيتأثر بفلاتر الأوردر/التتبع/التاريخ (server-side) لكن مش بفلاتر النوع/الحالة/النتيجة (client-side على الجدول الأول بس). بيعرض كل حدث <code>state === 45</code> بغض النظر عن <code>write_status</code> (v1.4.1) — عمود "النتيجة" في الصف بيوضح لو الكتابة على شوبيفاي فعليًا نجحت.</li>
+            <li>بانر السكوت وبانر فشل المطابقة (في تاب "الأوردرات تحت التوصيل" بس) بيتحدّثوا من <code>diag</code> كل دقيقة أثناء فتح الشاشة.</li>
+            <li>كل فلاتر التابات (اختيار متعدد + بحث أوردر/تتبع + فترة تاريخ) بقت client-side بالكامل على <code>rawEvents</code> المحمّلة مرة واحدة — <code>list_events</code> بيتنادى من غير أي فلتر سيرفر، فمفيش نداء Worker إضافي لأي تاب أو أي فلتر (v1.5.0).</li>
             <li>رقم الأوردر بيبقى نص عادي (بدون لينك) لو <code>shopify_order_id</code> فاضي — بيحصل ده للأحداث اللي فشلت مطابقتها أو حصلت قبل ترقية الـ Worker لـ v1.2.0 (fallback <code>.order-num</code>، design-system.md).</li>
             <li><code>toValidDate()</code> بترجّع <code>—</code> بدل ما ترمي استثناء لو <code>delivery_promise_date</code> (أو أي تاريخ تاني راجع من بوسطة) مش بصيغة يقدر <code>Date</code> يفهمها — فحدث واحد بتاريخ غريب بيفضل يعرض بقية الصفوف، مش يوقف الجدول كله (v1.3.1).</li>
           </ul>
@@ -682,285 +693,23 @@ body {
      §TOOL — شاشة الأحداث
      ══════════════════════════════════════════════════════ -->
 <main id="appContent" style="display:none;">
-  <!-- ─── §TOOL::mainTabs (tabs-and-modals.md §1) ─── -->
+  <!-- ─── §TOOL::mainTabs (tabs-and-modals.md §1) — 4 تابات، كل واحدة بفلاتر وجدول مستقلين تمامًا ─── -->
   <div class="main-tabs-bar">
-    <button class="main-tab-btn active" id="tabEvents"    onclick="switchMainTab('events')">📋 كل الأحداث</button>
-    <button class="main-tab-btn"        id="tabDelivered" onclick="switchMainTab('delivered')">✅ Delivered</button>
+    <button class="main-tab-btn active" id="tab-main"      onclick="switchMainTab('main')">🚚 الأوردرات تحت التوصيل</button>
+    <button class="main-tab-btn"        id="tab-exception" onclick="switchMainTab('exception')">⚠️ Exception</button>
+    <button class="main-tab-btn"        id="tab-returned"  onclick="switchMainTab('returned')">↩️ Returned to business</button>
+    <button class="main-tab-btn"        id="tab-archive"   onclick="switchMainTab('archive')">🗄 الأرشيف</button>
   </div>
 
-  <div class="tab-panel active" id="panelEvents">
-  <div class="banner banner-red" id="healthBanner"></div>
-  <div class="banner banner-red" id="silenceBanner"></div>
-  <div class="banner banner-amber" id="matchFailBanner"></div>
-
-  <!-- ─── §TOOL::unifiedTable — فلاتر + جدول في كارت واحد (data-table-standard.md) ─── -->
-  <div class="unified-section">
-    <div class="flt-header" onclick="toggleFilters()">
-      <div class="flt-header-right">
-        <span class="flt-toggle open" id="fltToggleIcon">▲</span>
-        <svg class="flt-icon" id="fltIcon" viewBox="0 0 36 24" fill="none"
-             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="2 3 13 3 8.3 10.2 8.3 19 6.7 19 6.7 10.2 2 3"></polygon>
-          <line x1="18" y1="5"  x2="33" y2="5"></line>
-          <line x1="18" y1="11" x2="29" y2="11"></line>
-          <line x1="18" y1="17" x2="25" y2="17"></line>
-        </svg>
-      </div>
-      <button class="clear-btn inactive" id="clearAllBtn"
-        onclick="event.stopPropagation(); clearAllFilters();">✕ مسح كل الفلاتر</button>
-    </div>
-    <div class="flt-body" id="fltBody">
-      <!-- صف 1 — فلاتر الاختيار المتعدد -->
-      <div class="flt-row">
-        <div class="ms-wrap" id="msWrap-type">
-          <span class="ms-flabel">النوع</span>
-          <button class="ms-btn" id="msBtn-type" onclick="msToggle('type')">
-            <span id="msBtnLabel-type">الكل</span><span class="ms-arrow">▾</span>
-          </button>
-          <div class="ms-menu" id="msMenu-type">
-            <div class="ms-ftr-top">
-              <button class="ms-ftr-clear" onclick="msClear('type')">مسح الاختيار</button>
-              <span class="ms-ftr-count" id="msFtrCount-type"></span>
-            </div>
-            <div class="ms-selectall-row" onclick="msToggleSelectAll('type')">
-              <input type="checkbox" id="msSelectAll-type" onclick="event.stopPropagation()" onchange="msToggleSelectAll('type', this.checked)">
-              <span id="msSelectAllLabel-type">تحديد الكل</span>
-            </div>
-            <div class="ms-list" id="msList-type"></div>
-          </div>
-        </div>
-        <div class="ms-wrap" id="msWrap-slot">
-          <span class="ms-flabel">الحالة</span>
-          <button class="ms-btn" id="msBtn-slot" onclick="msToggle('slot')">
-            <span id="msBtnLabel-slot">الكل</span><span class="ms-arrow">▾</span>
-          </button>
-          <div class="ms-menu" id="msMenu-slot">
-            <div class="ms-ftr-top">
-              <button class="ms-ftr-clear" onclick="msClear('slot')">مسح الاختيار</button>
-              <span class="ms-ftr-count" id="msFtrCount-slot"></span>
-            </div>
-            <div class="ms-selectall-row" onclick="msToggleSelectAll('slot')">
-              <input type="checkbox" id="msSelectAll-slot" onclick="event.stopPropagation()" onchange="msToggleSelectAll('slot', this.checked)">
-              <span id="msSelectAllLabel-slot">تحديد الكل</span>
-            </div>
-            <div class="ms-list" id="msList-slot"></div>
-          </div>
-        </div>
-        <div class="ms-wrap" id="msWrap-result">
-          <span class="ms-flabel">النتيجة</span>
-          <button class="ms-btn" id="msBtn-result" onclick="msToggle('result')">
-            <span id="msBtnLabel-result">الكل</span><span class="ms-arrow">▾</span>
-          </button>
-          <div class="ms-menu" id="msMenu-result">
-            <div class="ms-ftr-top">
-              <button class="ms-ftr-clear" onclick="msClear('result')">مسح الاختيار</button>
-              <span class="ms-ftr-count" id="msFtrCount-result"></span>
-            </div>
-            <div class="ms-selectall-row" onclick="msToggleSelectAll('result')">
-              <input type="checkbox" id="msSelectAll-result" onclick="event.stopPropagation()" onchange="msToggleSelectAll('result', this.checked)">
-              <span id="msSelectAllLabel-result">تحديد الكل</span>
-            </div>
-            <div class="ms-list" id="msList-result"></div>
-          </div>
-        </div>
-        <div class="ms-wrap" id="msWrap-desc">
-          <span class="ms-flabel">الوصف</span>
-          <button class="ms-btn" id="msBtn-desc" onclick="msToggle('desc')">
-            <span id="msBtnLabel-desc">الكل</span><span class="ms-arrow">▾</span>
-          </button>
-          <div class="ms-menu" id="msMenu-desc">
-            <div class="ms-ftr-top">
-              <button class="ms-ftr-clear" onclick="msClear('desc')">مسح الاختيار</button>
-              <span class="ms-ftr-count" id="msFtrCount-desc"></span>
-            </div>
-            <div class="ms-selectall-row" onclick="msToggleSelectAll('desc')">
-              <input type="checkbox" id="msSelectAll-desc" onclick="event.stopPropagation()" onchange="msToggleSelectAll('desc', this.checked)">
-              <span id="msSelectAllLabel-desc">تحديد الكل</span>
-            </div>
-            <div class="ms-list" id="msList-desc"></div>
-          </div>
-        </div>
-        <div class="ms-wrap" id="msWrap-stateCode">
-          <span class="ms-flabel">كود الحالة</span>
-          <button class="ms-btn" id="msBtn-stateCode" onclick="msToggle('stateCode')">
-            <span id="msBtnLabel-stateCode">الكل</span><span class="ms-arrow">▾</span>
-          </button>
-          <div class="ms-menu" id="msMenu-stateCode">
-            <div class="ms-ftr-top">
-              <button class="ms-ftr-clear" onclick="msClear('stateCode')">مسح الاختيار</button>
-              <span class="ms-ftr-count" id="msFtrCount-stateCode"></span>
-            </div>
-            <div class="ms-modes">
-              <button class="ms-mode-btn active" id="msModeBtn-stateCode-list"  onclick="msSwitchMode('stateCode','list')">☰ قائمة قيم</button>
-              <button class="ms-mode-btn"        id="msModeBtn-stateCode-range" onclick="msSwitchMode('stateCode','range')">↔ نطاق من-إلى</button>
-            </div>
-            <div class="ms-mode-panel active" id="msPanel-stateCode-list">
-              <div class="ms-selectall-row" onclick="msToggleSelectAll('stateCode')">
-                <input type="checkbox" id="msSelectAll-stateCode" onclick="event.stopPropagation()" onchange="msToggleSelectAll('stateCode', this.checked)">
-                <span id="msSelectAllLabel-stateCode">تحديد الكل</span>
-              </div>
-              <div class="ms-list" id="msList-stateCode"></div>
-            </div>
-            <div class="ms-mode-panel" id="msPanel-stateCode-range">
-              <div class="ms-range-body">
-                <div class="ms-range-row">
-                  <div class="ms-range-g"><span class="ms-range-lbl">من</span><input type="number" class="ms-range-input" id="msRangeFrom-stateCode" oninput="msRangeChange('stateCode')"></div>
-                  <div class="ms-range-g"><span class="ms-range-lbl">إلى</span><input type="number" class="ms-range-input" id="msRangeTo-stateCode" oninput="msRangeChange('stateCode')"></div>
-                </div>
-                <button class="ms-range-clear" onclick="msRangeClear('stateCode')">مسح النطاق</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="ms-wrap" id="msWrap-attempts">
-          <span class="ms-flabel">عدد المحاولات</span>
-          <button class="ms-btn" id="msBtn-attempts" onclick="msToggle('attempts')">
-            <span id="msBtnLabel-attempts">الكل</span><span class="ms-arrow">▾</span>
-          </button>
-          <div class="ms-menu" id="msMenu-attempts">
-            <div class="ms-ftr-top">
-              <button class="ms-ftr-clear" onclick="msClear('attempts')">مسح الاختيار</button>
-              <span class="ms-ftr-count" id="msFtrCount-attempts"></span>
-            </div>
-            <div class="ms-modes">
-              <button class="ms-mode-btn active" id="msModeBtn-attempts-list"  onclick="msSwitchMode('attempts','list')">☰ قائمة قيم</button>
-              <button class="ms-mode-btn"        id="msModeBtn-attempts-range" onclick="msSwitchMode('attempts','range')">↔ نطاق من-إلى</button>
-            </div>
-            <div class="ms-mode-panel active" id="msPanel-attempts-list">
-              <div class="ms-selectall-row" onclick="msToggleSelectAll('attempts')">
-                <input type="checkbox" id="msSelectAll-attempts" onclick="event.stopPropagation()" onchange="msToggleSelectAll('attempts', this.checked)">
-                <span id="msSelectAllLabel-attempts">تحديد الكل</span>
-              </div>
-              <div class="ms-list" id="msList-attempts"></div>
-            </div>
-            <div class="ms-mode-panel" id="msPanel-attempts-range">
-              <div class="ms-range-body">
-                <div class="ms-range-row">
-                  <div class="ms-range-g"><span class="ms-range-lbl">من</span><input type="number" class="ms-range-input" id="msRangeFrom-attempts" oninput="msRangeChange('attempts')"></div>
-                  <div class="ms-range-g"><span class="ms-range-lbl">إلى</span><input type="number" class="ms-range-input" id="msRangeTo-attempts" oninput="msRangeChange('attempts')"></div>
-                </div>
-                <button class="ms-range-clear" onclick="msRangeClear('attempts')">مسح النطاق</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- صف 2 — بحث ← فترة سريعة ← من ← إلى -->
-      <div class="flt-row">
-        <div class="search-wrap">
-          <span class="search-flabel">رقم الأوردر</span>
-          <input type="text" class="search-input" id="fOrder" placeholder="#12345" oninput="onLookupInput(this)">
-          <span class="search-icon">🔍</span>
-        </div>
-        <div class="search-wrap">
-          <span class="search-flabel">رقم التتبع</span>
-          <input type="text" class="search-input" id="fTracking" placeholder="8485106207" oninput="onLookupInput(this)">
-          <span class="search-icon">🔍</span>
-        </div>
-        <div class="range-fg">
-          <span class="range-flabel">فترة سريعة</span>
-          <div class="range-preset-wrap" id="rangePresetWrap">
-            <button class="range-preset-btn" id="rangePresetBtn" onclick="toggleRangePresetMenu(event)">
-              <span id="rangePresetLabel">⚡ اختار فترة</span><span class="pr-arrow">▾</span>
-            </button>
-            <div class="range-preset-menu" id="rangePresetMenu">
-              <div class="range-preset-clear-row"><button onclick="resetDateFilter(); applyFiltersAndRender();">✕ مسح الاختيار</button></div>
-              <div class="range-preset-item" data-preset="today"     onclick="applyRangePreset('today')">    <span>اليوم</span>       <span class="pr-check">✓</span></div>
-              <div class="range-preset-item" data-preset="yesterday" onclick="applyRangePreset('yesterday')"><span>أمس</span>         <span class="pr-check">✓</span></div>
-              <div class="range-preset-sep"></div>
-              <div class="range-preset-item" data-preset="last7"     onclick="applyRangePreset('last7')">    <span>آخر 7 أيام</span>  <span class="pr-check">✓</span></div>
-              <div class="range-preset-item" data-preset="last30"    onclick="applyRangePreset('last30')">   <span>آخر 30 يوم</span>  <span class="pr-check">✓</span></div>
-              <div class="range-preset-sep"></div>
-              <div class="range-preset-item" data-preset="thisMonth" onclick="applyRangePreset('thisMonth')"><span>الشهر الحالي</span><span class="pr-check">✓</span></div>
-              <div class="range-preset-item" data-preset="lastMonth" onclick="applyRangePreset('lastMonth')"><span>الشهر السابق</span><span class="pr-check">✓</span></div>
-            </div>
-          </div>
-        </div>
-        <div class="range-fg">
-          <span class="range-flabel">من تاريخ</span>
-          <div class="range-date-wrap"><input type="date" id="fFrom" onclick="this.showPicker&&this.showPicker();" onchange="onRangeDateChange()"></div>
-        </div>
-        <div class="range-fg">
-          <span class="range-flabel">إلى تاريخ</span>
-          <div class="range-date-wrap"><input type="date" id="fTo" onclick="this.showPicker&&this.showPicker();" onchange="onRangeDateChange()"></div>
-        </div>
-      </div>
-
-      <!-- Chips -->
-      <div class="ms-chips-row" id="chipsRow-lookup"></div>
-      <div class="ms-chips-row" id="chipsRow-date"></div>
-      <div class="ms-chips-row" id="chipsRow-type"></div>
-      <div class="ms-chips-row" id="chipsRow-slot"></div>
-      <div class="ms-chips-row" id="chipsRow-result"></div>
-      <div class="ms-chips-row" id="chipsRow-desc"></div>
-      <div class="ms-chips-row" id="chipsRow-stateCode"></div>
-      <div class="ms-chips-row" id="chipsRow-attempts"></div>
-    </div>
+  <div class="tab-panel active" id="panel-main">
+    <div class="banner banner-red" id="healthBanner"></div>
+    <div class="banner banner-red" id="silenceBanner"></div>
+    <div class="banner banner-amber" id="matchFailBanner"></div>
+    <div id="tabRoot-main"></div>
   </div>
-
-  <div class="unified-section">
-    <div class="tbl-bar" onclick="toggleTable()">
-      <div class="tbl-bar-right">
-        <span class="tbl-toggle open" id="tblToggleIcon">▲</span>
-        <div class="results-wrap">
-          <span class="results-label">النتائج:</span>
-          <span class="results-count" id="filteredCount">—</span>
-        </div>
-      </div>
-    </div>
-    <div class="tbl-body-wrap" id="tblBodyWrap">
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th class="sortable-th" data-sort-key="order" onclick="toggleSort('order')">الأوردر<span class="sort-icon" data-sort-key="order"></span></th>
-              <th class="sortable-th" data-sort-key="tracking" onclick="toggleSort('tracking')">رقم التتبع<span class="sort-icon" data-sort-key="tracking"></span></th>
-              <th class="sortable-th" data-sort-key="type" onclick="toggleSort('type')">النوع<span class="sort-icon" data-sort-key="type"></span></th>
-              <th class="sortable-th" data-sort-key="stateCode" onclick="toggleSort('stateCode')">كود الحالة<span class="sort-icon" data-sort-key="stateCode"></span></th>
-              <th>الوصف</th>
-              <th class="sortable-th" data-sort-key="promise" onclick="toggleSort('promise')">موعد التسليم المتوقع<span class="sort-icon" data-sort-key="promise"></span></th>
-              <th class="sortable-th" data-sort-key="attempts" onclick="toggleSort('attempts')">عدد المحاولات<span class="sort-icon" data-sort-key="attempts"></span></th>
-              <th class="sortable-th" data-sort-key="time" onclick="toggleSort('time')">الوقت<span class="sort-icon" data-sort-key="time"></span></th>
-              <th class="sortable-th" data-sort-key="slot" onclick="toggleSort('slot')">الحالة<span class="sort-icon" data-sort-key="slot"></span></th>
-              <th class="sortable-th" data-sort-key="matchMethod" onclick="toggleSort('matchMethod')">طريقة المطابقة<span class="sort-icon" data-sort-key="matchMethod"></span></th>
-              <th class="sortable-th" data-sort-key="result" onclick="toggleSort('result')">النتيجة<span class="sort-icon" data-sort-key="result"></span></th>
-            </tr>
-          </thead>
-          <tbody id="eventsBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  </div><!-- /panelEvents -->
-
-  <!-- ─── §TOOL::deliveredTab — أوردرات اتسجّل Delivered بنجاح على شوبيفاي ─── -->
-  <div class="tab-panel" id="panelDelivered">
-    <div class="unified-section">
-      <div class="tbl-bar">
-        <div class="tbl-bar-right">
-          <div class="results-wrap">
-            <span class="results-label">النتائج:</span>
-            <span class="results-count" id="deliveredCount">—</span>
-          </div>
-        </div>
-      </div>
-      <div class="tbl-body-wrap">
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>الأوردر</th><th>رقم التتبع</th><th>النوع</th><th>كود الحالة</th><th>الوصف</th>
-                <th>موعد التسليم المتوقع</th><th>عدد المحاولات</th><th>الوقت</th>
-                <th>الحالة</th><th>طريقة المطابقة</th><th>النتيجة</th>
-              </tr>
-            </thead>
-            <tbody id="deliveredBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="tab-panel" id="panel-exception"><div id="tabRoot-exception"></div></div>
+  <div class="tab-panel" id="panel-returned"><div id="tabRoot-returned"></div></div>
+  <div class="tab-panel" id="panel-archive"><div id="tabRoot-archive"></div></div>
 </main>
 
 </div><!-- /.container -->
@@ -974,8 +723,12 @@ body {
 // 🔴 1.3.1 = أول نسخة Worker شالت سقف الـ 200 القديم من list_events — نسخة
 //    أقدم بترجّع 200 صف بس لكل صفحة، فـ loadEvents() هتقصّ برضه بصمت
 //    (page.length < LOAD_PAGE_SIZE بيوقف السحب بدري) من غير أي تحذير هنا.
-const MIN_WORKER_VERSION = '1.3.1';
-const TOOL_VERSION       = 'v1.4.1';
+// 🔴 1.5.0 = أول نسخة Worker بتكتب write_status='delivered_duplicate_skipped'
+//    بدل ما تعيد الكتابة على شوبيفاي لحدث Delivered تاني — Worker أقدم هيكتب
+//    عادي على كل حدث Delivered (مفيش ضرر فعلي، القيمة نفسها)، بس الشاشة مش
+//    هتعرف تفرّق الحدث الأول عن التاني في عمود "النتيجة".
+const MIN_WORKER_VERSION = '1.5.0';
+const TOOL_VERSION       = 'v1.5.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1417,60 +1170,222 @@ function updateLoginSettingsBtn() {
 // §TOOL-JS
 // ══════════════════════════════════════════════════════
 const RESULT_LABELS = {
-  written:              'تم التسجيل',
-  dry_run_matched:      'تطابق (بدون كتابة)',
-  stale_skipped:        'أقدم من المكتوب',
-  match_failed:         'فشلت المطابقة',
-  shopify_write_failed: 'فشلت الكتابة',
-  processing:           'قيد المعالجة',
+  written:                     'تم التسجيل',
+  delivered_duplicate_skipped: 'Delivered مسبقًا — بدون كتابة',
+  dry_run_matched:             'تطابق (بدون كتابة)',
+  stale_skipped:                'أقدم من المكتوب',
+  match_failed:                 'فشلت المطابقة',
+  shopify_write_failed:         'فشلت الكتابة',
+  processing:                   'قيد المعالجة',
 };
 function resultBadge(status) {
   const clsMap = {
-    written: 'badge-success', dry_run_matched: 'badge-warn', stale_skipped: 'badge-neutral',
-    match_failed: 'badge-danger', shopify_write_failed: 'badge-danger', processing: 'badge-neutral',
+    written: 'badge-success', delivered_duplicate_skipped: 'badge-neutral', dry_run_matched: 'badge-warn',
+    stale_skipped: 'badge-neutral', match_failed: 'badge-danger', shopify_write_failed: 'badge-danger',
+    processing: 'badge-neutral',
   };
   const cls = clsMap[status] || 'badge-neutral';
   const label = RESULT_LABELS[status] || status || '—';
   return `<span class="badge ${cls}">${esc(label)}</span>`;
 }
 
-// ─── §TOOL-JS::filterState — فلاتر اختيار متعدد على البيانات المحمّلة (multi-select-filter.md) ───
-const msState = {
-  type:      { items: [], selected: new Set() },
-  slot:      { items: [], selected: new Set() },
-  result:    { items: [], selected: new Set() },
-  desc:      { items: [], selected: new Set() },
-  stateCode: { items: [], selected: new Set(), mode: 'list', rangeFrom: '', rangeTo: '' },
-  attempts:  { items: [], selected: new Set(), mode: 'list', rangeFrom: '', rangeTo: '' },
-};
+// ─── §TOOL::tabs — 4 تابات، كل واحدة بيانات + فلاتر + جدول + ترتيب مستقلين تمامًا ───
+// كل تاب بيفلتر نفس rawEvents المحمّلة مرة واحدة (partition حسب state — مفيش
+// حدث بيظهر في أكتر من تاب)، وبعد كده فلاتره الخاصة (اختيار متعدد + بحث +
+// فترة) client-side بالكامل — مفيش نداء Worker منفصل لكل تاب.
+const TABS = [
+  { key: 'main',      match: ev => ![45, 46, 47].includes(Number(ev.state)) },
+  { key: 'exception', match: ev => Number(ev.state) === 47 },
+  { key: 'returned',  match: ev => Number(ev.state) === 46 },
+  { key: 'archive',   match: ev => Number(ev.state) === 45 },
+];
+const FILTER_KEYS = ['type', 'slot', 'result', 'desc', 'stateCode', 'attempts'];
+const NUMERIC_FILTER_KEYS = new Set(['stateCode', 'attempts']);
 const filterLabels = { type: 'النوع', slot: 'الحالة', result: 'النتيجة', desc: 'الوصف', stateCode: 'كود الحالة', attempts: 'عدد المحاولات' };
-let rawEvents = [];
-let dateFilterActive = false;
 
-function msRenderList(key) {
-  const st = msState[key];
-  const listEl = document.getElementById(`msList-${key}`);
+function newMsState() {
+  const s = {};
+  FILTER_KEYS.forEach(k => {
+    s[k] = { items: [], selected: new Set() };
+    if (NUMERIC_FILTER_KEYS.has(k)) { s[k].mode = 'list'; s[k].rangeFrom = ''; s[k].rangeTo = ''; }
+  });
+  return s;
+}
+const tabState = {};
+TABS.forEach(t => {
+  tabState[t.key] = {
+    ms: newMsState(), order: '', tracking: '',
+    dateFrom: '', dateTo: '', dateFilterActive: false, activeRangePreset: '',
+    sort: { key: null, dir: null },
+  };
+});
+let rawEvents = [];
+
+// ─── §TOOL-JS::buildPanel — HTML قسم الفلاتر+الجدول مولّد بـ JS لكل تاب (نفس بنية data-table-standard.md) ───
+function buildMsFilterHtml(tabKey, key) {
+  const label = filterLabels[key];
+  const numeric = NUMERIC_FILTER_KEYS.has(key);
+  const listBody = `
+    <div class="ms-selectall-row" onclick="msToggleSelectAll('${tabKey}','${key}')">
+      <input type="checkbox" id="msSelectAll-${tabKey}-${key}" onclick="event.stopPropagation()" onchange="msToggleSelectAll('${tabKey}','${key}', this.checked)">
+      <span id="msSelectAllLabel-${tabKey}-${key}">تحديد الكل</span>
+    </div>
+    <div class="ms-list" id="msList-${tabKey}-${key}"></div>`;
+  const rangeBody = `
+    <div class="ms-range-body">
+      <div class="ms-range-row">
+        <div class="ms-range-g"><span class="ms-range-lbl">من</span><input type="number" class="ms-range-input" id="msRangeFrom-${tabKey}-${key}" oninput="msRangeChange('${tabKey}','${key}')"></div>
+        <div class="ms-range-g"><span class="ms-range-lbl">إلى</span><input type="number" class="ms-range-input" id="msRangeTo-${tabKey}-${key}" oninput="msRangeChange('${tabKey}','${key}')"></div>
+      </div>
+      <button class="ms-range-clear" onclick="msRangeClear('${tabKey}','${key}')">مسح النطاق</button>
+    </div>`;
+  const menuInner = numeric ? `
+    <div class="ms-modes">
+      <button class="ms-mode-btn active" id="msModeBtn-${tabKey}-${key}-list"  onclick="msSwitchMode('${tabKey}','${key}','list')">☰ قائمة قيم</button>
+      <button class="ms-mode-btn"        id="msModeBtn-${tabKey}-${key}-range" onclick="msSwitchMode('${tabKey}','${key}','range')">↔ نطاق من-إلى</button>
+    </div>
+    <div class="ms-mode-panel active" id="msPanel-${tabKey}-${key}-list">${listBody}</div>
+    <div class="ms-mode-panel" id="msPanel-${tabKey}-${key}-range">${rangeBody}</div>` : listBody;
+  return `
+    <div class="ms-wrap" id="msWrap-${tabKey}-${key}">
+      <span class="ms-flabel">${label}</span>
+      <button class="ms-btn" id="msBtn-${tabKey}-${key}" onclick="msToggle('${tabKey}','${key}')">
+        <span id="msBtnLabel-${tabKey}-${key}">الكل</span><span class="ms-arrow">▾</span>
+      </button>
+      <div class="ms-menu" id="msMenu-${tabKey}-${key}">
+        <div class="ms-ftr-top">
+          <button class="ms-ftr-clear" onclick="msClear('${tabKey}','${key}')">مسح الاختيار</button>
+          <span class="ms-ftr-count" id="msFtrCount-${tabKey}-${key}"></span>
+        </div>
+        ${menuInner}
+      </div>
+    </div>`;
+}
+function buildTabPanelHtml(tabKey) {
+  const msRow = FILTER_KEYS.map(k => buildMsFilterHtml(tabKey, k)).join('');
+  const chipsRows = ['lookup', 'date', ...FILTER_KEYS].map(k => `<div class="ms-chips-row" id="chipsRow-${tabKey}-${k}"></div>`).join('');
+  const sortTh = (key, label) => `<th class="sortable-th" data-sort-key="${key}" onclick="toggleSort('${tabKey}','${key}')">${label}<span class="sort-icon" data-sort-key="${key}"></span></th>`;
+  return `
+  <div class="unified-section">
+    <div class="flt-header" onclick="toggleFilters('${tabKey}')">
+      <div class="flt-header-right">
+        <span class="flt-toggle open" id="fltToggleIcon-${tabKey}">▲</span>
+        <svg class="flt-icon" id="fltIcon-${tabKey}" viewBox="0 0 36 24" fill="none"
+             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="2 3 13 3 8.3 10.2 8.3 19 6.7 19 6.7 10.2 2 3"></polygon>
+          <line x1="18" y1="5"  x2="33" y2="5"></line>
+          <line x1="18" y1="11" x2="29" y2="11"></line>
+          <line x1="18" y1="17" x2="25" y2="17"></line>
+        </svg>
+      </div>
+      <button class="clear-btn inactive" id="clearAllBtn-${tabKey}"
+        onclick="event.stopPropagation(); clearAllFilters('${tabKey}');">✕ مسح كل الفلاتر</button>
+    </div>
+    <div class="flt-body" id="fltBody-${tabKey}">
+      <div class="flt-row">${msRow}</div>
+      <div class="flt-row">
+        <div class="search-wrap">
+          <span class="search-flabel">رقم الأوردر</span>
+          <input type="text" class="search-input" id="fOrder-${tabKey}" placeholder="#12345" oninput="onLookupInput('${tabKey}', this)">
+          <span class="search-icon">🔍</span>
+        </div>
+        <div class="search-wrap">
+          <span class="search-flabel">رقم التتبع</span>
+          <input type="text" class="search-input" id="fTracking-${tabKey}" placeholder="8485106207" oninput="onLookupInput('${tabKey}', this)">
+          <span class="search-icon">🔍</span>
+        </div>
+        <div class="range-fg">
+          <span class="range-flabel">فترة سريعة</span>
+          <div class="range-preset-wrap" id="rangePresetWrap-${tabKey}">
+            <button class="range-preset-btn" id="rangePresetBtn-${tabKey}" onclick="toggleRangePresetMenu('${tabKey}', event)">
+              <span id="rangePresetLabel-${tabKey}">⚡ اختار فترة</span><span class="pr-arrow">▾</span>
+            </button>
+            <div class="range-preset-menu" id="rangePresetMenu-${tabKey}">
+              <div class="range-preset-clear-row"><button onclick="resetDateFilter('${tabKey}'); applyFiltersAndRender('${tabKey}');">✕ مسح الاختيار</button></div>
+              <div class="range-preset-item" data-preset="today"     onclick="applyRangePreset('${tabKey}','today')">    <span>اليوم</span>       <span class="pr-check">✓</span></div>
+              <div class="range-preset-item" data-preset="yesterday" onclick="applyRangePreset('${tabKey}','yesterday')"><span>أمس</span>         <span class="pr-check">✓</span></div>
+              <div class="range-preset-sep"></div>
+              <div class="range-preset-item" data-preset="last7"     onclick="applyRangePreset('${tabKey}','last7')">    <span>آخر 7 أيام</span>  <span class="pr-check">✓</span></div>
+              <div class="range-preset-item" data-preset="last30"    onclick="applyRangePreset('${tabKey}','last30')">   <span>آخر 30 يوم</span>  <span class="pr-check">✓</span></div>
+              <div class="range-preset-sep"></div>
+              <div class="range-preset-item" data-preset="thisMonth" onclick="applyRangePreset('${tabKey}','thisMonth')"><span>الشهر الحالي</span><span class="pr-check">✓</span></div>
+              <div class="range-preset-item" data-preset="lastMonth" onclick="applyRangePreset('${tabKey}','lastMonth')"><span>الشهر السابق</span><span class="pr-check">✓</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="range-fg">
+          <span class="range-flabel">من تاريخ</span>
+          <div class="range-date-wrap"><input type="date" id="fFrom-${tabKey}" onclick="this.showPicker&&this.showPicker();" onchange="onRangeDateChange('${tabKey}')"></div>
+        </div>
+        <div class="range-fg">
+          <span class="range-flabel">إلى تاريخ</span>
+          <div class="range-date-wrap"><input type="date" id="fTo-${tabKey}" onclick="this.showPicker&&this.showPicker();" onchange="onRangeDateChange('${tabKey}')"></div>
+        </div>
+      </div>
+      ${chipsRows}
+    </div>
+  </div>
+
+  <div class="unified-section">
+    <div class="tbl-bar" onclick="toggleTable('${tabKey}')">
+      <div class="tbl-bar-right">
+        <span class="tbl-toggle open" id="tblToggleIcon-${tabKey}">▲</span>
+        <div class="results-wrap">
+          <span class="results-label">النتائج:</span>
+          <span class="results-count" id="filteredCount-${tabKey}">—</span>
+        </div>
+      </div>
+    </div>
+    <div class="tbl-body-wrap" id="tblBodyWrap-${tabKey}">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              ${sortTh('order', 'الأوردر')}
+              ${sortTh('tracking', 'رقم التتبع')}
+              ${sortTh('type', 'النوع')}
+              ${sortTh('stateCode', 'كود الحالة')}
+              <th>الوصف</th>
+              ${sortTh('promise', 'موعد التسليم المتوقع')}
+              ${sortTh('attempts', 'عدد المحاولات')}
+              ${sortTh('time', 'الوقت')}
+              ${sortTh('slot', 'الحالة')}
+              ${sortTh('matchMethod', 'طريقة المطابقة')}
+              ${sortTh('result', 'النتيجة')}
+            </tr>
+          </thead>
+          <tbody id="eventsBody-${tabKey}"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── §TOOL-JS::filterState — فلاتر اختيار متعدد لكل تاب (multi-select-filter.md) ───
+function msRenderList(tabKey, key) {
+  const st = tabState[tabKey].ms[key];
+  const listEl = document.getElementById(`msList-${tabKey}-${key}`);
   listEl.innerHTML = !st.items.length
     ? '<div class="ms-empty">لا توجد قيم في البيانات الحالية</div>'
     : st.items.map(it => {
         const checked = st.selected.has(it.value);
-        return `<div class="ms-item ${checked ? 'checked' : ''}" onclick="msToggleItem('${key}','${it.value}')">
-          <input type="checkbox" ${checked ? 'checked' : ''} onclick="event.stopPropagation(); msToggleItem('${key}','${it.value}')">
+        return `<div class="ms-item ${checked ? 'checked' : ''}" onclick="msToggleItem('${tabKey}','${key}','${it.value}')">
+          <input type="checkbox" ${checked ? 'checked' : ''} onclick="event.stopPropagation(); msToggleItem('${tabKey}','${key}','${it.value}')">
           <span class="ms-item-label">${esc(it.label)}</span>
         </div>`;
       }).join('');
   const allChecked = st.items.length > 0 && st.items.every(it => st.selected.has(it.value));
-  const selAll = document.getElementById(`msSelectAll-${key}`);
+  const selAll = document.getElementById(`msSelectAll-${tabKey}-${key}`);
   if (selAll) selAll.checked = allChecked;
-  msUpdateButtonLabel(key);
-  document.getElementById(`msFtrCount-${key}`).textContent = `${st.selected.size} مختار`;
+  msUpdateButtonLabel(tabKey, key);
+  document.getElementById(`msFtrCount-${tabKey}-${key}`).textContent = `${st.selected.size} مختار`;
 }
-function msUpdateButtonLabel(key) {
-  const st = msState[key];
-  const btn = document.getElementById(`msBtn-${key}`);
-  const lbl = document.getElementById(`msBtnLabel-${key}`);
+function msUpdateButtonLabel(tabKey, key) {
+  const st = tabState[tabKey].ms[key];
+  const btn = document.getElementById(`msBtn-${tabKey}-${key}`);
+  const lbl = document.getElementById(`msBtnLabel-${tabKey}-${key}`);
   if (st.mode === 'range') {
-    const rl = rangeLabel(key);
+    const rl = rangeLabel(tabKey, key);
     btn.classList.toggle('has-selection', !!rl);
     lbl.textContent = rl || 'الكل';
     return;
@@ -1482,50 +1397,50 @@ function msUpdateButtonLabel(key) {
   else lbl.innerHTML = `${n} محددين <span class="ms-count">${n}</span>`;
 }
 // ─── §TOOL-JS::numericFilter — فلاتر الأرقام: قائمة/نطاق متبادلان (data-table-standard.md §4) ───
-function msSwitchMode(key, mode) {
-  const st = msState[key];
+function msSwitchMode(tabKey, key, mode) {
+  const st = tabState[tabKey].ms[key];
   if (st.mode === mode) return;
   st.mode = mode;
   if (mode === 'range') {
     st.selected.clear();
-    msRenderList(key);
+    msRenderList(tabKey, key);
   } else {
     st.rangeFrom = ''; st.rangeTo = '';
-    const f = document.getElementById(`msRangeFrom-${key}`), t = document.getElementById(`msRangeTo-${key}`);
+    const f = document.getElementById(`msRangeFrom-${tabKey}-${key}`), t = document.getElementById(`msRangeTo-${tabKey}-${key}`);
     if (f) f.value = ''; if (t) t.value = '';
   }
-  document.getElementById(`msModeBtn-${key}-list`).classList.toggle('active', mode === 'list');
-  document.getElementById(`msModeBtn-${key}-range`).classList.toggle('active', mode === 'range');
-  document.getElementById(`msPanel-${key}-list`).classList.toggle('active', mode === 'list');
-  document.getElementById(`msPanel-${key}-range`).classList.toggle('active', mode === 'range');
-  msUpdateButtonLabel(key); renderMsChips(); applyFiltersAndRender();
+  document.getElementById(`msModeBtn-${tabKey}-${key}-list`).classList.toggle('active', mode === 'list');
+  document.getElementById(`msModeBtn-${tabKey}-${key}-range`).classList.toggle('active', mode === 'range');
+  document.getElementById(`msPanel-${tabKey}-${key}-list`).classList.toggle('active', mode === 'list');
+  document.getElementById(`msPanel-${tabKey}-${key}-range`).classList.toggle('active', mode === 'range');
+  msUpdateButtonLabel(tabKey, key); renderMsChips(tabKey); applyFiltersAndRender(tabKey);
 }
-function msRangeChange(key) {
-  const st = msState[key];
-  st.rangeFrom = document.getElementById(`msRangeFrom-${key}`).value;
-  st.rangeTo   = document.getElementById(`msRangeTo-${key}`).value;
-  msUpdateButtonLabel(key); renderMsChips(); applyFiltersAndRender();
+function msRangeChange(tabKey, key) {
+  const st = tabState[tabKey].ms[key];
+  st.rangeFrom = document.getElementById(`msRangeFrom-${tabKey}-${key}`).value;
+  st.rangeTo   = document.getElementById(`msRangeTo-${tabKey}-${key}`).value;
+  msUpdateButtonLabel(tabKey, key); renderMsChips(tabKey); applyFiltersAndRender(tabKey);
 }
-function msRangeClear(key) {
-  const st = msState[key];
+function msRangeClear(tabKey, key) {
+  const st = tabState[tabKey].ms[key];
   st.rangeFrom = ''; st.rangeTo = '';
-  const f = document.getElementById(`msRangeFrom-${key}`), t = document.getElementById(`msRangeTo-${key}`);
+  const f = document.getElementById(`msRangeFrom-${tabKey}-${key}`), t = document.getElementById(`msRangeTo-${tabKey}-${key}`);
   if (f) f.value = ''; if (t) t.value = '';
-  msUpdateButtonLabel(key); renderMsChips(); applyFiltersAndRender();
+  msUpdateButtonLabel(tabKey, key); renderMsChips(tabKey); applyFiltersAndRender(tabKey);
 }
-function rangeLabel(key) {
-  const st = msState[key];
+function rangeLabel(tabKey, key) {
+  const st = tabState[tabKey].ms[key];
   if (st.mode !== 'range') return '';
   if (!st.rangeFrom && !st.rangeTo) return '';
   if (st.rangeFrom && st.rangeTo) return `${st.rangeFrom} - ${st.rangeTo}`;
   return st.rangeFrom ? `من ${st.rangeFrom}` : `إلى ${st.rangeTo}`;
 }
-function numericPass(key, value) {
-  const st = msState[key];
+function numericPass(tabKey, key, value) {
+  const st = tabState[tabKey].ms[key];
   if (st.mode === 'range') {
     const hasRange = !!st.rangeFrom || !!st.rangeTo;
     if (!hasRange) return true;
-    if (value == null || value === '') return false;   // قيمة مفقودة (مثلاً عدد المحاولات فاضي) — مايطابقش أي نطاق، مش صفر
+    if (value == null || value === '') return false;   // قيمة مفقودة — مايطابقش أي نطاق، مش صفر
     const v = Number(value);
     if (!Number.isFinite(v)) return false;
     const from = st.rangeFrom !== '' ? Number(st.rangeFrom) : -Infinity;
@@ -1535,136 +1450,140 @@ function numericPass(key, value) {
   if (st.selected.size === 0) return true;
   return st.selected.has(String(value));
 }
-function msToggle(key) {
-  const menu = document.getElementById(`msMenu-${key}`), btn = document.getElementById(`msBtn-${key}`);
+function msToggle(tabKey, key) {
+  const menu = document.getElementById(`msMenu-${tabKey}-${key}`), btn = document.getElementById(`msBtn-${tabKey}-${key}`);
   const willOpen = !menu.classList.contains('open');
-  Object.keys(msState).forEach(k => {
-    document.getElementById(`msMenu-${k}`).classList.remove('open');
-    document.getElementById(`msBtn-${k}`).classList.remove('open');
+  FILTER_KEYS.forEach(k => {
+    document.getElementById(`msMenu-${tabKey}-${k}`).classList.remove('open');
+    document.getElementById(`msBtn-${tabKey}-${k}`).classList.remove('open');
   });
   if (willOpen) { menu.classList.add('open'); btn.classList.add('open'); }
 }
-function msToggleItem(key, value) {
-  const st = msState[key];
+function msToggleItem(tabKey, key, value) {
+  const st = tabState[tabKey].ms[key];
   st.selected.has(value) ? st.selected.delete(value) : st.selected.add(value);
-  msRenderList(key); applyFiltersAndRender();
+  msRenderList(tabKey, key); applyFiltersAndRender(tabKey);
 }
-function msToggleSelectAll(key, forceState) {
-  const st = msState[key];
+function msToggleSelectAll(tabKey, key, forceState) {
+  const st = tabState[tabKey].ms[key];
   const allChecked = st.items.length > 0 && st.items.every(it => st.selected.has(it.value));
   const shouldCheck = forceState !== undefined ? forceState : !allChecked;
   st.items.forEach(it => shouldCheck ? st.selected.add(it.value) : st.selected.delete(it.value));
-  msRenderList(key); applyFiltersAndRender();
+  msRenderList(tabKey, key); applyFiltersAndRender(tabKey);
 }
-function msClear(key) {
-  msState[key].selected.clear();
-  msRenderList(key); applyFiltersAndRender();
+function msClear(tabKey, key) {
+  tabState[tabKey].ms[key].selected.clear();
+  msRenderList(tabKey, key); applyFiltersAndRender(tabKey);
 }
 document.addEventListener('click', (e) => {
   if (!document.contains(e.target)) return;
-  Object.keys(msState).forEach(k => {
-    const wrap = document.getElementById(`msWrap-${k}`);
+  TABS.forEach(t => FILTER_KEYS.forEach(k => {
+    const wrap = document.getElementById(`msWrap-${t.key}-${k}`);
     if (wrap && !wrap.contains(e.target)) {
-      document.getElementById(`msMenu-${k}`).classList.remove('open');
-      document.getElementById(`msBtn-${k}`).classList.remove('open');
+      document.getElementById(`msMenu-${t.key}-${k}`).classList.remove('open');
+      document.getElementById(`msBtn-${t.key}-${k}`).classList.remove('open');
     }
-  });
+  }));
 });
 
-function renderMsChips() {
-  Object.keys(msState).forEach(key => {
-    const row = document.getElementById(`chipsRow-${key}`);
+function renderMsChips(tabKey) {
+  FILTER_KEYS.forEach(key => {
+    const row = document.getElementById(`chipsRow-${tabKey}-${key}`);
     if (!row) return;
     const label = filterLabels[key] || key;
-    const valueChips = [...msState[key].selected].map(val => {
-      const item = msState[key].items.find(it => it.value === val);
+    const st = tabState[tabKey].ms[key];
+    const valueChips = [...st.selected].map(val => {
+      const item = st.items.find(it => it.value === val);
       const v = item ? item.label : val;
-      return `<span class="ms-chip">${esc(v)}<button onclick="msToggleItem('${key}','${val.replace(/'/g, "\\'")}')">✕</button></span>`;
+      return `<span class="ms-chip">${esc(v)}<button onclick="msToggleItem('${tabKey}','${key}','${val.replace(/'/g, "\\'")}')">✕</button></span>`;
     }).join('');
-    const rl = rangeLabel(key);
-    const rangeChip = rl ? `<span class="ms-chip">${esc(rl)}<button onclick="msRangeClear('${key}')">✕</button></span>` : '';
+    const rl = rangeLabel(tabKey, key);
+    const rangeChip = rl ? `<span class="ms-chip">${esc(rl)}<button onclick="msRangeClear('${tabKey}','${key}')">✕</button></span>` : '';
     const chips = valueChips + rangeChip;
     row.innerHTML = chips ? `<span class="chips-label">${label}:</span>${chips}` : '';
   });
 }
-function renderLookupChips() {
-  const row = document.getElementById('chipsRow-lookup');
+function renderLookupChips(tabKey) {
+  const row = document.getElementById(`chipsRow-${tabKey}-lookup`);
   const chips = [];
-  const orderVal = document.getElementById('fOrder').value.trim();
-  const trackVal = document.getElementById('fTracking').value.trim();
-  if (orderVal) chips.push(`<span class="ms-chip">${esc(orderVal)}<button onclick="clearLookupField('fOrder')">✕</button></span>`);
-  if (trackVal) chips.push(`<span class="ms-chip">${esc(trackVal)}<button onclick="clearLookupField('fTracking')">✕</button></span>`);
+  const orderVal = document.getElementById(`fOrder-${tabKey}`).value.trim();
+  const trackVal = document.getElementById(`fTracking-${tabKey}`).value.trim();
+  if (orderVal) chips.push(`<span class="ms-chip">${esc(orderVal)}<button onclick="clearLookupField('${tabKey}','fOrder')">✕</button></span>`);
+  if (trackVal) chips.push(`<span class="ms-chip">${esc(trackVal)}<button onclick="clearLookupField('${tabKey}','fTracking')">✕</button></span>`);
   row.innerHTML = chips.length ? `<span class="chips-label">بحث:</span>${chips.join('')}` : '';
 
-  const dateRow = document.getElementById('chipsRow-date');
-  if (dateFilterActive) {
-    const from = document.getElementById('fFrom').value, to = document.getElementById('fTo').value;
-    dateRow.innerHTML = `<span class="chips-label">الفترة:</span><span class="ms-chip">${esc(from)} → ${esc(to)}<button onclick="resetDateFilter(); applyFiltersAndRender();">✕</button></span>`;
+  const dateRow = document.getElementById(`chipsRow-${tabKey}-date`);
+  const ts = tabState[tabKey];
+  if (ts.dateFilterActive) {
+    const from = document.getElementById(`fFrom-${tabKey}`).value, to = document.getElementById(`fTo-${tabKey}`).value;
+    dateRow.innerHTML = `<span class="chips-label">الفترة:</span><span class="ms-chip">${esc(from)} → ${esc(to)}<button onclick="resetDateFilter('${tabKey}'); applyFiltersAndRender('${tabKey}');">✕</button></span>`;
   } else {
     dateRow.innerHTML = '';
   }
 }
-function clearLookupField(id) {
-  const el = document.getElementById(id);
+function clearLookupField(tabKey, id) {
+  const el = document.getElementById(`${id}-${tabKey}`);
   el.value = ''; el.classList.remove('has-value');
-  applyFiltersAndRender();
+  applyFiltersAndRender(tabKey);
 }
 
 // ─── §TOOL-JS::filterIcon — anyFilterActive بـ !!value مش !== null (data-table-standard.md §3) ───
-function anyFilterActive() {
-  const msActive = Object.keys(msState).some(k =>
-    msState[k].selected.size > 0 || !!msState[k].rangeFrom || !!msState[k].rangeTo);
-  const orderVal = document.getElementById('fOrder').value.trim();
-  const trackVal = document.getElementById('fTracking').value.trim();
-  return msActive || !!orderVal || !!trackVal || dateFilterActive;
+function anyFilterActive(tabKey) {
+  const ts = tabState[tabKey];
+  const msActive = FILTER_KEYS.some(k => ts.ms[k].selected.size > 0 || !!ts.ms[k].rangeFrom || !!ts.ms[k].rangeTo);
+  const orderVal = document.getElementById(`fOrder-${tabKey}`).value.trim();
+  const trackVal = document.getElementById(`fTracking-${tabKey}`).value.trim();
+  return msActive || !!orderVal || !!trackVal || ts.dateFilterActive;
 }
-function updateFilterIconState() {
-  const active = anyFilterActive();
-  document.getElementById('fltIcon').classList.toggle('active', active);
-  document.getElementById('clearAllBtn').classList.toggle('inactive', !active);
+function updateFilterIconState(tabKey) {
+  const active = anyFilterActive(tabKey);
+  document.getElementById(`fltIcon-${tabKey}`).classList.toggle('active', active);
+  document.getElementById(`clearAllBtn-${tabKey}`).classList.toggle('inactive', !active);
 }
-function clearAllFilters() {
-  ['fOrder', 'fTracking'].forEach(id => { const el = document.getElementById(id); el.value = ''; el.classList.remove('has-value'); });
-  Object.keys(msState).forEach(k => {
-    const st = msState[k];
+function clearAllFilters(tabKey) {
+  ['fOrder', 'fTracking'].forEach(id => { const el = document.getElementById(`${id}-${tabKey}`); el.value = ''; el.classList.remove('has-value'); });
+  const ts = tabState[tabKey];
+  FILTER_KEYS.forEach(k => {
+    const st = ts.ms[k];
     st.selected.clear();
     if ('rangeFrom' in st) {
       st.mode = 'list'; st.rangeFrom = ''; st.rangeTo = '';
-      const f = document.getElementById(`msRangeFrom-${k}`), t = document.getElementById(`msRangeTo-${k}`);
+      const f = document.getElementById(`msRangeFrom-${tabKey}-${k}`), t = document.getElementById(`msRangeTo-${tabKey}-${k}`);
       if (f) f.value = ''; if (t) t.value = '';
-      document.getElementById(`msModeBtn-${k}-list`).classList.add('active');
-      document.getElementById(`msModeBtn-${k}-range`).classList.remove('active');
-      document.getElementById(`msPanel-${k}-list`).classList.add('active');
-      document.getElementById(`msPanel-${k}-range`).classList.remove('active');
+      document.getElementById(`msModeBtn-${tabKey}-${k}-list`).classList.add('active');
+      document.getElementById(`msModeBtn-${tabKey}-${k}-range`).classList.remove('active');
+      document.getElementById(`msPanel-${tabKey}-${k}-list`).classList.add('active');
+      document.getElementById(`msPanel-${tabKey}-${k}-range`).classList.remove('active');
     }
   });
-  resetDateFilter();
-  Object.keys(msState).forEach(k => msRenderList(k));
-  applyFiltersAndRender();
+  resetDateFilter(tabKey);
+  FILTER_KEYS.forEach(k => msRenderList(tabKey, k));
+  applyFiltersAndRender(tabKey);
 }
-function toggleFilters() {
-  document.getElementById('fltBody').classList.toggle('collapsed');
-  document.getElementById('fltToggleIcon').classList.toggle('open');
+function toggleFilters(tabKey) {
+  document.getElementById(`fltBody-${tabKey}`).classList.toggle('collapsed');
+  document.getElementById(`fltToggleIcon-${tabKey}`).classList.toggle('open');
 }
-function toggleTable() {
-  document.getElementById('tblBodyWrap').classList.toggle('collapsed');
-  document.getElementById('tblToggleIcon').classList.toggle('open');
+function toggleTable(tabKey) {
+  document.getElementById(`tblBodyWrap-${tabKey}`).classList.toggle('collapsed');
+  document.getElementById(`tblToggleIcon-${tabKey}`).classList.toggle('open');
 }
 
-// ─── §TOOL-JS::dateRange — فترة سريعة + من/إلى (date-range-filter.md، بلا افتراضي) ───
+// ─── §TOOL-JS::dateRange — فترة سريعة + من/إلى لكل تاب (date-range-filter.md، بلا افتراضي) ───
 const RANGE_PRESET_LABELS = { today: 'اليوم', yesterday: 'أمس', last7: 'آخر 7 أيام', last30: 'آخر 30 يوم', thisMonth: 'الشهر الحالي', lastMonth: 'الشهر السابق' };
-let activeRangePreset = '';
-let lookupDebounce = null;
+const lookupDebounce = {};
 
-function toggleRangePresetMenu(e) {
+function toggleRangePresetMenu(tabKey, e) {
   e.stopPropagation();
-  const menu = document.getElementById('rangePresetMenu'), btn = document.getElementById('rangePresetBtn');
+  const menu = document.getElementById(`rangePresetMenu-${tabKey}`), btn = document.getElementById(`rangePresetBtn-${tabKey}`);
   const isOpen = menu.classList.contains('open');
   menu.classList.toggle('open', !isOpen); btn.classList.toggle('open', !isOpen);
 }
 document.addEventListener('click', () => {
-  document.getElementById('rangePresetMenu')?.classList.remove('open');
-  document.getElementById('rangePresetBtn')?.classList.remove('open');
+  TABS.forEach(t => {
+    document.getElementById(`rangePresetMenu-${t.key}`)?.classList.remove('open');
+    document.getElementById(`rangePresetBtn-${t.key}`)?.classList.remove('open');
+  });
 });
 function computePresetRange(preset) {
   const today = cairoTodayStr();
@@ -1686,69 +1605,75 @@ function computePresetRange(preset) {
     default: return null;
   }
 }
-function applyRangePreset(preset) {
-  document.getElementById('rangePresetMenu').classList.remove('open');
-  document.getElementById('rangePresetBtn').classList.remove('open');
+function applyRangePreset(tabKey, preset) {
+  document.getElementById(`rangePresetMenu-${tabKey}`).classList.remove('open');
+  document.getElementById(`rangePresetBtn-${tabKey}`).classList.remove('open');
   const range = computePresetRange(preset);
   if (!range) return;
-  activeRangePreset = preset;
-  dateFilterActive = true;
-  document.getElementById('fFrom').value = range.from;
-  document.getElementById('fTo').value = range.to;
-  document.querySelectorAll('.range-preset-item').forEach(el => el.classList.toggle('active', el.dataset.preset === preset));
-  document.getElementById('rangePresetLabel').textContent = `⚡ ${RANGE_PRESET_LABELS[preset]}`;
-  document.getElementById('rangePresetBtn').classList.add('has-preset');
-  loadEvents();
+  const ts = tabState[tabKey];
+  ts.activeRangePreset = preset;
+  ts.dateFilterActive = true;
+  document.getElementById(`fFrom-${tabKey}`).value = range.from;
+  document.getElementById(`fTo-${tabKey}`).value = range.to;
+  document.querySelectorAll(`#tabRoot-${tabKey} .range-preset-item`).forEach(el => el.classList.toggle('active', el.dataset.preset === preset));
+  document.getElementById(`rangePresetLabel-${tabKey}`).textContent = `⚡ ${RANGE_PRESET_LABELS[preset]}`;
+  document.getElementById(`rangePresetBtn-${tabKey}`).classList.add('has-preset');
+  applyFiltersAndRender(tabKey);
 }
-function onRangeDateChange() {
-  activeRangePreset = '';
-  document.querySelectorAll('.range-preset-item').forEach(el => el.classList.remove('active'));
-  document.getElementById('rangePresetLabel').textContent = '⚡ اختار فترة';
-  document.getElementById('rangePresetBtn').classList.remove('has-preset');
-  const fromVal = document.getElementById('fFrom').value, toVal = document.getElementById('fTo').value;
-  dateFilterActive = !!(fromVal || toVal);
+function onRangeDateChange(tabKey) {
+  const ts = tabState[tabKey];
+  ts.activeRangePreset = '';
+  document.querySelectorAll(`#tabRoot-${tabKey} .range-preset-item`).forEach(el => el.classList.remove('active'));
+  document.getElementById(`rangePresetLabel-${tabKey}`).textContent = '⚡ اختار فترة';
+  document.getElementById(`rangePresetBtn-${tabKey}`).classList.remove('has-preset');
+  const fromVal = document.getElementById(`fFrom-${tabKey}`).value, toVal = document.getElementById(`fTo-${tabKey}`).value;
+  ts.dateFilterActive = !!(fromVal || toVal);
   if (fromVal && toVal && fromVal > toVal) return;
-  loadEvents();
+  applyFiltersAndRender(tabKey);
 }
-function resetDateFilter() {
-  activeRangePreset = ''; dateFilterActive = false;
-  document.getElementById('fFrom').value = '';
-  document.getElementById('fTo').value = '';
-  document.getElementById('rangePresetLabel').textContent = '⚡ اختار فترة';
-  document.getElementById('rangePresetBtn').classList.remove('has-preset');
-  document.querySelectorAll('.range-preset-item').forEach(el => el.classList.remove('active'));
+function resetDateFilter(tabKey) {
+  const ts = tabState[tabKey];
+  ts.activeRangePreset = ''; ts.dateFilterActive = false;
+  document.getElementById(`fFrom-${tabKey}`).value = '';
+  document.getElementById(`fTo-${tabKey}`).value = '';
+  document.getElementById(`rangePresetLabel-${tabKey}`).textContent = '⚡ اختار فترة';
+  document.getElementById(`rangePresetBtn-${tabKey}`).classList.remove('has-preset');
+  document.querySelectorAll(`#tabRoot-${tabKey} .range-preset-item`).forEach(el => el.classList.remove('active'));
 }
 
-// ─── §TOOL-JS::sort — 3 حالات، مستقل عن الفلاتر (data-table-standard.md §8) ───
+// ─── §TOOL-JS::sort — 3 حالات، مستقل عن الفلاتر ومستقل عن التاب الآخر (data-table-standard.md §8) ───
 const sortConfig = {
   order: { type: 'string' }, tracking: { type: 'string' }, type: { type: 'string' },
   stateCode: { type: 'number' }, promise: { type: 'date' }, attempts: { type: 'number' },
   time: { type: 'date' }, slot: { type: 'string' }, matchMethod: { type: 'string' }, result: { type: 'string' },
 };
-let sortState = { key: null, dir: null };
-function toggleSort(key) {
-  if (sortState.key !== key) { sortState.key = key; sortState.dir = 'asc'; }
-  else if (sortState.dir === 'asc') { sortState.dir = 'desc'; }
-  else { sortState.key = null; sortState.dir = null; }
-  updateSortHeaderUI();
-  applyFiltersAndRender();
+function toggleSort(tabKey, key) {
+  const ts = tabState[tabKey];
+  if (ts.sort.key !== key) { ts.sort.key = key; ts.sort.dir = 'asc'; }
+  else if (ts.sort.dir === 'asc') { ts.sort.dir = 'desc'; }
+  else { ts.sort.key = null; ts.sort.dir = null; }
+  updateSortHeaderUI(tabKey);
+  applyFiltersAndRender(tabKey);
 }
-function updateSortHeaderUI() {
-  document.querySelectorAll('.sort-icon').forEach(el => {
-    const isActive = sortState.key === el.dataset.sortKey;
-    el.textContent = isActive ? (sortState.dir === 'asc' ? '▲' : '▼') : '';
+function updateSortHeaderUI(tabKey) {
+  const root = document.getElementById(`tabRoot-${tabKey}`);
+  const ts = tabState[tabKey];
+  root.querySelectorAll('.sort-icon').forEach(el => {
+    const isActive = ts.sort.key === el.dataset.sortKey;
+    el.textContent = isActive ? (ts.sort.dir === 'asc' ? '▲' : '▼') : '';
     el.classList.toggle('active', isActive);
   });
-  document.querySelectorAll('.sortable-th').forEach(th => {
-    th.classList.toggle('sorted', th.dataset.sortKey === sortState.key);
+  root.querySelectorAll('.sortable-th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.sortKey === ts.sort.key);
   });
 }
-function applySort(rows) {
-  if (!sortState.key) return rows;
-  const cfg = sortConfig[sortState.key];
-  const dir = sortState.dir === 'asc' ? 1 : -1;
+function applySort(tabKey, rows) {
+  const ts = tabState[tabKey];
+  if (!ts.sort.key) return rows;
+  const cfg = sortConfig[ts.sort.key];
+  const dir = ts.sort.dir === 'asc' ? 1 : -1;
   return [...rows].sort((a, b) => {
-    let av = a[`_sort_${sortState.key}`], bv = b[`_sort_${sortState.key}`];
+    let av = a[`_sort_${ts.sort.key}`], bv = b[`_sort_${ts.sort.key}`];
     if (av == null && bv == null) return 0;
     if (av == null) return 1; if (bv == null) return -1;
     if (cfg.type === 'date') return (av.getTime() - bv.getTime()) * dir;
@@ -1775,28 +1700,40 @@ function eventRowHtml(ev) {
     </tr>`;
 }
 
-// ─── §TOOL::mainTabs — كل الأحداث / Delivered (tabs-and-modals.md §1) ───
-function switchMainTab(tab) {
-  document.getElementById('tabEvents').classList.toggle('active', tab === 'events');
-  document.getElementById('tabDelivered').classList.toggle('active', tab === 'delivered');
-  document.getElementById('panelEvents').classList.toggle('active', tab === 'events');
-  document.getElementById('panelDelivered').classList.toggle('active', tab === 'delivered');
-}
-// أوردرات وصلت لكود حالة Delivered (45) — بغض النظر عن write_status (يشمل
-// شكل الأداة اللي لسه processing أو فشلت كتابتها على شوبيفاي، عشان تبان
-// كمشكلة محتاجة متابعة بدل ما تختفي من التاب). نفس batch list_events
-// المحمّل بالفعل (فلاتر الأوردر/التتبع/التاريخ لسه سارية)، بدون نداء Worker
-// إضافي.
-function renderDeliveredTab() {
-  const rows = rawEvents.filter(ev => Number(ev.state) === 45);
-  document.getElementById('deliveredCount').textContent = rows.length.toLocaleString('en-US');
-  const body = document.getElementById('deliveredBody');
-  body.innerHTML = rows.length
-    ? rows.map(eventRowHtml).join('')
-    : '<tr><td colspan="11">لا توجد أوردرات اتسجّلت Delivered لسه</td></tr>';
+function switchMainTab(tabKey) {
+  TABS.forEach(t => {
+    document.getElementById(`tab-${t.key}`).classList.toggle('active', t.key === tabKey);
+    document.getElementById(`panel-${t.key}`).classList.toggle('active', t.key === tabKey);
+  });
 }
 
-function buildMsItems(events) {
+function tabPartition(tabKey) {
+  return rawEvents.filter(TABS.find(t => t.key === tabKey).match);
+}
+// رقم الأوردر/رقم التتبع — بحث substring بسيط client-side، بديل عن نداء list_events لكل تاب
+function lookupPass(tabKey, ev) {
+  const orderVal = document.getElementById(`fOrder-${tabKey}`).value.trim().replace(/^#/, '').toLowerCase();
+  const trackVal = document.getElementById(`fTracking-${tabKey}`).value.trim().toLowerCase();
+  if (orderVal) {
+    const orderNum = String(ev.order_number || '').toLowerCase();
+    const bizRef = String(ev.business_reference || '').toLowerCase();
+    if (!orderNum.includes(orderVal) && !bizRef.includes(orderVal)) return false;
+  }
+  if (trackVal && !String(ev.tracking_number || '').toLowerCase().includes(trackVal)) return false;
+  return true;
+}
+function datePass(tabKey, ev) {
+  const ts = tabState[tabKey];
+  if (!ts.dateFilterActive) return true;
+  const from = document.getElementById(`fFrom-${tabKey}`).value;
+  const to   = document.getElementById(`fTo-${tabKey}`).value;
+  const d = String(ev.received_at || '').slice(0, 10);
+  if (from && d < from) return false;
+  if (to && d > to) return false;
+  return true;
+}
+
+function buildMsItems(tabKey, events) {
   const typeVals = new Set(), slotVals = new Set(), resultVals = new Set();
   const descVals = new Set(), stateVals = new Set(), attemptVals = new Set();
   events.forEach(ev => {
@@ -1807,28 +1744,32 @@ function buildMsItems(events) {
     if (ev.state != null) stateVals.add(String(ev.state));
     if (ev.number_of_attempts != null) attemptVals.add(String(ev.number_of_attempts));
   });
-  msState.type.items = [...typeVals].sort().map(v => ({ value: v, label: v }));
-  msState.slot.items = [...slotVals].sort().map(v => ({ value: v, label: v === '—' ? '— (بدون تطابق)' : v.toUpperCase() }));
-  msState.result.items = [...resultVals].sort().map(v => ({ value: v, label: RESULT_LABELS[v] || v }));
-  msState.desc.items = [...descVals].sort().map(v => ({ value: v, label: v }));
-  msState.stateCode.items = [...stateVals].sort((a, b) => Number(a) - Number(b)).map(v => ({ value: v, label: v }));
-  msState.attempts.items = [...attemptVals].sort((a, b) => Number(a) - Number(b)).map(v => ({ value: v, label: v }));
-  Object.keys(msState).forEach(k => msRenderList(k));
+  const ms = tabState[tabKey].ms;
+  ms.type.items = [...typeVals].sort().map(v => ({ value: v, label: v }));
+  ms.slot.items = [...slotVals].sort().map(v => ({ value: v, label: v === '—' ? '— (بدون تطابق)' : v.toUpperCase() }));
+  ms.result.items = [...resultVals].sort().map(v => ({ value: v, label: RESULT_LABELS[v] || v }));
+  ms.desc.items = [...descVals].sort().map(v => ({ value: v, label: v }));
+  ms.stateCode.items = [...stateVals].sort((a, b) => Number(a) - Number(b)).map(v => ({ value: v, label: v }));
+  ms.attempts.items = [...attemptVals].sort((a, b) => Number(a) - Number(b)).map(v => ({ value: v, label: v }));
+  FILTER_KEYS.forEach(k => msRenderList(tabKey, k));
 }
 
-function applyFiltersAndRender() {
-  const body = document.getElementById('eventsBody');
-  updateFilterIconState();
-  renderMsChips();
-  renderLookupChips();
+function applyFiltersAndRender(tabKey) {
+  const body = document.getElementById(`eventsBody-${tabKey}`);
+  updateFilterIconState(tabKey);
+  renderMsChips(tabKey);
+  renderLookupChips(tabKey);
 
-  const filtered = rawEvents.filter(ev => {
-    if (msState.type.selected.size && !msState.type.selected.has(ev.bosta_type || '')) return false;
-    if (msState.slot.selected.size && !msState.slot.selected.has(ev.matched_slot || '—')) return false;
-    if (msState.result.selected.size && !msState.result.selected.has(ev.write_status || 'processing')) return false;
-    if (msState.desc.selected.size && !msState.desc.selected.has(ev.description || '—')) return false;
-    if (!numericPass('stateCode', ev.state)) return false;
-    if (!numericPass('attempts', ev.number_of_attempts)) return false;
+  const ms = tabState[tabKey].ms;
+  const filtered = tabPartition(tabKey).filter(ev => {
+    if (ms.type.selected.size && !ms.type.selected.has(ev.bosta_type || '')) return false;
+    if (ms.slot.selected.size && !ms.slot.selected.has(ev.matched_slot || '—')) return false;
+    if (ms.result.selected.size && !ms.result.selected.has(ev.write_status || 'processing')) return false;
+    if (ms.desc.selected.size && !ms.desc.selected.has(ev.description || '—')) return false;
+    if (!numericPass(tabKey, 'stateCode', ev.state)) return false;
+    if (!numericPass(tabKey, 'attempts', ev.number_of_attempts)) return false;
+    if (!lookupPass(tabKey, ev)) return false;
+    if (!datePass(tabKey, ev)) return false;
     return true;
   });
 
@@ -1839,52 +1780,52 @@ function applyFiltersAndRender() {
     _sort_attempts: ev.number_of_attempts, _sort_time: toValidDate(ev.received_at),
     _sort_slot: ev.matched_slot || '—', _sort_matchMethod: ev.match_method, _sort_result: ev.write_status,
   }));
-  const sorted = applySort(decorated);
+  const sorted = applySort(tabKey, decorated);
 
-  document.getElementById('filteredCount').textContent = filtered.length.toLocaleString('en-US');
+  document.getElementById(`filteredCount-${tabKey}`).textContent = filtered.length.toLocaleString('en-US');
   body.innerHTML = sorted.length
     ? sorted.map(eventRowHtml).join('')
     : '<tr><td colspan="11">لا توجد أحداث مطابقة</td></tr>';
 }
 
-function onLookupInput(el) {
+function onLookupInput(tabKey, el) {
   el.classList.toggle('has-value', el.value.trim().length > 0);
-  clearTimeout(lookupDebounce);
-  lookupDebounce = setTimeout(loadEvents, 400);
+  clearTimeout(lookupDebounce[tabKey]);
+  lookupDebounce[tabKey] = setTimeout(() => applyFiltersAndRender(tabKey), 300);
 }
 
 // 🔴 مفيش سقف تحميل هنا خالص — list_events بترجع 500 كحد أقصى للنداء
-// الواحد (الحد الأقصى القديم 200 اتشال من الـ Worker)، فبنسحب كل الصفحات
-// المطابقة بالتتابع لحد ما نوصل لصفحة أقل من LOAD_PAGE_SIZE. أي سقف تاني
-// هنا بيرجّعنا لنفس مشكلة "آخر 200 حدث بس" اللي كانت بتقص أحداث قديمة من
-// الشاشة من غير أي إشارة.
+// الواحد، فبنسحب كل الصفحات بالتتابع لحد ما نوصل لصفحة أقل من
+// LOAD_PAGE_SIZE. الحمل بيتم مرة واحدة بدون أي فلتر سيرفر (أوردر/تتبع/
+// تاريخ) — كل الفلترة دلوقتي client-side ومستقلة لكل تاب (راجع §TOOL::tabs)،
+// فمفيش داعي نبعت فلاتر للـ Worker أصلًا.
 const LOAD_PAGE_SIZE = 500;
 
 async function loadEvents() {
-  const body = document.getElementById('eventsBody');
-  body.innerHTML = '<tr><td colspan="11">...جاري التحميل</td></tr>';
+  TABS.forEach(t => {
+    const body = document.getElementById(`eventsBody-${t.key}`);
+    if (body) body.innerHTML = '<tr><td colspan="11">...جاري التحميل</td></tr>';
+  });
   try {
-    const baseParams = {
-      order:    document.getElementById('fOrder').value.trim(),
-      tracking: document.getElementById('fTracking').value.trim(),
-      dateFrom: document.getElementById('fFrom').value,
-      dateTo:   document.getElementById('fTo').value,
-    };
     let all = [];
     let offset = 0;
     while (true) {
-      const data = await apiGet('list_events', { ...baseParams, limit: LOAD_PAGE_SIZE, offset });
+      const data = await apiGet('list_events', { limit: LOAD_PAGE_SIZE, offset });
       const page = data.events || [];
       all = all.concat(page);
       if (page.length < LOAD_PAGE_SIZE) break;
       offset += LOAD_PAGE_SIZE;
     }
     rawEvents = all;
-    buildMsItems(rawEvents);
-    applyFiltersAndRender();
-    renderDeliveredTab();
+    TABS.forEach(t => {
+      buildMsItems(t.key, tabPartition(t.key));
+      applyFiltersAndRender(t.key);
+    });
   } catch (e) {
-    body.innerHTML = `<tr><td colspan="11">${esc(e.message)}</td></tr>`;
+    TABS.forEach(t => {
+      const body = document.getElementById(`eventsBody-${t.key}`);
+      if (body) body.innerHTML = `<tr><td colspan="11">${esc(e.message)}</td></tr>`;
+    });
   }
 }
 
@@ -1934,6 +1875,7 @@ async function refreshDiagBanners() {
 // ══════════════════════════════════════════════════════
 // §INIT
 // ══════════════════════════════════════════════════════
+TABS.forEach(t => { document.getElementById(`tabRoot-${t.key}`).innerHTML = buildTabPanelHtml(t.key); });
 renderVersionUI();
 updateSettingsBtn();
 checkWorkerVersion();

@@ -2,14 +2,14 @@
 
 # مستقبل حالة شحنات بوسطة (`Bosta-Webhook-Status-Receiver`)
 
-![version](https://img.shields.io/badge/version-v1.4.1-blue)
+![version](https://img.shields.io/badge/version-v1.5.0-blue)
 
 > بيتحمّل أوتوماتيك في كل جلسة Claude — في Claude Code وCowork.
 
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.4.0` · الواجهة `v1.4.1`
+**الإصدار:** Worker `v1.5.0` · الواجهة `v1.5.0`
 
 ---
 
@@ -133,6 +133,13 @@ CREATE TABLE IF NOT EXISTS bosta_webhook_events (id INTEGER PRIMARY KEY AUTOINCR
 > بعد كده مطابقة S1/S2 أو الكتابة) — الأحداث اللي `الأوردر مش موجود على
 > شوبيفاي` (`match_failed` من غير `orderNode`) بتفضل من غير قيمة، ورقم
 > الأوردر في الشاشة بيبقى نص عادي بلا هايبرلينك ليها.
+
+> 🔴 **`write_status = 'delivered_duplicate_skipped'` (v1.5.0)** — قيمة جديدة
+> على عمود موجود بالفعل، مفيش تعديل schema. بتتكتب لما حدث Delivered (كود 45)
+> يوصل لأوردر/slot اتسجّل عليه Delivered بنجاح فعليًا (`write_status='written'`)
+> قبل كده — الحدث بيتسجّل في `bosta_webhook_events` عادي (وفي `logs` بنوع
+> `status_event`) لكن **من غير أي نداء `metafieldsSet` تاني**. راجع "فخاخ الأداة
+> دي" تحت لتفاصيل القرار.
 
 ## الأسرار — لسه محتاجة تتسجّل على Cloudflare (Dashboard → Settings → Variables → Secret)
 
@@ -262,6 +269,16 @@ Production branch : main · Builds for non-production branches: ON
   أو بيرتّب على حقل تاريخ **مش من `received_at`** (اللي الـ Worker نفسه
   بيكتبه بـ `.toISOString()` فمضمون) لازم يعدّي عليها الأول، مش يستخدم
   `new Date(v)` مباشرة.
+- 🔴 **حدث Delivered تاني على نفس الأوردر/الـ slot مايكتبش على شوبيفاي تاني
+  (قرار أحمد 26-09-2026).** بوسطة بتبعت أكتر من حدث بنفس الحالة أحيانًا
+  (تأكيد/إعادة إرسال)، وإعادة نفس الكتابة على `bosta_webhook_status_update_s1`/
+  `_s2` وتاريخ التحديث كل مرة مالهاش داعي. الحارس في `matchAndWriteMetafields`
+  (قبل §4.2) بيدوّر على صف تاني بنفس `business_reference`+`matched_slot`+
+  `state=45`+`write_status='written'` قبل ما يكمل — لو لقى، الحدث الجديد
+  بيتسجّل بـ `write_status='delivered_duplicate_skipped'` من غير أي نداء
+  `metafieldsSet`. **الحارس مبني على `matched_slot` مش على `state` بس** — لو
+  الأوردر اتسجّل Delivered على S1 وبعدين جالك حدث Delivered تاني على S2 (نادر
+  لكن ممكن نظريًا)، الحدث ده هيتكتب عادي لأنه slot مختلف.
 
 ## مسائل مفتوحة (§2.4 من التكليف الأصلي — تتقفل بالتشغيل)
 
@@ -297,11 +314,43 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 | ecommoda-worker-builder | v3.7.1 |
 | bosta-api-helper | v6.0.0 |
 | ecommoda-constants | v3.1.0 |
-| ecommoda-html-builder | v7.2.0 |
+| ecommoda-html-builder | v8.0.1 |
 | ecommoda-tool-migration-playbook | (بلا رقم إصدار ظاهر وقت القراءة) |
 
-آخر مطابقة: 25-09-2026 · `index.js` v1.4.0 · `index.html` v1.4.1
+آخر مطابقة: 26-09-2026 · `index.js` v1.5.0 · `index.html` v1.5.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
+
+### 26-09-2026 — 4 تابات مستقلة تمامًا + منع إعادة الكتابة على Delivered تاني (`index.js` v1.5.0 · `index.html` v1.5.0)
+
+- **بطلب أحمد** — 5 تغييرات مع بعض في تسليم واحد:
+  1. **التابات بقت مستقلة تمامًا** — قبل كده تاب "✅ Delivered" كان بيقرا نفس
+     `rawEvents` اللي التاب الأول محمّلها وبيتأثر بفلتر الأوردر/التتبع/التاريخ
+     بتاعه (server-side وقتها). دلوقتي كل تاب معاه نسخته الخاصة من الفلاتر
+     (اختيار متعدد + بحث + فترة + ترتيب) — `tabState[tabKey]` منفصل بالكامل،
+     ومفيش أي state متشارك. التحميل من `list_events` بقى نداء واحد بلا فلاتر
+     (كل الفلترة بقت client-side)، فمفيش تكلفة نداءات إضافية رغم استقلال
+     التابات.
+  2. **تاب "📋 كل الأحداث" اتسمّى "🚚 الأوردرات تحت التوصيل"** وبقى بيستبعد
+     أحداث الحالات 45 (Delivered) و46 (Returned to business) و47 (Exception) —
+     دول بقى ليهم تابات مستقلة (بند 3-5).
+  3. **تاب "✅ Delivered" القديم بقى "🗄 الأرشيف"** (آخر تاب في الترتيب،
+     `state === 45`) — نفس منطق العرض القديم (كل `write_status`، مش
+     `written` بس)، الاسم والمكان بس اتغيّروا.
+  4. **تاب جديد "⚠️ Exception"** (`state === 47`).
+  5. **تاب جديد "↩️ Returned to business"** (`state === 46`).
+  - `TOOL_VERSION` اتصعّد لـ `1.5.0`، و`MIN_WORKER_VERSION` كمان لـ `1.5.0`
+    (البند التالي).
+- **منع إعادة الكتابة على شوبيفاي لحدث Delivered تاني على نفس الأوردر/الـ
+  slot** — `matchAndWriteMetafields` (index.js) بقى بيدوّر على صف سابق ناجح
+  (`write_status='written'`, `state=45`, نفس `business_reference`+
+  `matched_slot`) قبل ما يكمل لـ §4.2. لو لقى، بيسجّل الحدث الجديد
+  بـ `write_status='delivered_duplicate_skipped'` (قيمة جديدة على عمود موجود،
+  مفيش schema change) **من غير أي نداء `metafieldsSet`** — الحدث بيبان في
+  السجل والشاشة بس. `RESULT_LABELS`/`resultBadge` في `index.html` اتحدّثوا
+  بالقيمة الجديدة (بادج محايد `badge-neutral`). `WORKER_VERSION` اتصعّد لـ
+  `1.5.0`.
+- **مفيش تغيير SQL/Schema** — القيمة الجديدة كتابة عادية في عمود
+  `write_status` النصي الموجود بالفعل.
 
 ### 25-09-2026 — إلغاء فلاج `WRITE_METAFIELDS`: الكتابة على شوبيفاي بقت سلوك دائم (`index.js` v1.4.0)
 
@@ -485,6 +534,6 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
   + `extra._unregistered = true` + UPSERT في `log_value_alerts` (الجدول
   المشترك، **مش** اتعمل هنا).
 
-آخر تحديث: 25-09-2026
+آخر تحديث: 26-09-2026
 
 </div>
