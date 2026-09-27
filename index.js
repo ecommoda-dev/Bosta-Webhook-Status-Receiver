@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.5.0';
+const WORKER_VERSION = '1.6.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -562,24 +562,30 @@ async function matchAndWriteMetafields(env, rowId, n) {
     return;
   }
 
-  // §4.1b — قرار أحمد 26-09-2026: أوردر وصله حدث Delivered (45) واتسجّل عليه
-  // فعليًا (write_status='written') قبل كده على نفس الـ slot، أي حدث Delivered
-  // تاني بعده بيتسجّل في bosta_webhook_events للعرض بس — مفيش أي نداء شوبيفاي
-  // تاني. بوسطة بتبعت أكتر من حدث بنفس الحالة أحيانًا (إعادة إرسال/تأكيد)،
-  // وإعادة كتابة نفس القيمة مالهاش داعي.
-  if (n.state === 45) {
+  // §4.1b — قرار أحمد 26-09-2026 (Delivered 45) + 27-09-2026 (Returned to
+  // business 46): أوردر وصله حدث بالحالة دي واتسجّل عليه فعليًا
+  // (write_status='written') قبل كده على نفس الـ slot، أي حدث تاني بنفس الحالة
+  // بعده بيتسجّل في bosta_webhook_events للعرض بس — مفيش أي نداء شوبيفاي تاني.
+  // بوسطة بتبعت أكتر من حدث بنفس الحالة أحيانًا (إعادة إرسال/تأكيد)، وإعادة
+  // كتابة نفس القيمة مالهاش داعي.
+  const DUPLICATE_GUARDED_STATES = {
+    45: { writeStatus: 'delivered_duplicate_skipped', label: 'Delivered' },
+    46: { writeStatus: 'returned_duplicate_skipped',  label: 'Returned to business' },
+  };
+  const dupGuard = DUPLICATE_GUARDED_STATES[n.state];
+  if (dupGuard) {
     const dup = await env.DB.prepare(
       `SELECT id FROM bosta_webhook_events
-       WHERE business_reference = ? AND matched_slot = ? AND state = 45
+       WHERE business_reference = ? AND matched_slot = ? AND state = ?
          AND write_status = 'written' AND id != ? LIMIT 1`
-    ).bind(n.businessReference, slot, rowId).first();
+    ).bind(n.businessReference, slot, n.state, rowId).first();
     if (dup) {
-      await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: 'delivered_duplicate_skipped', shopify_order_id: orderNode.legacyResourceId });
+      await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: dupGuard.writeStatus, shopify_order_id: orderNode.legacyResourceId });
       await writeLog(env.DB, {
         tool: TOOL_NAME, type: 'status_event',
         orderId: orderNode.legacyResourceId, orderName: n.businessReference,
-        notes: `حدث Delivered تاني على ${slot.toUpperCase()} — الأوردر اتسجّل Delivered بنجاح على شوبيفاي قبل كده، الحدث ده اتسجّل في السجل بس بدون أي كتابة تانية`,
-        extra: { result: 'already', slot, matchMethod, bostaId: n.bostaId, duplicateDelivered: true },
+        notes: `حدث ${dupGuard.label} تاني على ${slot.toUpperCase()} — الأوردر اتسجّل ${dupGuard.label} بنجاح على شوبيفاي قبل كده، الحدث ده اتسجّل في السجل بس بدون أي كتابة تانية`,
+        extra: { result: 'already', slot, matchMethod, bostaId: n.bostaId, duplicateState: n.state, duplicateDelivered: n.state === 45 },
       }).catch(() => {});
       return;
     }

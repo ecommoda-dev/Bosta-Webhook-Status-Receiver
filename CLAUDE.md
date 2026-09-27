@@ -2,14 +2,14 @@
 
 # مستقبل حالة شحنات بوسطة (`Bosta-Webhook-Status-Receiver`)
 
-![version](https://img.shields.io/badge/version-v1.6.0-blue)
+![version](https://img.shields.io/badge/version-v1.7.0-blue)
 
 > بيتحمّل أوتوماتيك في كل جلسة Claude — في Claude Code وCowork.
 
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.5.0` · الواجهة `v1.6.0`
+**الإصدار:** Worker `v1.6.0` · الواجهة `v1.7.0`
 
 ---
 
@@ -279,6 +279,15 @@ Production branch : main · Builds for non-production branches: ON
   `metafieldsSet`. **الحارس مبني على `matched_slot` مش على `state` بس** — لو
   الأوردر اتسجّل Delivered على S1 وبعدين جالك حدث Delivered تاني على S2 (نادر
   لكن ممكن نظريًا)، الحدث ده هيتكتب عادي لأنه slot مختلف.
+  🔴 **نفس الحارس بقى على Returned to business (كود 46) كمان (قرار أحمد
+  27-09-2026)** — `write_status='returned_duplicate_skipped'`، نفس الشروط
+  بالظبط (`business_reference`+`matched_slot`+`state=46`+`written`). الحالتين
+  متعرّفين في `DUPLICATE_GUARDED_STATES` في `index.js` — أي حالة تالتة تتضاف
+  هناك بس.
+- 🔴 **الأرشفة في الشاشة بتتفعّل بكود 45 أو 46** (`ARCHIVE_TRIGGER_STATES` في
+  `index.html`) — رقم تتبع وصله Delivered أو Returned to business ولو مرة، كل
+  سجلاته بتروح تاب الأرشيف وبتتشال من "الأوردرات تحت التوصيل". تاب "↩️ Returned
+  to business" نفسه بيفضل يعرض أحداث كود 46 بس.
 
 ## مسائل مفتوحة (§2.4 من التكليف الأصلي — تتقفل بالتشغيل)
 
@@ -317,8 +326,25 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 | ecommoda-html-builder | v8.0.1 |
 | ecommoda-tool-migration-playbook | (بلا رقم إصدار ظاهر وقت القراءة) |
 
-آخر مطابقة: 26-09-2026 · `index.js` v1.5.0 · `index.html` v1.6.0
+آخر مطابقة: 27-09-2026 · `index.js` v1.6.0 · `index.html` v1.7.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
+
+### 27-09-2026 — نمط Delivered اتكرّر على Returned to business (`index.js` v1.6.0 · `index.html` v1.7.0)
+
+- **بطلب أحمد** — نفس السلوكين اللي على Delivered (45) بقوا على Returned to
+  business (46):
+  1. **Worker:** حدث 46 تاني على نفس `business_reference`+`matched_slot` بعد
+     أول 46 اتكتب بنجاح (`written`) بيتسجّل بـ
+     `write_status='returned_duplicate_skipped'` من غير أي نداء
+     `metafieldsSet`. الحارس اتعمم في `DUPLICATE_GUARDED_STATES` (45 و46)
+     بدل شرط `state === 45` الثابت. مفيش schema change ولا قيمة `type` جديدة
+     (لسه `status_event` بـ `result: 'already'`).
+  2. **الواجهة:** `computeArchivedTrackingNumbers()` بقت بتأرشف على
+     `ARCHIVE_TRIGGER_STATES = {45, 46}` — كل سجلات رقم التتبع اللي وصل 46
+     بتتنقل للأرشيف وبتتشال من "🚚 الأوردرات تحت التوصيل". تاب "↩️ Returned to
+     business" ما اتغيّرش (كود 46 بس). بادج/ليبل جديد للقيمة الجديدة.
+- `WORKER_VERSION` → `1.6.0`، `MIN_WORKER_VERSION` → `1.6.0`، `TOOL_VERSION` →
+  `v1.7.0`.
 
 ### 26-09-2026 — تصحيح: تاب "الأرشيف" الحقيقي — تجميع كل سجلات رقم التتبع، مش مجرد إعادة تسمية (`index.html` v1.6.0)
 
@@ -566,6 +592,6 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
   + `extra._unregistered = true` + UPSERT في `log_value_alerts` (الجدول
   المشترك، **مش** اتعمل هنا).
 
-آخر تحديث: 26-09-2026
+آخر تحديث: 27-09-2026
 
 </div>

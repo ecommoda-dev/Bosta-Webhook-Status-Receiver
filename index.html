@@ -469,6 +469,16 @@ body {
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">27-09-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>Returned to business (كود 46) بقى بيأرشف زي Delivered بالظبط.</b> بمجرد ما رقم تتبع يوصله حدث Returned to business ولو مرة واحدة، <b>كل سجلاته</b> (بكل الحالات اللي مرّ بيها) بتتنقل لتاب <b>🗄 الأرشيف</b> وبتتشال بالكامل من <b>🚚 الأوردرات تحت التوصيل</b>. تاب <b>↩️ Returned to business</b> لسه بيعرض أحداث كود 46 بس.</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>حدث Returned to business تاني على نفس الأوردر مش بيكتب على شوبيفاي تاني.</b> لو الأوردر اتسجّل عليه Returned to business بنجاح (<code>write_status='written'</code>) قبل كده على نفس الـ slot، أي تكرار بعده بيتسجّل في السجل بس (<code>write_status='returned_duplicate_skipped'</code>) — بدون نداء شوبيفاي. يتطلب <code>Worker ≥ v1.6.0</code>.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.6.0</span>
           <span class="cl-ver-date">26-09-2026</span>
         </div>
         <ul class="cl-items">
@@ -613,10 +623,10 @@ body {
           <h4>FEATURE MAP</h4>
           <ul>
             <li><code>§SHELL</code> — App Shell + Login + Settings/About/Changelog modals</li>
-            <li><code>§TOOL::tabs</code> — 5 تابات، كل واحدة بفلاتر/بحث/فترة/ترتيب مستقل بالكامل: 🚚 الأوردرات تحت التوصيل (كل حدث مش Delivered/Exception/Returned to business، وبيستبعد كمان أرقام التتبع المؤرشفة)، ⚠️ Exception (كود 47)، ↩️ Returned to business (كود 46)، ✅ Delivered (كود 45)، 🗄 الأرشيف (آخر تاب — كل سجلات أي رقم تتبع وصل لـ Delivered، بكل حالاته)</li>
+            <li><code>§TOOL::tabs</code> — 5 تابات، كل واحدة بفلاتر/بحث/فترة/ترتيب مستقل بالكامل: 🚚 الأوردرات تحت التوصيل (كل حدث مش Delivered/Exception/Returned to business، وبيستبعد كمان أرقام التتبع المؤرشفة)، ⚠️ Exception (كود 47)، ↩️ Returned to business (كود 46)، ✅ Delivered (كود 45)، 🗄 الأرشيف (آخر تاب — كل سجلات أي رقم تتبع وصل لـ Delivered أو Returned to business، بكل حالاته)</li>
             <li><code>buildTabPanelHtml()</code> / <code>buildMsFilterHtml()</code> — بيولّدوا HTML الفلاتر والجدول لكل تاب في وقت التحميل (بدل تكرار 5 نسخ يدويًا في الـ HTML)، بـ id namespaced بـ <code>tabKey</code></li>
             <li><code>tabState[tabKey]</code> — فلاتر اختيار متعدد + بحث أوردر/تتبع + فترة تاريخ + ترتيب، لكل تاب نسخة مستقلة بالكامل (مفيش state متشارك بين التابات)</li>
-            <li><code>computeArchivedTrackingNumbers()</code> — Set بكل <code>tracking_number</code> وصلها حدث بكود حالة 45 مرة واحدة على الأقل، بيتحسب مرة واحدة بعد كل تحميل ويتقرا من تابي "الأوردرات تحت التوصيل" (استبعاد) و"الأرشيف" (تجميع) — مش من تاب Delivered/Exception/Returned to business</li>
+            <li><code>computeArchivedTrackingNumbers()</code> — Set بكل <code>tracking_number</code> وصلها حدث بكود حالة 45 أو 46 مرة واحدة على الأقل، بيتحسب مرة واحدة بعد كل تحميل ويتقرا من تابي "الأوردرات تحت التوصيل" (استبعاد) و"الأرشيف" (تجميع) — مش من تاب Delivered/Exception/Returned to business</li>
             <li><code>tabPartition(tabKey)</code> — بيفلتر <code>rawEvents</code> حسب <code>state</code> (+ حالة الأرشفة لتابي main/archive)</li>
             <li><code>§TOOL-JS::numericFilter</code> — فلاتر كود الحالة وعدد المحاولات: تبويبا قائمة قيم/نطاق من-إلى متبادلان (<code>data-table-standard.md</code> §4)</li>
             <li><code>§TOOL-JS::dateRange</code> — فترة سريعة + من/إلى تاريخ لكل تاب (بدون افتراضي، client-side بالكامل)</li>
@@ -637,7 +647,7 @@ body {
             <li>الأداة مالهاش أي زرار تنفيذ فعل — كل الكتابة على شوبيفاي بتحصل من الـ Worker وحده عند استقبال ويبهوك.</li>
             <li>بانر السكوت وبانر فشل المطابقة (في تاب "الأوردرات تحت التوصيل" بس) بيتحدّثوا من <code>diag</code> كل دقيقة أثناء فتح الشاشة.</li>
             <li>كل فلاتر التابات (اختيار متعدد + بحث أوردر/تتبع + فترة تاريخ) بقت client-side بالكامل على <code>rawEvents</code> المحمّلة مرة واحدة — <code>list_events</code> بيتنادى من غير أي فلتر سيرفر، فمفيش نداء Worker إضافي لأي تاب أو أي فلتر (v1.5.0).</li>
-            <li>الأرشفة بـ <code>tracking_number</code> مش <code>business_reference</code> — لو الأوردر عنده رقمين تتبع (S1 وS2) وواحد بس وصل Delivered، سجلات الرقم التاني (لسه شغّال) بتفضل في "الأوردرات تحت التوصيل" عادي (v1.6.0).</li>
+            <li>الأرشفة بـ <code>tracking_number</code> مش <code>business_reference</code> — لو الأوردر عنده رقمين تتبع (S1 وS2) وواحد بس وصل Delivered أو Returned to business، سجلات الرقم التاني (لسه شغّال) بتفضل في "الأوردرات تحت التوصيل" عادي (v1.6.0).</li>
             <li>رقم الأوردر بيبقى نص عادي (بدون لينك) لو <code>shopify_order_id</code> فاضي — بيحصل ده للأحداث اللي فشلت مطابقتها أو حصلت قبل ترقية الـ Worker لـ v1.2.0 (fallback <code>.order-num</code>، design-system.md).</li>
             <li><code>toValidDate()</code> بترجّع <code>—</code> بدل ما ترمي استثناء لو <code>delivery_promise_date</code> (أو أي تاريخ تاني راجع من بوسطة) مش بصيغة يقدر <code>Date</code> يفهمها — فحدث واحد بتاريخ غريب بيفضل يعرض بقية الصفوف، مش يوقف الجدول كله (v1.3.1).</li>
           </ul>
@@ -739,8 +749,10 @@ body {
 //    بدل ما تعيد الكتابة على شوبيفاي لحدث Delivered تاني — Worker أقدم هيكتب
 //    عادي على كل حدث Delivered (مفيش ضرر فعلي، القيمة نفسها)، بس الشاشة مش
 //    هتعرف تفرّق الحدث الأول عن التاني في عمود "النتيجة".
-const MIN_WORKER_VERSION = '1.5.0';
-const TOOL_VERSION       = 'v1.6.0';
+// 🔴 1.6.0 = أول نسخة Worker بتكتب write_status='returned_duplicate_skipped'
+//    لحدث Returned to business (46) تاني على نفس الأوردر/الـ slot.
+const MIN_WORKER_VERSION = '1.6.0';
+const TOOL_VERSION       = 'v1.7.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1184,6 +1196,7 @@ function updateLoginSettingsBtn() {
 const RESULT_LABELS = {
   written:                     'تم التسجيل',
   delivered_duplicate_skipped: 'Delivered مسبقًا — بدون كتابة',
+  returned_duplicate_skipped:  'Returned مسبقًا — بدون كتابة',
   dry_run_matched:             'تطابق (بدون كتابة)',
   stale_skipped:                'أقدم من المكتوب',
   match_failed:                 'فشلت المطابقة',
@@ -1192,7 +1205,7 @@ const RESULT_LABELS = {
 };
 function resultBadge(status) {
   const clsMap = {
-    written: 'badge-success', delivered_duplicate_skipped: 'badge-neutral', dry_run_matched: 'badge-warn',
+    written: 'badge-success', delivered_duplicate_skipped: 'badge-neutral', returned_duplicate_skipped: 'badge-neutral', dry_run_matched: 'badge-warn',
     stale_skipped: 'badge-neutral', match_failed: 'badge-danger', shopify_write_failed: 'badge-danger',
     processing: 'badge-neutral',
   };
@@ -1204,16 +1217,19 @@ function resultBadge(status) {
 // ─── §TOOL::tabs — 5 تابات، كل واحدة بيانات + فلاتر + جدول + ترتيب مستقلين تمامًا ───
 // كل تاب (عدا الأرشيف) بيفلتر نفس rawEvents المحمّلة مرة واحدة حسب state.
 // تاب "🗄 الأرشيف" مختلف: مش بيفلتر بـ state — بيجمع **كل** سجلات أي رقم
-// تتبع وصلت حالته لـ Delivered (كود 45) مرة واحدة على الأقل، بكل حالاته
+// تتبع وصلت حالته لـ Delivered (كود 45) أو Returned to business (كود 46) مرة
+// واحدة على الأقل، بكل حالاته
 // (21/24/30/41/45/...)، وتاب "🚚 الأوردرات تحت التوصيل" بيستبعد نفس أرقام
 // التتبع دي بالكامل (قرار أحمد 26-09-2026 — راجع CLAUDE.md). تاب "✅
 // Delivered" (كود 45 بس) و"⚠️ Exception"/"↩️ Returned to business" **مش**
 // بيستبعدوا أرقام التتبع المؤرشفة — لسه بيعرضوا كل حدث مطابق للحالة زي ما
 // هما، الأرشيف عرض تجميعي إضافي مش بديل عنهم.
+// 🔴 27-09-2026 — Returned to business (46) بقى بيأرشف زي Delivered (45) بالظبط.
+const ARCHIVE_TRIGGER_STATES = new Set([45, 46]);
 let archivedTrackingNumbers = new Set();
 function computeArchivedTrackingNumbers(events) {
   const s = new Set();
-  events.forEach(ev => { if (Number(ev.state) === 45 && ev.tracking_number) s.add(String(ev.tracking_number)); });
+  events.forEach(ev => { if (ARCHIVE_TRIGGER_STATES.has(Number(ev.state)) && ev.tracking_number) s.add(String(ev.tracking_number)); });
   return s;
 }
 const TABS = [
