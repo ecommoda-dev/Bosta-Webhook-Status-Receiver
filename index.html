@@ -472,6 +472,16 @@ body {
           <span class="cl-ver-date">27-09-2026</span>
         </div>
         <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>تاب ⚠️ Exception بقى بيستبعد أرقام التتبع اللي وصلت حالة نهائية.</b> رقم تتبع وصله Delivered (45) أو Returned to business (46) ولو مرة واحدة، أحداث Exception (47) بتاعته بتختفي من تاب Exception (بتفضل ظاهرة في تاب 🗄 الأرشيف بس) — بيستخدم نفس <code>archivedTrackingNumbers</code> اللي بتستبعدها تاب "🚚 الأوردرات تحت التوصيل". مفيش تغيير Worker.</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>عمود وفلتر "الحالة" (S1/S2) اتسمى <b>"نوع الأوردر"</b> في كل التابات — القيمة المعروضة بقت S1 ← "عادي"، S2 ← "استبدال/استرجاع" بدل الرمز الخام. عمود وفلتر "النوع" (<code>bosta_type</code>) اتسمى <b>"نوع الشحنة"</b> في كل التابات. البيانات في D1 ما اتغيّرتش، التسمية والقيم المعروضة في الواجهة بس.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.7.0</span>
+          <span class="cl-ver-date">27-09-2026</span>
+        </div>
+        <ul class="cl-items">
           <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>Returned to business (كود 46) بقى بيأرشف زي Delivered بالظبط.</b> بمجرد ما رقم تتبع يوصله حدث Returned to business ولو مرة واحدة، <b>كل سجلاته</b> (بكل الحالات اللي مرّ بيها) بتتنقل لتاب <b>🗄 الأرشيف</b> وبتتشال بالكامل من <b>🚚 الأوردرات تحت التوصيل</b>. تاب <b>↩️ Returned to business</b> لسه بيعرض أحداث كود 46 بس.</span></li>
           <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>حدث Returned to business تاني على نفس الأوردر مش بيكتب على شوبيفاي تاني.</b> لو الأوردر اتسجّل عليه Returned to business بنجاح (<code>write_status='written'</code>) قبل كده على نفس الـ slot، أي تكرار بعده بيتسجّل في السجل بس (<code>write_status='returned_duplicate_skipped'</code>) — بدون نداء شوبيفاي. يتطلب <code>Worker ≥ v1.6.0</code>.</span></li>
         </ul>
@@ -623,10 +633,11 @@ body {
           <h4>FEATURE MAP</h4>
           <ul>
             <li><code>§SHELL</code> — App Shell + Login + Settings/About/Changelog modals</li>
-            <li><code>§TOOL::tabs</code> — 5 تابات، كل واحدة بفلاتر/بحث/فترة/ترتيب مستقل بالكامل: 🚚 الأوردرات تحت التوصيل (كل حدث مش Delivered/Exception/Returned to business، وبيستبعد كمان أرقام التتبع المؤرشفة)، ⚠️ Exception (كود 47)، ↩️ Returned to business (كود 46)، ✅ Delivered (كود 45)، 🗄 الأرشيف (آخر تاب — كل سجلات أي رقم تتبع وصل لـ Delivered أو Returned to business، بكل حالاته)</li>
+            <li><code>§TOOL::tabs</code> — 5 تابات، كل واحدة بفلاتر/بحث/فترة/ترتيب مستقل بالكامل: 🚚 الأوردرات تحت التوصيل (كل حدث مش Delivered/Exception/Returned to business، وبيستبعد كمان أرقام التتبع المؤرشفة)، ⚠️ Exception (كود 47، وبيستبعد هو كمان أرقام التتبع المؤرشفة)، ↩️ Returned to business (كود 46)، ✅ Delivered (كود 45)، 🗄 الأرشيف (آخر تاب — كل سجلات أي رقم تتبع وصل لـ Delivered أو Returned to business، بكل حالاته)</li>
             <li><code>buildTabPanelHtml()</code> / <code>buildMsFilterHtml()</code> — بيولّدوا HTML الفلاتر والجدول لكل تاب في وقت التحميل (بدل تكرار 5 نسخ يدويًا في الـ HTML)، بـ id namespaced بـ <code>tabKey</code></li>
             <li><code>tabState[tabKey]</code> — فلاتر اختيار متعدد + بحث أوردر/تتبع + فترة تاريخ + ترتيب، لكل تاب نسخة مستقلة بالكامل (مفيش state متشارك بين التابات)</li>
-            <li><code>computeArchivedTrackingNumbers()</code> — Set بكل <code>tracking_number</code> وصلها حدث بكود حالة 45 أو 46 مرة واحدة على الأقل، بيتحسب مرة واحدة بعد كل تحميل ويتقرا من تابي "الأوردرات تحت التوصيل" (استبعاد) و"الأرشيف" (تجميع) — مش من تاب Delivered/Exception/Returned to business</li>
+            <li><code>computeArchivedTrackingNumbers()</code> — Set بكل <code>tracking_number</code> وصلها حدث بكود حالة 45 أو 46 مرة واحدة على الأقل، بيتحسب مرة واحدة بعد كل تحميل ويتقرا من تابي "الأوردرات تحت التوصيل" و"⚠️ Exception" (استبعاد) و"الأرشيف" (تجميع) — مش من تاب Delivered/Returned to business</li>
+            <li><code>slotLabel()</code> — بيحوّل <code>matched_slot</code> (S1/S2 الخام) لليبل عمود "نوع الأوردر" المعروض: S1 ← "عادي"، S2 ← "استبدال/استرجاع"، أي قيمة تانية بترجع كابيتال زي ما هي. عمود "النوع" (<code>bosta_type</code> — SEND/RTO/EXCHANGE...) اتسمى "نوع الشحنة" في كل التابات — البيانات في D1 ما اتغيّرتش، التسمية في الواجهة بس.</li>
             <li><code>tabPartition(tabKey)</code> — بيفلتر <code>rawEvents</code> حسب <code>state</code> (+ حالة الأرشفة لتابي main/archive)</li>
             <li><code>§TOOL-JS::numericFilter</code> — فلاتر كود الحالة وعدد المحاولات: تبويبا قائمة قيم/نطاق من-إلى متبادلان (<code>data-table-standard.md</code> §4)</li>
             <li><code>§TOOL-JS::dateRange</code> — فترة سريعة + من/إلى تاريخ لكل تاب (بدون افتراضي، client-side بالكامل)</li>
@@ -752,7 +763,7 @@ body {
 // 🔴 1.6.0 = أول نسخة Worker بتكتب write_status='returned_duplicate_skipped'
 //    لحدث Returned to business (46) تاني على نفس الأوردر/الـ slot.
 const MIN_WORKER_VERSION = '1.6.0';
-const TOOL_VERSION       = 'v1.7.0';
+const TOOL_VERSION       = 'v1.8.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1221,10 +1232,13 @@ function resultBadge(status) {
 // واحدة على الأقل، بكل حالاته
 // (21/24/30/41/45/...)، وتاب "🚚 الأوردرات تحت التوصيل" بيستبعد نفس أرقام
 // التتبع دي بالكامل (قرار أحمد 26-09-2026 — راجع CLAUDE.md). تاب "✅
-// Delivered" (كود 45 بس) و"⚠️ Exception"/"↩️ Returned to business" **مش**
-// بيستبعدوا أرقام التتبع المؤرشفة — لسه بيعرضوا كل حدث مطابق للحالة زي ما
-// هما، الأرشيف عرض تجميعي إضافي مش بديل عنهم.
+// Delivered"/"↩️ Returned to business" **مش** بيستبعدوا أرقام التتبع
+// المؤرشفة — لسه بيعرضوا كل حدث مطابق للحالة زي ما هما، الأرشيف عرض تجميعي
+// إضافي مش بديل عنهم.
 // 🔴 27-09-2026 — Returned to business (46) بقى بيأرشف زي Delivered (45) بالظبط.
+// 🔴 27-09-2026 — تاب "⚠️ Exception" بقى بيستبعد أرقام التتبع اللي وصلت
+// حالة نهائية (Delivered/Returned to business) — لو رقم التتبع اتأرشف، أي
+// حدث Exception قديم ليه بيختفي من التاب ده (بيفضل ظاهر في تاب الأرشيف بس).
 const ARCHIVE_TRIGGER_STATES = new Set([45, 46]);
 let archivedTrackingNumbers = new Set();
 function computeArchivedTrackingNumbers(events) {
@@ -1234,14 +1248,19 @@ function computeArchivedTrackingNumbers(events) {
 }
 const TABS = [
   { key: 'main',      match: ev => ![45, 46, 47].includes(Number(ev.state)) && !archivedTrackingNumbers.has(String(ev.tracking_number)) },
-  { key: 'exception', match: ev => Number(ev.state) === 47 },
+  { key: 'exception', match: ev => Number(ev.state) === 47 && !archivedTrackingNumbers.has(String(ev.tracking_number)) },
   { key: 'returned',  match: ev => Number(ev.state) === 46 },
   { key: 'delivered', match: ev => Number(ev.state) === 45 },
   { key: 'archive',   match: ev => archivedTrackingNumbers.has(String(ev.tracking_number)) },
 ];
 const FILTER_KEYS = ['type', 'slot', 'result', 'desc', 'stateCode', 'attempts'];
 const NUMERIC_FILTER_KEYS = new Set(['stateCode', 'attempts']);
-const filterLabels = { type: 'النوع', slot: 'الحالة', result: 'النتيجة', desc: 'الوصف', stateCode: 'كود الحالة', attempts: 'عدد المحاولات' };
+const filterLabels = { type: 'نوع الشحنة', slot: 'نوع الأوردر', result: 'النتيجة', desc: 'الوصف', stateCode: 'كود الحالة', attempts: 'عدد المحاولات' };
+const SLOT_LABELS = { S1: 'عادي', S2: 'استبدال/استرجاع' };
+function slotLabel(slot) {
+  const key = String(slot || '').toUpperCase();
+  return SLOT_LABELS[key] || (slot ? String(slot).toUpperCase() : '—');
+}
 
 function newMsState() {
   const s = {};
@@ -1383,13 +1402,13 @@ function buildTabPanelHtml(tabKey) {
             <tr>
               ${sortTh('order', 'الأوردر')}
               ${sortTh('tracking', 'رقم التتبع')}
-              ${sortTh('type', 'النوع')}
+              ${sortTh('type', 'نوع الشحنة')}
               ${sortTh('stateCode', 'كود الحالة')}
               <th>الوصف</th>
               ${sortTh('promise', 'موعد التسليم المتوقع')}
               ${sortTh('attempts', 'عدد المحاولات')}
               ${sortTh('time', 'الوقت')}
-              ${sortTh('slot', 'الحالة')}
+              ${sortTh('slot', 'نوع الأوردر')}
               ${sortTh('matchMethod', 'طريقة المطابقة')}
               ${sortTh('result', 'النتيجة')}
             </tr>
@@ -1734,7 +1753,7 @@ function eventRowHtml(ev) {
       <td>${ev.delivery_promise_date ? formatDateOnly(ev.delivery_promise_date) : '—'}</td>
       <td>${ev.number_of_attempts ?? '—'}</td>
       <td>${formatDateTime(ev.received_at)}</td>
-      <td>${esc((ev.matched_slot || '—').toUpperCase())}</td>
+      <td>${esc(slotLabel(ev.matched_slot))}</td>
       <td>${esc(ev.match_method || '—')}</td>
       <td>${resultBadge(ev.write_status)}</td>
     </tr>`;
@@ -1786,7 +1805,7 @@ function buildMsItems(tabKey, events) {
   });
   const ms = tabState[tabKey].ms;
   ms.type.items = [...typeVals].sort().map(v => ({ value: v, label: v }));
-  ms.slot.items = [...slotVals].sort().map(v => ({ value: v, label: v === '—' ? '— (بدون تطابق)' : v.toUpperCase() }));
+  ms.slot.items = [...slotVals].sort().map(v => ({ value: v, label: v === '—' ? '— (بدون تطابق)' : slotLabel(v) }));
   ms.result.items = [...resultVals].sort().map(v => ({ value: v, label: RESULT_LABELS[v] || v }));
   ms.desc.items = [...descVals].sort().map(v => ({ value: v, label: v }));
   ms.stateCode.items = [...stateVals].sort((a, b) => Number(a) - Number(b)).map(v => ({ value: v, label: v }));
