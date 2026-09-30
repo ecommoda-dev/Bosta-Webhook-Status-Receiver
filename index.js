@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.6.0';
+const WORKER_VERSION = '1.7.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -893,14 +893,34 @@ export default {
         if (trackingParam) { sql += ' AND tracking_number = ?'; b.push(trackingParam); }
         if (dateFrom)        { sql += ' AND substr(received_at, 1, 10) >= ?'; b.push(dateFrom); }
         if (dateTo)          { sql += ' AND substr(received_at, 1, 10) <= ?'; b.push(dateTo); }
-        sql += ' ORDER BY received_at DESC LIMIT ? OFFSET ?';
+        // 🔴 v1.7.0 — تحميل تراكمي: afterId بيرجّع الصفوف الأحدث من آخر id مع الواجهة
+        //    (ترتيب id تصاعدي عشان الصفحات تتابع من غير فجوات)، والصفوف الجديدة بس
+        //    مش كل الجدول. `ids` بيرجّع نسخة محدّثة من صفوف موجودة عند الواجهة —
+        //    لأن write_status/matched_slot بيتعدّلوا بعد الإدراج (processing → written)
+        //    فالـ afterId لوحده كان هيفوّتهم.
+        const afterRaw = parseInt(url.searchParams.get('afterId') || '', 10);
+        const afterId  = Number.isFinite(afterRaw) ? Math.max(afterRaw, 0) : null;
+        const idsParam = (url.searchParams.get('ids') || '')
+          .split(',').map(x => parseInt(x, 10)).filter(n => Number.isFinite(n) && n > 0).slice(0, 300);
+        if (afterId !== null) {
+          sql += ' AND id > ?'; b.push(afterId);
+          sql += ' ORDER BY id ASC LIMIT ? OFFSET ?';
+        } else {
+          sql += ' ORDER BY received_at DESC LIMIT ? OFFSET ?';
+        }
 
         // 🔴 ممنوع ترجيع [] لما الجدول مش موجود — ده بيخلّي "D1 مكسورة" تبان
         //    "مفيش أحداث"، وهو اللي ضيّع يوم كامل في 20/21-09-2026
         //    (ecommoda-constants §7.0 — صفر صفوف مش دليل).
         try {
           const { results } = await env.DB.prepare(sql).bind(...b, limit, offset).all();
-          return json({ ok: true, events: results }, 200, request);
+          const maxRow = await env.DB.prepare('SELECT MAX(id) AS m FROM bosta_webhook_events').first();
+          let updated = [];
+          if (idsParam.length) {
+            const ph = idsParam.map(() => '?').join(',');
+            updated = (await env.DB.prepare(`SELECT * FROM bosta_webhook_events WHERE id IN (${ph})`).bind(...idsParam).all()).results;
+          }
+          return json({ ok: true, events: results, updated, maxId: maxRow?.m ?? 0 }, 200, request);
         } catch (e) {
           if (/no such table/i.test(e.message)) {
             return json({
