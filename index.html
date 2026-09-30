@@ -92,6 +92,11 @@ body {
 .hbtn .ico { display: inline-block; }
 .hbtn.refreshing .ico { animation: hbtn-spin .7s linear infinite; }
 @keyframes hbtn-spin { to { transform: rotate(360deg); } }
+/* مؤشر التحديث في الخلفية — الجدول بيفضل ظاهر، بس الدايرة دي بتدور */
+.bg-spin { display: none; font-size: 15px; color: var(--accent); line-height: 1; }
+.bg-spin.on { display: inline-block; animation: hbtn-spin .8s linear infinite; }
+.last-upd { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); direction: ltr; white-space: nowrap; }
+.last-upd.err { color: var(--red); font-weight: 700; }
 
 /* ── Settings Modal ─────────────────────────────────────────── */
 .settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; }
@@ -488,6 +493,17 @@ body {
           <span class="cl-ver-date">30-09-2026</span>
         </div>
         <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag fix">إصلاح</span><span>🔴 <b>الجدول كان بيختفي ويظهر «جاري التحميل» كل دقيقة.</b> التحديث الدوري (كل ٦٠ث) كان بيمسح الـ٥ جداول قبل النداء الأول ويسحب <b>كل</b> الأحداث على كذا صفحة، فالجدول يفضل فاضي طول السحب. دلوقتي «جاري التحميل» بتظهر في أول تحميل بس؛ بعد كده الصفوف القديمة بتفضل ظاهرة ودايرة صغيرة جنب «النتائج» + «آخر تحديث HH:MM».</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span><b>تحميل تراكمي:</b> نداء واحد خفيف بيجيب الأحداث الجديدة بس (<code>afterId</code>) + تحديث الصفوف الحديثة/<code>processing</code> (<code>ids</code>) بدل سحب الجدول كله كل دورة. مزامنة كاملة كل ٣٠ دقيقة وعند زرار «تحديث». مفيش إعادة رسم لو مفيش تغيير، وقوايم الفلاتر ما بتتعاد رسمها لو قيمها ما اتغيّرتش. يتطلب <code>Worker ≥ v1.7.0</code>.</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>حماية من تداخل النداءات (<code>isLoadingEvents</code>)، والتحديث الدوري بيتوقف والتاب متخبّي (وبيتحدّث فور الرجوع له)، والفاصل بقى ٢ دقيقة. فشل تحديث دوري مابيمسحش الجدول — بيظهر تنبيه صغير بس. لوحة «🕘 السجل» المفتوحة بتتحدّث لوحدها.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.10.0</span>
+          <span class="cl-ver-date">30-09-2026</span>
+        </div>
+        <ul class="cl-items">
           <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>تاب "🚚 الأوردرات تحت التوصيل" بقى صف واحد لكل رقم تتبع بآخر حالة فقط</b> — "النتائج" بقت عدد أرقام التتبع مش عدد الأحداث. الفلاتر في التاب ده بتشتغل على آخر حالة بس. رقم التتبع اللي آخر حالته Exception (47) بيروح تاب Exception، واللي وصل 45/46 بيروح الأرشيف.</span></li>
           <li class="cl-item"><span class="cl-tag new">جديد</span><span>زرار <b>"🕘 السجل"</b> في كل صف بيفتح لوحة جانبية (Drawer) بكل أحداث رقم التتبع بترتيب زمني (الأحدث فوق) — الوصف والكود والوقت وعدد المحاولات ونتيجة الكتابة. بتتقفل بـ ✕ أو بالضغط برّاها أو Esc.</span></li>
           <li class="cl-item"><span class="cl-tag change">تغيير</span><span><b>تاب ⚠️ Exception بيعرض الرقم بس لو Exception هي آخر حالة ليه.</b> أي حالة أحدث بعدها (حتى غير نهائية) بتشيله من التاب. "الأحدث" = أكبر <code>bosta_timestamp</code> ثم <code>received_at</code> ثم <code>id</code>. مفيش تغيير Worker.</span></li>
@@ -666,6 +682,7 @@ body {
             <li><code>computeArchivedTrackingNumbers()</code> — Set بكل <code>tracking_number</code> وصلها حدث بكود حالة 45 أو 46 مرة واحدة على الأقل، بيتحسب مرة واحدة بعد كل تحميل ويتقرا من تابي "الأوردرات تحت التوصيل" و"⚠️ Exception" (استبعاد) و"الأرشيف" (تجميع) — مش من تاب Delivered/Returned to business</li>
             <li><code>slotLabel()</code> — بيحوّل <code>matched_slot</code> (S1/S2 الخام) لليبل عمود "نوع الأوردر" المعروض: S1 ← "عادي"، S2 ← "استبدال/استرجاع"، أي قيمة تانية بترجع كابيتال زي ما هي. عمود "النوع" (<code>bosta_type</code> — SEND/RTO/EXCHANGE...) اتسمى "نوع الشحنة" في كل التابات — البيانات في D1 ما اتغيّرتش، التسمية في الواجهة بس.</li>
             <li><code>computeLatestStateByTracking()</code> / <code>latestEventByTracking</code> — آخر حدث لكل <code>tracking_number</code>؛ بيحكم تاب الأوردرات تحت التوصيل (صف واحد لكل رقم) وتاب Exception (يظهر لو آخر حالة 47) · <code>openHistoryDrawer(tn)</code> — لوحة سجل رقم التتبع</li>
+            <li><code>loadEvents({full})</code> — تحديث stale-while-revalidate: تحميل أولي كامل، بعده تراكمي (<code>afterId</code> + <code>ids</code>)، بلا مسح للجدول، مع <code>isLoadingEvents</code> ومزامنة كاملة كل ٣٠ دقيقة</li>
             <li><code>tabPartition(tabKey)</code> — بيفلتر <code>rawEvents</code> حسب <code>state</code> (+ حالة الأرشفة لتابي main/archive)</li>
             <li><code>§TOOL-JS::numericFilter</code> — فلاتر كود الحالة وعدد المحاولات: تبويبا قائمة قيم/نطاق من-إلى متبادلان (<code>data-table-standard.md</code> §4)</li>
             <li><code>§TOOL-JS::dateRange</code> — فترة سريعة + من/إلى تاريخ لكل تاب (بدون افتراضي، client-side بالكامل)</li>
@@ -795,8 +812,8 @@ body {
 //    هتعرف تفرّق الحدث الأول عن التاني في عمود "النتيجة".
 // 🔴 1.6.0 = أول نسخة Worker بتكتب write_status='returned_duplicate_skipped'
 //    لحدث Returned to business (46) تاني على نفس الأوردر/الـ slot.
-const MIN_WORKER_VERSION = '1.6.0';
-const TOOL_VERSION       = 'v1.10.0';
+const MIN_WORKER_VERSION = '1.7.0';
+const TOOL_VERSION       = 'v1.11.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -959,7 +976,7 @@ function setRefreshing(active) {
 }
 async function doRefresh() {
   setRefreshing(true);
-  try { await loadEvents(); await refreshDiagBanners(); } finally { setRefreshing(false); }
+  try { await loadEvents({ full: true }); await refreshDiagBanners(); } finally { setRefreshing(false); }
 }
 
 function showToast(msg, type = 'neutral', duration = 3500) {
@@ -1208,7 +1225,7 @@ async function finishLogin(username, displayName) {
   loadEvents();
   refreshDiagBanners();
   clearInterval(finishLogin._poll);
-  finishLogin._poll = setInterval(() => { loadEvents(); refreshDiagBanners(); }, 60000);
+  finishLogin._poll = setInterval(pollTick, POLL_MS);
 }
 
 async function doLogout() {
@@ -1446,6 +1463,8 @@ function buildTabPanelHtml(tabKey) {
         <div class="results-wrap">
           <span class="results-label">النتائج:</span>
           <span class="results-count" id="filteredCount-${tabKey}">—</span>
+          <span class="bg-spin" aria-label="جاري التحديث">⟳</span>
+          <span class="last-upd" title="آخر تحديث ناجح"></span>
         </div>
       </div>
     </div>
@@ -1819,6 +1838,7 @@ function eventRowHtml(ev, tabKey) {
 
 // 🔴 30-09-2026 — Drawer سجل رقم التتبع: كل أحداثه من rawEvents (الأحدث فوق)
 function openHistoryDrawer(tn) {
+  openHistoryDrawer._tn = tn;
   const evs = rawEvents.filter(e => String(e.tracking_number) === String(tn))
     .sort((a, b) => (Number(b.bosta_timestamp) || 0) - (Number(a.bosta_timestamp) || 0) || String(b.received_at).localeCompare(String(a.received_at)) || (Number(b.id) || 0) - (Number(a.id) || 0));
   const first = evs[0] || {};
@@ -1832,6 +1852,7 @@ function openHistoryDrawer(tn) {
   const d = document.getElementById('histDrawer'); d.classList.add('open'); d.setAttribute('aria-hidden', 'false');
 }
 function closeHistoryDrawer() {
+  openHistoryDrawer._tn = null;
   document.getElementById('histOverlay').classList.remove('open');
   const d = document.getElementById('histDrawer'); d.classList.remove('open'); d.setAttribute('aria-hidden', 'true');
 }
@@ -1882,12 +1903,19 @@ function buildMsItems(tabKey, events) {
     if (ev.number_of_attempts != null) attemptVals.add(String(ev.number_of_attempts));
   });
   const ms = tabState[tabKey].ms;
+  const prevSig = tabState[tabKey]._msSig;
+  const sig = JSON.stringify([...typeVals].sort()) + JSON.stringify([...slotVals].sort()) + JSON.stringify([...resultVals].sort())
+    + JSON.stringify([...descVals].sort()) + JSON.stringify([...stateVals].sort()) + JSON.stringify([...attemptVals].sort());
   ms.type.items = [...typeVals].sort().map(v => ({ value: v, label: v }));
   ms.slot.items = [...slotVals].sort().map(v => ({ value: v, label: v === '—' ? '— (بدون تطابق)' : slotLabel(v) }));
   ms.result.items = [...resultVals].sort().map(v => ({ value: v, label: RESULT_LABELS[v] || v }));
   ms.desc.items = [...descVals].sort().map(v => ({ value: v, label: v }));
   ms.stateCode.items = [...stateVals].sort((a, b) => Number(a) - Number(b)).map(v => ({ value: v, label: v }));
   ms.attempts.items = [...attemptVals].sort((a, b) => Number(a) - Number(b)).map(v => ({ value: v, label: v }));
+  // 🔴 v1.11.0 — قوائم الفلاتر ما بتترسمش من جديد لو القيم هي هي: التحديث الدوري
+  //    كان بيعيد رسم قائمة مفتوحة تحت إيد المستخدم (بحث داخلي/سكرول بيتصفّر).
+  if (sig === prevSig) return;
+  tabState[tabKey]._msSig = sig;
   FILTER_KEYS.forEach(k => msRenderList(tabKey, k));
 }
 
@@ -1938,35 +1966,164 @@ function onLookupInput(tabKey, el) {
 // فمفيش داعي نبعت فلاتر للـ Worker أصلًا.
 const LOAD_PAGE_SIZE = 500;
 
-async function loadEvents() {
-  TABS.forEach(t => {
-    const body = document.getElementById(`eventsBody-${t.key}`);
-    if (body) body.innerHTML = '<tr><td colspan="12">...جاري التحميل</td></tr>';
+// 🔴 v1.11.0 — التحديث بقى "stale-while-revalidate":
+//   • "جاري التحميل" بتظهر في أول تحميل بس (rawEvents فاضية). بعد كده الصفوف
+//     القديمة بتفضل ظاهرة ودايرة صغيرة (.bg-spin) بتدور جنب "النتائج" — قبل كده
+//     كل دورة (٦٠ث) كانت بتمسح الـ٥ جداول وتسيبهم فاضيين طول سحب كل الصفحات.
+//   • تحميل تراكمي: نداء واحد بـ afterId (الجديد بس) + ids (صفوف حديثة/processing
+//     لأن write_status بيتغيّر بعد الإدراج) بدل سحب كل الأحداث كل مرة.
+//   • مفيش إعادة رسم لو مفيش تغيير فعلي.
+//   • isLoadingEvents بيمنع تداخل نداءين، والدورة بتتوقف والتاب متخبّي.
+//   • مزامنة كاملة كل FULL_RESYNC_MS + عند زرار "تحديث" (ضمان إن مفيش صف قديم اتغيّر).
+//   • Worker أقدم من 1.7.0 (رد من غير maxId) → رجوع تلقائي للسحب الكامل.
+const POLL_MS = 120000;
+const FULL_RESYNC_MS = 30 * 60 * 1000;
+const RECHECK_WINDOW_MS = 30 * 60 * 1000;
+const RECHECK_MAX_IDS = 300;
+let isLoadingEvents = false;
+let hasLoadedEvents = false;
+let lastLoadAt = 0;
+let lastFullAt = 0;
+let lastMaxId = 0;
+let incrementalSupported = true;
+let refreshFailStreak = 0;
+
+function setBgLoading(on) {
+  document.querySelectorAll('.bg-spin').forEach(el => el.classList.toggle('on', on));
+}
+function setLastUpdated(failed) {
+  const t = lastLoadAt ? new Date(lastLoadAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Cairo' }) : '';
+  document.querySelectorAll('.last-upd').forEach(el => {
+    el.textContent = failed ? `⚠️ فشل التحديث — آخر بيانات ${t}` : (t ? `آخر تحديث ${t}` : '');
+    el.classList.toggle('err', !!failed);
   });
-  try {
-    let all = [];
-    let offset = 0;
-    while (true) {
-      const data = await apiGet('list_events', { limit: LOAD_PAGE_SIZE, offset });
-      const page = data.events || [];
-      all = all.concat(page);
-      if (page.length < LOAD_PAGE_SIZE) break;
-      offset += LOAD_PAGE_SIZE;
-    }
-    rawEvents = all;
-    archivedTrackingNumbers = computeArchivedTrackingNumbers(rawEvents);
-    latestStateByTracking = computeLatestStateByTracking(rawEvents);
-    TABS.forEach(t => {
-      buildMsItems(t.key, tabPartition(t.key));
-      applyFiltersAndRender(t.key);
-    });
-  } catch (e) {
+}
+function sortEventsDesc(arr) {
+  return arr.sort((a, b) => String(b.received_at || '').localeCompare(String(a.received_at || '')) || (Number(b.id) || 0) - (Number(a.id) || 0));
+}
+// يدمج صفوف جديدة/محدّثة في rawEvents بالـ id ويرجّع true لو حصل تغيير فعلي
+function mergeEvents(rows) {
+  const byId = new Map(rawEvents.map(e => [e.id, e]));
+  let changed = false;
+  rows.forEach(r => {
+    const cur = byId.get(r.id);
+    if (!cur) { byId.set(r.id, r); changed = true; }
+    else if (JSON.stringify(cur) !== JSON.stringify(r)) { byId.set(r.id, r); changed = true; }
+  });
+  if (changed) rawEvents = sortEventsDesc([...byId.values()]);
+  return changed;
+}
+async function fetchAllEvents() {
+  const all = new Map();
+  let offset = 0;
+  while (true) {
+    const data = await apiGet('list_events', { limit: LOAD_PAGE_SIZE, offset });
+    const page = data.events || [];
+    // dedupe بالـ id: حدث جديد وقت السحب بيزحزح الـ offset فبعض الصفوف كانت بتتكرر
+    page.forEach(e => all.set(e.id, e));
+    if (page.length < LOAD_PAGE_SIZE) break;
+    offset += LOAD_PAGE_SIZE;
+  }
+  return { rows: [...all.values()], hasMaxId: true };
+}
+async function fetchIncremental() {
+  const now = Date.now();
+  const recheck = rawEvents
+    .filter(e => e.write_status === 'processing' || now - Date.parse(e.received_at) < RECHECK_WINDOW_MS)
+    .map(e => e.id).sort((a, b) => b - a).slice(0, RECHECK_MAX_IDS);
+  let cursor = lastMaxId;
+  const rows = [];
+  let first = true;
+  while (true) {
+    const params = { limit: LOAD_PAGE_SIZE, afterId: cursor };
+    if (first && recheck.length) params.ids = recheck.join(',');
+    const data = await apiGet('list_events', params);
+    if (data.maxId === undefined) return null;   // Worker قديم — afterId اتجاهلت
+    const page = data.events || [];
+    rows.push(...page);
+    if (first) rows.push(...(data.updated || []));
+    first = false;
+    if (page.length < LOAD_PAGE_SIZE) break;
+    cursor = page[page.length - 1].id;
+  }
+  return rows;
+}
+function renderAllTabs() {
+  archivedTrackingNumbers = computeArchivedTrackingNumbers(rawEvents);
+  latestStateByTracking = computeLatestStateByTracking(rawEvents);
+  TABS.forEach(t => {
+    buildMsItems(t.key, tabPartition(t.key));
+    applyFiltersAndRender(t.key);
+  });
+  // لو لوحة سجل رقم تتبع مفتوحة، نحدّثها بالبيانات الجديدة
+  const d = document.getElementById('histDrawer');
+  if (d && d.classList.contains('open') && openHistoryDrawer._tn) openHistoryDrawer(openHistoryDrawer._tn);
+}
+
+async function loadEvents({ full = false } = {}) {
+  if (isLoadingEvents) return false;
+  isLoadingEvents = true;
+  const first = !hasLoadedEvents;
+  if (first) {
     TABS.forEach(t => {
       const body = document.getElementById(`eventsBody-${t.key}`);
-      if (body) body.innerHTML = `<tr><td colspan="12">${esc(e.message)}</td></tr>`;
+      if (body) body.innerHTML = '<tr><td colspan="12">...جاري التحميل</td></tr>';
     });
   }
+  setBgLoading(true);
+  try {
+    const needFull = first || full || !incrementalSupported || (Date.now() - lastFullAt > FULL_RESYNC_MS);
+    let changed = false;
+    if (!needFull) {
+      const rows = await fetchIncremental();
+      if (rows === null) { incrementalSupported = false; }
+      else changed = mergeEvents(rows);
+    }
+    if (needFull || !incrementalSupported) {
+      const { rows } = await fetchAllEvents();
+      const prev = rawEvents;
+      const sameSize = prev.length === rows.length;
+      const before = new Map(prev.map(e => [e.id, JSON.stringify(e)]));
+      changed = !sameSize || rows.some(r => before.get(r.id) !== JSON.stringify(r));
+      if (changed) rawEvents = sortEventsDesc(rows);
+      lastFullAt = Date.now();
+    }
+    lastMaxId = rawEvents.reduce((m, e) => Math.max(m, Number(e.id) || 0), 0);
+    if (changed || first) renderAllTabs();
+    hasLoadedEvents = true;
+    lastLoadAt = Date.now();
+    refreshFailStreak = 0;
+    setLastUpdated(false);
+    return true;
+  } catch (e) {
+    refreshFailStreak++;
+    if (!hasLoadedEvents) {
+      // أول تحميل فشل: مفيش بيانات نحافظ عليها — نعرض الخطأ ونسمح بإعادة المحاولة
+      TABS.forEach(t => {
+        const body = document.getElementById(`eventsBody-${t.key}`);
+        if (body) body.innerHTML = `<tr><td colspan="12">${esc(e.message)}</td></tr>`;
+      });
+    } else {
+      // تحديث دوري فشل: الجدول القديم يفضل ظاهر + تنبيه صغير بدل مسحه برسالة خطأ
+      setLastUpdated(true);
+      if (refreshFailStreak === 1) showToast(`فشل تحديث الأحداث: ${e.message}`, 'error', 5000);
+    }
+    return false;
+  } finally {
+    isLoadingEvents = false;
+    setBgLoading(false);
+  }
 }
+
+function pollTick() {
+  if (document.hidden || isLoadingEvents) return;
+  loadEvents();
+  refreshDiagBanners();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !currentEmployee) return;
+  if (Date.now() - lastLoadAt > POLL_MS / 2) pollTick();
+});
 
 // 🔴 ترتيب البانرات مقصود: عطل الأداة نفسها بيسبق "مفيش أحداث".
 //    قبل كده كان فيه بانر واحد بيقول "مفيش أي حدث من بوسطة على الإطلاق"
