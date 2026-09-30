@@ -2,14 +2,14 @@
 
 # مستقبل حالة شحنات بوسطة (`Bosta-Webhook-Status-Receiver`)
 
-![version](https://img.shields.io/badge/version-v1.7.0-blue)
+![version](https://img.shields.io/badge/version-v1.10.0-blue)
 
 > بيتحمّل أوتوماتيك في كل جلسة Claude — في Claude Code وCowork.
 
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.6.0` · الواجهة `v1.7.0`
+**الإصدار:** Worker `v1.6.0` · الواجهة `v1.10.0`
 
 ---
 
@@ -284,6 +284,18 @@ Production branch : main · Builds for non-production branches: ON
   بالظبط (`business_reference`+`matched_slot`+`state=46`+`written`). الحالتين
   متعرّفين في `DUPLICATE_GUARDED_STATES` في `index.js` — أي حالة تالتة تتضاف
   هناك بس.
+- 🔴 **تاب "🚚 الأوردرات تحت التوصيل" = صف واحد لكل `tracking_number` بآخر حالة فقط
+  (30-09-2026).** "الأحدث" = أكبر `bosta_timestamp` ثم `received_at` ثم `id`
+  (`computeLatestStateByTracking()` → `latestEventByTracking`). عدد "النتائج" بقى
+  عدد أرقام التتبع مش الأحداث، والفلاتر (وصف/كود/محاولات/نتيجة) بتشتغل على آخر
+  حالة بس. رقم التتبع اللي آخر حالته 47 مايظهرش هنا (بيروح تاب Exception)، واللي
+  وصل 45/46 بيروح الأرشيف. السجل الكامل لأي رقم بيتفتح من زرار "🕘 السجل" في
+  Drawer جانبي (`openHistoryDrawer`) — كله client-side على `rawEvents`، مفيش
+  تغيير Worker. **التجميع على مستوى رقم التتبع مش الأوردر** — أوردر بـ S1 وS2
+  بيبان صفين (قرار أحمد).
+- 🔴 **تاب ⚠️ Exception بيعرض أحداث 47 لرقم التتبع بس لو 47 هي آخر حالة ليه
+  (30-09-2026)** — أي حالة أحدث بعدها بتشيله من التاب (وبيرجع لو رجع Exception).
+  بيفضل يستبعد الأرقام المؤرشفة (45/46) زي ما كان.
 - 🔴 **الأرشفة في الشاشة بتتفعّل بكود 45 أو 46** (`ARCHIVE_TRIGGER_STATES` في
   `index.html`) — رقم تتبع وصله Delivered أو Returned to business ولو مرة، كل
   سجلاته بتروح تاب الأرشيف وبتتشال من "الأوردرات تحت التوصيل". تاب "↩️ Returned
@@ -326,8 +338,22 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 | ecommoda-html-builder | v8.0.1 |
 | ecommoda-tool-migration-playbook | (بلا رقم إصدار ظاهر وقت القراءة) |
 
-آخر مطابقة: 27-09-2026 · `index.js` v1.6.0 · `index.html` v1.7.0
+آخر مطابقة: 30-09-2026 · `index.js` v1.6.0 · `index.html` v1.10.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
+
+### 30-09-2026 — تاب "تحت التوصيل" بآخر حالة لكل رقم تتبع + Drawer السجل + Exception بآخر حالة فقط (`index.html` v1.10.0)
+
+- **بطلب أحمد** — 3 تغييرات (واجهة فقط، مفيش تغيير Worker/SQL):
+  1. **Exception:** الحدث 47 بيظهر بس لو Exception هي آخر حالة لرقم التتبع
+     (v1.9.0).
+  2. **"🚚 الأوردرات تحت التوصيل":** صف واحد لكل `tracking_number` بآخر حالة،
+     والعدد = عدد أرقام التتبع (v1.10.0).
+  3. **زرار "🕘 السجل"** بيفتح Drawer جانبي (مش popup window) بكل أحداث الرقم،
+     الأحدث فوق.
+- التجميع على مستوى `tracking_number` (مش `business_reference`) — قرار أحمد.
+- `TOOL_VERSION` → `v1.10.0`. `WORKER_VERSION`/`MIN_WORKER_VERSION` فضلوا `1.6.0`.
+- اتّحقق بـ Playwright headless ببيانات مُحاكاة: 3 أرقام تتبع → main=2،
+  exception=1، والـ Drawer فتح بحدثين.
 
 ### 27-09-2026 — نمط Delivered اتكرّر على Returned to business (`index.js` v1.6.0 · `index.html` v1.7.0)
 
@@ -592,6 +618,6 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
   + `extra._unregistered = true` + UPSERT في `log_value_alerts` (الجدول
   المشترك، **مش** اتعمل هنا).
 
-آخر تحديث: 27-09-2026
+آخر تحديث: 30-09-2026
 
 </div>

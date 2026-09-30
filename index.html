@@ -485,6 +485,17 @@ body {
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">30-09-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>تاب "🚚 الأوردرات تحت التوصيل" بقى صف واحد لكل رقم تتبع بآخر حالة فقط</b> — "النتائج" بقت عدد أرقام التتبع مش عدد الأحداث. الفلاتر في التاب ده بتشتغل على آخر حالة بس. رقم التتبع اللي آخر حالته Exception (47) بيروح تاب Exception، واللي وصل 45/46 بيروح الأرشيف.</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>زرار <b>"🕘 السجل"</b> في كل صف بيفتح لوحة جانبية (Drawer) بكل أحداث رقم التتبع بترتيب زمني (الأحدث فوق) — الوصف والكود والوقت وعدد المحاولات ونتيجة الكتابة. بتتقفل بـ ✕ أو بالضغط برّاها أو Esc.</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span><b>تاب ⚠️ Exception بيعرض الرقم بس لو Exception هي آخر حالة ليه.</b> أي حالة أحدث بعدها (حتى غير نهائية) بتشيله من التاب. "الأحدث" = أكبر <code>bosta_timestamp</code> ثم <code>received_at</code> ثم <code>id</code>. مفيش تغيير Worker.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.8.0</span>
           <span class="cl-ver-date">27-09-2026</span>
         </div>
         <ul class="cl-items">
@@ -654,6 +665,7 @@ body {
             <li><code>tabState[tabKey]</code> — فلاتر اختيار متعدد + بحث أوردر/تتبع + فترة تاريخ + ترتيب، لكل تاب نسخة مستقلة بالكامل (مفيش state متشارك بين التابات)</li>
             <li><code>computeArchivedTrackingNumbers()</code> — Set بكل <code>tracking_number</code> وصلها حدث بكود حالة 45 أو 46 مرة واحدة على الأقل، بيتحسب مرة واحدة بعد كل تحميل ويتقرا من تابي "الأوردرات تحت التوصيل" و"⚠️ Exception" (استبعاد) و"الأرشيف" (تجميع) — مش من تاب Delivered/Returned to business</li>
             <li><code>slotLabel()</code> — بيحوّل <code>matched_slot</code> (S1/S2 الخام) لليبل عمود "نوع الأوردر" المعروض: S1 ← "عادي"، S2 ← "استبدال/استرجاع"، أي قيمة تانية بترجع كابيتال زي ما هي. عمود "النوع" (<code>bosta_type</code> — SEND/RTO/EXCHANGE...) اتسمى "نوع الشحنة" في كل التابات — البيانات في D1 ما اتغيّرتش، التسمية في الواجهة بس.</li>
+            <li><code>computeLatestStateByTracking()</code> / <code>latestEventByTracking</code> — آخر حدث لكل <code>tracking_number</code>؛ بيحكم تاب الأوردرات تحت التوصيل (صف واحد لكل رقم) وتاب Exception (يظهر لو آخر حالة 47) · <code>openHistoryDrawer(tn)</code> — لوحة سجل رقم التتبع</li>
             <li><code>tabPartition(tabKey)</code> — بيفلتر <code>rawEvents</code> حسب <code>state</code> (+ حالة الأرشفة لتابي main/archive)</li>
             <li><code>§TOOL-JS::numericFilter</code> — فلاتر كود الحالة وعدد المحاولات: تبويبا قائمة قيم/نطاق من-إلى متبادلان (<code>data-table-standard.md</code> §4)</li>
             <li><code>§TOOL-JS::dateRange</code> — فترة سريعة + من/إلى تاريخ لكل تاب (بدون افتراضي، client-side بالكامل)</li>
