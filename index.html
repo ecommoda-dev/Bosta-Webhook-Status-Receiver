@@ -145,6 +145,22 @@ body {
 .about-sec-body th, .about-sec-body td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; }
 
 /* ── Toast ──────────────────────────────────────────────────── */
+.hist-btn { border:1px solid var(--accent-border); background:var(--accent-light); color:var(--accent-dark); border-radius:var(--radius-sm); padding:4px 10px; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+.hist-btn:hover { background:var(--accent-hover); }
+.drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:9000; opacity:0; pointer-events:none; transition:opacity .2s; }
+.drawer-overlay.open { opacity:1; pointer-events:auto; }
+.drawer { position:fixed; top:0; bottom:0; left:0; width:min(420px,100vw); background:var(--surface); box-shadow:4px 0 24px rgba(0,0,0,.2); z-index:9001; transform:translateX(-100%); transition:transform .25s ease; display:flex; flex-direction:column; }
+.drawer.open { transform:translateX(0); }
+.drawer-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px 16px; border-bottom:1px solid var(--border); }
+.drawer-title { font-size:15px; font-weight:700; }
+.drawer-close { border:none; background:none; font-size:20px; cursor:pointer; color:var(--text-secondary); }
+.drawer-body { padding:16px; overflow-y:auto; flex:1; }
+.tl-item { position:relative; padding:0 22px 16px 0; border-right:2px solid var(--border); margin-right:6px; }
+.tl-item::before { content:''; position:absolute; right:-7px; top:3px; width:12px; height:12px; border-radius:50%; background:var(--border-strong); border:2px solid var(--surface); }
+.tl-item.latest::before { background:var(--accent); }
+.tl-item:last-child { border-right-color:transparent; }
+.tl-desc { font-weight:600; font-size:13px; }
+.tl-meta { font-size:12px; color:var(--text-secondary); margin-top:2px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
 .toast { padding: 10px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: var(--on-accent); box-shadow: 0 4px 12px rgba(0,0,0,.2); animation: toastIn .3s ease; max-width: 320px; }
 @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -668,6 +684,11 @@ body {
   </div>
 </div>
 
+<div class="drawer-overlay" id="histOverlay" onclick="closeHistoryDrawer()"></div>
+<aside class="drawer" id="histDrawer" aria-hidden="true">
+  <div class="drawer-head"><div class="drawer-title" id="histTitle">—</div><button class="drawer-close" onclick="closeHistoryDrawer()" aria-label="إغلاق">✕</button></div>
+  <div class="drawer-body" id="histBody"></div>
+</aside>
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- ══════════════════════════════════════════════════════
@@ -763,7 +784,7 @@ body {
 // 🔴 1.6.0 = أول نسخة Worker بتكتب write_status='returned_duplicate_skipped'
 //    لحدث Returned to business (46) تاني على نفس الأوردر/الـ slot.
 const MIN_WORKER_VERSION = '1.6.0';
-const TOOL_VERSION       = 'v1.9.0';
+const TOOL_VERSION       = 'v1.10.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1250,6 +1271,7 @@ function computeArchivedTrackingNumbers(events) {
 // لرقم التتبع. أي حالة أحدث بعدها (حتى غير نهائية) بتشيل رقم التتبع من التاب.
 // الأحدث = أكبر bosta_timestamp، وعند التعادل received_at ثم id.
 let latestStateByTracking = new Map();
+let latestEventByTracking = new Map();
 function computeLatestStateByTracking(events) {
   const best = new Map();
   const key = ev => [Number(ev.bosta_timestamp) || 0, String(ev.received_at || ''), Number(ev.id) || 0];
@@ -1259,12 +1281,15 @@ function computeLatestStateByTracking(events) {
     const t = String(ev.tracking_number), cur = best.get(t);
     if (!cur || newer(ev, cur)) best.set(t, ev);
   });
+  latestEventByTracking = best;
   const m = new Map();
   best.forEach((ev, t) => m.set(t, Number(ev.state)));
   return m;
 }
 const TABS = [
-  { key: 'main',      match: ev => ![45, 46, 47].includes(Number(ev.state)) && !archivedTrackingNumbers.has(String(ev.tracking_number)) },
+  // 🔴 30-09-2026 — "الأوردرات تحت التوصيل": صف واحد لكل tracking_number بآخر حالة فقط
+//    (والسجل الكامل في Drawer). رقم التتبع اللي آخر حالته 47 بيروح تاب Exception.
+  { key: 'main',      match: ev => latestEventByTracking.get(String(ev.tracking_number)) === ev && ![45, 46, 47].includes(Number(ev.state)) && !archivedTrackingNumbers.has(String(ev.tracking_number)) },
   { key: 'exception', match: ev => Number(ev.state) === 47 && !archivedTrackingNumbers.has(String(ev.tracking_number)) && latestStateByTracking.get(String(ev.tracking_number)) === 47 },
   { key: 'returned',  match: ev => Number(ev.state) === 46 },
   { key: 'delivered', match: ev => Number(ev.state) === 45 },
@@ -1428,6 +1453,7 @@ function buildTabPanelHtml(tabKey) {
               ${sortTh('slot', 'نوع الأوردر')}
               ${sortTh('matchMethod', 'طريقة المطابقة')}
               ${sortTh('result', 'النتيجة')}
+              ${tabKey === 'main' ? '<th>السجل</th>' : ''}
             </tr>
           </thead>
           <tbody id="eventsBody-${tabKey}"></tbody>
@@ -1759,7 +1785,9 @@ function applySort(tabKey, rows) {
 }
 
 // ─── §TOOL-JS::eventRow — بناء صف الجدول (الهايبرلينكات + الأعمدة الجديدة) ───
-function eventRowHtml(ev) {
+function eventRowHtml(ev, tabKey) {
+  const histTd = tabKey === 'main'
+    ? `<td><button class="hist-btn" onclick="openHistoryDrawer('${esc(String(ev.tracking_number))}')">🕘 السجل</button></td>` : '';
   return `
     <tr>
       <td>${orderLink(ev.business_reference, ev.shopify_order_id)}</td>
@@ -1773,8 +1801,29 @@ function eventRowHtml(ev) {
       <td>${esc(slotLabel(ev.matched_slot))}</td>
       <td>${esc(ev.match_method || '—')}</td>
       <td>${resultBadge(ev.write_status)}</td>
+      ${histTd}
     </tr>`;
 }
+
+// 🔴 30-09-2026 — Drawer سجل رقم التتبع: كل أحداثه من rawEvents (الأحدث فوق)
+function openHistoryDrawer(tn) {
+  const evs = rawEvents.filter(e => String(e.tracking_number) === String(tn))
+    .sort((a, b) => (Number(b.bosta_timestamp) || 0) - (Number(a.bosta_timestamp) || 0) || String(b.received_at).localeCompare(String(a.received_at)) || (Number(b.id) || 0) - (Number(a.id) || 0));
+  const first = evs[0] || {};
+  document.getElementById('histTitle').innerHTML = `سجل ${esc(tn)} · ${esc(first.business_reference || '')} <span style="color:var(--text-secondary);font-weight:400">(${evs.length} حدث)</span>`;
+  document.getElementById('histBody').innerHTML = evs.map((e, i) => `
+    <div class="tl-item ${i === 0 ? 'latest' : ''}">
+      <div class="tl-desc">${esc(e.description || '—')} <span style="color:var(--text-secondary);font-weight:400">(${esc(e.state)})</span></div>
+      <div class="tl-meta"><span>${formatDateTime(e.received_at)}</span><span>محاولات: ${e.number_of_attempts ?? '—'}</span>${resultBadge(e.write_status)}</div>
+    </div>`).join('') || '<div>لا توجد أحداث</div>';
+  document.getElementById('histOverlay').classList.add('open');
+  const d = document.getElementById('histDrawer'); d.classList.add('open'); d.setAttribute('aria-hidden', 'false');
+}
+function closeHistoryDrawer() {
+  document.getElementById('histOverlay').classList.remove('open');
+  const d = document.getElementById('histDrawer'); d.classList.remove('open'); d.setAttribute('aria-hidden', 'true');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHistoryDrawer(); });
 
 function switchMainTab(tabKey) {
   TABS.forEach(t => {
@@ -1860,8 +1909,8 @@ function applyFiltersAndRender(tabKey) {
 
   document.getElementById(`filteredCount-${tabKey}`).textContent = filtered.length.toLocaleString('en-US');
   body.innerHTML = sorted.length
-    ? sorted.map(eventRowHtml).join('')
-    : '<tr><td colspan="11">لا توجد أحداث مطابقة</td></tr>';
+    ? sorted.map(ev => eventRowHtml(ev, tabKey)).join('')
+    : '<tr><td colspan="12">لا توجد أحداث مطابقة</td></tr>';
 }
 
 function onLookupInput(tabKey, el) {
@@ -1880,7 +1929,7 @@ const LOAD_PAGE_SIZE = 500;
 async function loadEvents() {
   TABS.forEach(t => {
     const body = document.getElementById(`eventsBody-${t.key}`);
-    if (body) body.innerHTML = '<tr><td colspan="11">...جاري التحميل</td></tr>';
+    if (body) body.innerHTML = '<tr><td colspan="12">...جاري التحميل</td></tr>';
   });
   try {
     let all = [];
@@ -1902,7 +1951,7 @@ async function loadEvents() {
   } catch (e) {
     TABS.forEach(t => {
       const body = document.getElementById(`eventsBody-${t.key}`);
-      if (body) body.innerHTML = `<tr><td colspan="11">${esc(e.message)}</td></tr>`;
+      if (body) body.innerHTML = `<tr><td colspan="12">${esc(e.message)}</td></tr>`;
     });
   }
 }
