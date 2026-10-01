@@ -357,6 +357,19 @@ body {
 .ms-chip button{border:none;background:rgba(37,99,235,.15);color:var(--accent-dark);
   width:16px;height:16px;border-radius:50%;font-size:11px;cursor:pointer;line-height:1;}
 .ms-chip button:hover{background:var(--accent);color:var(--on-accent);}
+/* 🔴 30-09-2026 — مربعات عدد المحاولات (تاب "تحت التوصيل"): مربوطة بفلتر "عدد المحاولات" نفسه، مش حالة تانية جنبه */
+.att-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 16px;margin-bottom:16px;}
+.att-chips-label{font-size:12.5px;font-weight:700;color:var(--text-secondary);margin-inline-end:4px;}
+.att-chip{display:inline-flex;align-items:center;gap:9px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--surface-2);color:var(--text-secondary);font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;transition:filter .12s,transform .1s;}
+.att-chip:hover{filter:brightness(.97);}
+.att-chip:active{transform:translateY(1px);}
+.att-chip-n{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:20px;background:var(--surface);border:1px solid currentColor;font-family:var(--font-mono);font-size:12.5px;font-weight:800;line-height:1;direction:ltr;font-variant-numeric:tabular-nums;}
+.att-chip.att-0{background:var(--surface-2);color:var(--text-secondary);border-color:var(--border);}
+.att-chip.att-1{background:var(--accent-light);color:var(--accent-dark);border-color:var(--accent-border);}
+.att-chip.att-2{background:var(--amber-light);color:var(--amber-dark);border-color:var(--amber-border);}
+.att-chip.att-3{background:var(--red-light);color:var(--red-dark);border-color:var(--red-border);}
+.att-chip.on{box-shadow:0 0 0 2px currentColor inset;}
+.att-chip.on::after{content:'✕';font-size:12px;font-weight:800;opacity:.75;}
 
 /* فترة سريعة + من/إلى تاريخ */
 .range-fg{display:flex;flex-direction:column;gap:3px;}
@@ -490,6 +503,16 @@ body {
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">30-09-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span><b>مربعات «عدد المحاولات» فوق تاب 🚚 الأوردرات تحت التوصيل</b> — مربع لكل قيمة (٠ · ١ · ٢ · ٣+) بعدد أرقام التتبع اللي عليها. الضغط بيكتب في فلتر «عدد المحاولات» نفسه (مش حالة تانية)، والاختيار من الفلتر بيولّع المربع. العدّ من التاب كله مش المفلتر. مفيش تغيير Worker.</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>تاب 🗄 الأرشيف بقى صف واحد لكل رقم تتبع بآخر حالة</b> زي «تحت التوصيل» بالظبط، مع زرار «🕘 السجل» بيفتح النافذة الجانبية بكل حالاته. «النتائج» بقت عدد أرقام التتبع.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.11.0</span>
           <span class="cl-ver-date">30-09-2026</span>
         </div>
         <ul class="cl-items">
@@ -813,7 +836,7 @@ body {
 // 🔴 1.6.0 = أول نسخة Worker بتكتب write_status='returned_duplicate_skipped'
 //    لحدث Returned to business (46) تاني على نفس الأوردر/الـ slot.
 const MIN_WORKER_VERSION = '1.7.0';
-const TOOL_VERSION       = 'v1.11.0';
+const TOOL_VERSION       = 'v1.12.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1322,7 +1345,9 @@ const TABS = [
   { key: 'exception', match: ev => Number(ev.state) === 47 && !archivedTrackingNumbers.has(String(ev.tracking_number)) && latestStateByTracking.get(String(ev.tracking_number)) === 47 },
   { key: 'returned',  match: ev => Number(ev.state) === 46 },
   { key: 'delivered', match: ev => Number(ev.state) === 45 },
-  { key: 'archive',   match: ev => archivedTrackingNumbers.has(String(ev.tracking_number)) },
+  // 🔴 30-09-2026 — الأرشيف بقى صف واحد لكل tracking_number بآخر حالة (زي "تحت التوصيل")،
+  //    والسجل الكامل في الـ Drawer بدل ما كل حدث يبان صف.
+  { key: 'archive',   match: ev => archivedTrackingNumbers.has(String(ev.tracking_number)) && latestEventByTracking.get(String(ev.tracking_number)) === ev },
 ];
 const FILTER_KEYS = ['type', 'slot', 'result', 'desc', 'stateCode', 'attempts'];
 const NUMERIC_FILTER_KEYS = new Set(['stateCode', 'attempts']);
@@ -1331,6 +1356,35 @@ const SLOT_LABELS = { S1: 'عادي', S2: 'استبدال/استرجاع' };
 function slotLabel(slot) {
   const key = String(slot || '').toUpperCase();
   return SLOT_LABELS[key] || (slot ? String(slot).toUpperCase() : '—');
+}
+
+// 🔴 30-09-2026 — مربعات عدد المحاولات (تاب "تحت التوصيل" بس). بتكتب في فلتر `attempts` نفسه
+//    (مش حالة تانية جنبه) والعدّ من التاب كله مش المفلتر — عشان أول ضغطة ماتصفّرش باقي المربعات.
+const ATTEMPT_CHIP_TABS = new Set(['main']);
+const HISTORY_TABS = new Set(['main', 'archive']);   // التابات المجمّعة بآخر حالة لكل رقم تتبع + زرار 🕘 السجل
+function attemptClass(v) { const n = Number(v); return Number.isFinite(n) ? 'att-' + Math.min(n, 3) : 'att-0'; }
+function renderAttemptChips(tabKey) {
+  const box = document.getElementById(`attChips-${tabKey}`);
+  if (!box) return;
+  const counts = new Map();
+  tabPartition(tabKey).forEach(ev => {
+    const k = ev.number_of_attempts == null ? 'null' : String(ev.number_of_attempts);
+    counts.set(k, (counts.get(k) || 0) + 1);
+  });
+  const keys = [...counts.keys()].sort((a, b) => (a === 'null') - (b === 'null') || Number(a) - Number(b));
+  const st = tabState[tabKey].ms.attempts;
+  box.style.display = keys.length ? '' : 'none';
+  box.innerHTML = `<span class="att-chips-label">عدد المحاولات:</span>` + keys.map(k => {
+    const on = st.mode !== 'range' && st.selected.has(k);
+    const label = k === 'null' ? '— بدون' : `${k} ${Number(k) === 1 ? 'محاولة' : 'محاولات'}`;
+    return `<button type="button" class="att-chip ${k === 'null' ? 'att-0' : attemptClass(k)} ${on ? 'on' : ''}" data-val="${esc(k)}" aria-pressed="${on}"><span>${label}</span><span class="att-chip-n">${counts.get(k)}</span></button>`;
+  }).join('');
+  box.querySelectorAll('.att-chip').forEach(b => b.addEventListener('click', () => onAttemptChip(tabKey, b.dataset.val)));
+}
+function onAttemptChip(tabKey, val) {
+  const st = tabState[tabKey].ms.attempts;
+  if (st.mode === 'range') msSwitchMode(tabKey, 'attempts', 'list');   // بيصفّر النطاق ويرجّع لوضع القائمة
+  msToggleItem(tabKey, 'attempts', val);
 }
 
 function newMsState() {
@@ -1396,6 +1450,7 @@ function buildTabPanelHtml(tabKey) {
   const chipsRows = ['lookup', 'date', ...FILTER_KEYS].map(k => `<div class="ms-chips-row" id="chipsRow-${tabKey}-${k}"></div>`).join('');
   const sortTh = (key, label) => `<th class="sortable-th" data-sort-key="${key}" onclick="toggleSort('${tabKey}','${key}')">${label}<span class="sort-icon" data-sort-key="${key}"></span></th>`;
   return `
+  ${ATTEMPT_CHIP_TABS.has(tabKey) ? `<div class="att-chips" id="attChips-${tabKey}"></div>` : ''}
   <div class="unified-section">
     <div class="flt-header" onclick="toggleFilters('${tabKey}')">
       <div class="flt-header-right">
@@ -1484,7 +1539,7 @@ function buildTabPanelHtml(tabKey) {
               ${sortTh('slot', 'نوع الأوردر')}
               ${sortTh('matchMethod', 'طريقة المطابقة')}
               ${sortTh('result', 'النتيجة')}
-              ${tabKey === 'main' ? '<th>السجل</th>' : ''}
+              ${HISTORY_TABS.has(tabKey) ? '<th>السجل</th>' : ''}
             </tr>
           </thead>
           <tbody id="eventsBody-${tabKey}"></tbody>
@@ -1581,7 +1636,7 @@ function numericPass(tabKey, key, value) {
     return v >= from && v <= to;
   }
   if (st.selected.size === 0) return true;
-  return st.selected.has(String(value));
+  return st.selected.has(value == null || value === '' ? 'null' : String(value));
 }
 function msToggle(tabKey, key) {
   const menu = document.getElementById(`msMenu-${tabKey}-${key}`), btn = document.getElementById(`msBtn-${tabKey}-${key}`);
@@ -1817,7 +1872,7 @@ function applySort(tabKey, rows) {
 
 // ─── §TOOL-JS::eventRow — بناء صف الجدول (الهايبرلينكات + الأعمدة الجديدة) ───
 function eventRowHtml(ev, tabKey) {
-  const histTd = tabKey === 'main'
+  const histTd = HISTORY_TABS.has(tabKey)
     ? `<td><button class="hist-btn" onclick="openHistoryDrawer('${esc(String(ev.tracking_number))}')">🕘 السجل</button></td>` : '';
   return `
     <tr>
@@ -1900,7 +1955,7 @@ function buildMsItems(tabKey, events) {
     resultVals.add(ev.write_status || 'processing');
     descVals.add(ev.description || '—');
     if (ev.state != null) stateVals.add(String(ev.state));
-    if (ev.number_of_attempts != null) attemptVals.add(String(ev.number_of_attempts));
+    attemptVals.add(ev.number_of_attempts == null ? 'null' : String(ev.number_of_attempts));
   });
   const ms = tabState[tabKey].ms;
   const prevSig = tabState[tabKey]._msSig;
@@ -1911,7 +1966,7 @@ function buildMsItems(tabKey, events) {
   ms.result.items = [...resultVals].sort().map(v => ({ value: v, label: RESULT_LABELS[v] || v }));
   ms.desc.items = [...descVals].sort().map(v => ({ value: v, label: v }));
   ms.stateCode.items = [...stateVals].sort((a, b) => Number(a) - Number(b)).map(v => ({ value: v, label: v }));
-  ms.attempts.items = [...attemptVals].sort((a, b) => Number(a) - Number(b)).map(v => ({ value: v, label: v }));
+  ms.attempts.items = [...attemptVals].sort((a, b) => (a === 'null') - (b === 'null') || Number(a) - Number(b)).map(v => ({ value: v, label: v === 'null' ? '— (بدون)' : v }));
   // 🔴 v1.11.0 — قوائم الفلاتر ما بتترسمش من جديد لو القيم هي هي: التحديث الدوري
   //    كان بيعيد رسم قائمة مفتوحة تحت إيد المستخدم (بحث داخلي/سكرول بيتصفّر).
   if (sig === prevSig) return;
@@ -1924,6 +1979,7 @@ function applyFiltersAndRender(tabKey) {
   updateFilterIconState(tabKey);
   renderMsChips(tabKey);
   renderLookupChips(tabKey);
+  renderAttemptChips(tabKey);
 
   const ms = tabState[tabKey].ms;
   const filtered = tabPartition(tabKey).filter(ev => {
