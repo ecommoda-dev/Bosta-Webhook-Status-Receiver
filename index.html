@@ -503,6 +503,15 @@ body {
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">03-10-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span><b>النوع الأصلي للشحنة المحوّلة لـ RTO:</b> عمود «نوع الشحنة» ولوحة «🕘 السجل» بيعرضوا «RTO (كانت: SEND)» أو «(كانت: EXCHANGE)». الويبهوك مابيبعتش <code>oldType</code>، فالقيمة من أول نوع ظهر على نفس رقم التتبع قبل حدث RTO. لو الشحنة اتحوّلت قبل تسجيل الويبهوك بتظهر «RTO» لوحدها. واجهة فقط — مفيش تغيير Worker/SQL.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.12.0</span>
           <span class="cl-ver-date">30-09-2026</span>
         </div>
         <ul class="cl-items">
@@ -836,7 +845,7 @@ body {
 // 🔴 1.6.0 = أول نسخة Worker بتكتب write_status='returned_duplicate_skipped'
 //    لحدث Returned to business (46) تاني على نفس الأوردر/الـ slot.
 const MIN_WORKER_VERSION = '1.7.0';
-const TOOL_VERSION       = 'v1.12.0';
+const TOOL_VERSION       = 'v1.13.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1319,6 +1328,33 @@ function computeArchivedTrackingNumbers(events) {
   events.forEach(ev => { if (ARCHIVE_TRIGGER_STATES.has(Number(ev.state)) && ev.tracking_number) s.add(String(ev.tracking_number)); });
   return s;
 }
+// 🔴 03-10-2026 — النوع الأصلي (oldType) للشحنة المحوّلة لـ RTO. الويبهوك مابيبعتش `oldType`
+// أبدًا (مقيس على D1: صفر من ~٨٩٥٠ حدث)، فبيتحسب من تاريخ الأحداث نفسه: أول نوع غير RTO
+// ظهر على نفس `tracking_number` قبل حدث RTO. من غير أحداث سابقة (شحنة اتحوّلت قبل تسجيل
+// الويبهوك) → مفيش قيمة والعرض بيفضل "RTO" لوحدها.
+let originalTypeByTracking = new Map();
+function computeOriginalTypeByTracking(events) {
+  const key = ev => [Number(ev.bosta_timestamp) || 0, String(ev.received_at || ''), Number(ev.id) || 0];
+  const older = (a, b) => { const ka = key(a), kb = key(b); for (let i = 0; i < 3; i++) { if (ka[i] !== kb[i]) return ka[i] < kb[i]; } return false; };
+  const rto = new Set(), first = new Map();
+  events.forEach(ev => {
+    if (!ev.tracking_number || !ev.bosta_type) return;
+    const t = String(ev.tracking_number);
+    if (ev.bosta_type === 'RTO') { rto.add(t); return; }
+    const cur = first.get(t);
+    if (!cur || older(ev, cur)) first.set(t, ev);
+  });
+  const m = new Map();
+  rto.forEach(t => { const ev = first.get(t); if (ev) m.set(t, ev.bosta_type); });
+  return m;
+}
+function typeText(ev) {
+  const t = ev && ev.bosta_type;
+  if (!t) return '—';
+  const old = t === 'RTO' ? originalTypeByTracking.get(String(ev.tracking_number)) : null;
+  return old ? `${t} (كانت: ${old})` : t;
+}
+
 // 🔴 30-09-2026 — تاب Exception: الحدث بيظهر بس لو Exception (47) هي آخر حالة
 // لرقم التتبع. أي حالة أحدث بعدها (حتى غير نهائية) بتشيل رقم التتبع من التاب.
 // الأحدث = أكبر bosta_timestamp، وعند التعادل received_at ثم id.
@@ -1878,7 +1914,7 @@ function eventRowHtml(ev, tabKey) {
     <tr>
       <td>${orderLink(ev.business_reference, ev.shopify_order_id)}</td>
       <td>${trackingLink(ev.tracking_number)}</td>
-      <td>${esc(ev.bosta_type || '—')}</td>
+      <td>${esc(typeText(ev))}</td>
       <td>${esc(ev.state)}</td>
       <td>${esc(ev.description || '—')}</td>
       <td>${ev.delivery_promise_date ? formatDateOnly(ev.delivery_promise_date) : '—'}</td>
@@ -1898,7 +1934,8 @@ function openHistoryDrawer(tn) {
     .sort((a, b) => (Number(b.bosta_timestamp) || 0) - (Number(a.bosta_timestamp) || 0) || String(b.received_at).localeCompare(String(a.received_at)) || (Number(b.id) || 0) - (Number(a.id) || 0));
   const first = evs[0] || {};
   document.getElementById('histTitle').innerHTML = `سجل ${esc(tn)} · ${esc(first.business_reference || '')} <span style="color:var(--text-secondary);font-weight:400">(${evs.length} حدث)</span>`;
-  document.getElementById('histBody').innerHTML = evs.map((e, i) => `
+  const typeLine = first.bosta_type ? `<div class="tl-meta" style="margin-bottom:12px"><span>نوع الشحنة: <b>${esc(typeText(first))}</b></span></div>` : '';
+  document.getElementById('histBody').innerHTML = typeLine + evs.map((e, i) => `
     <div class="tl-item ${i === 0 ? 'latest' : ''}">
       <div class="tl-desc">${esc(e.description || '—')} <span style="color:var(--text-secondary);font-weight:400">(${esc(e.state)})</span></div>
       <div class="tl-meta"><span>${formatDateTime(e.received_at)}</span><span>محاولات: ${e.number_of_attempts ?? '—'}</span>${resultBadge(e.write_status)}</div>
@@ -2107,6 +2144,7 @@ async function fetchIncremental() {
 function renderAllTabs() {
   archivedTrackingNumbers = computeArchivedTrackingNumbers(rawEvents);
   latestStateByTracking = computeLatestStateByTracking(rawEvents);
+  originalTypeByTracking = computeOriginalTypeByTracking(rawEvents);
   TABS.forEach(t => {
     buildMsItems(t.key, tabPartition(t.key));
     applyFiltersAndRender(t.key);
