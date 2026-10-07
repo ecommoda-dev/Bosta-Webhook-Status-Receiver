@@ -2,14 +2,14 @@
 
 # مستقبل حالة شحنات بوسطة (`Bosta-Webhook-Status-Receiver`)
 
-![version](https://img.shields.io/badge/version-v1.13.0-blue)
+![version](https://img.shields.io/badge/version-v1.14.0-blue)
 
 > بيتحمّل أوتوماتيك في كل جلسة Claude — في Claude Code وCowork.
 
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.7.0` · الواجهة `v1.13.0`
+**الإصدار:** Worker `v1.7.0` · الواجهة `v1.14.0`
 
 ---
 
@@ -352,6 +352,11 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 
 آخر مطابقة: 30-09-2026 · `index.js` v1.7.0 · `index.html` v1.12.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
+
+### 07-10-2026 — Raw Payload لكل حدث في لوحة «🕘 السجل» (`index.html` v1.14.0 · واجهة فقط)
+
+- بطلب أحمد: زي «Raw Payload» في `Bosta-Order-Lookup`، كل حدث في لوحة السجل ليه toggle بيعرض `raw_payload` منسّق JSON (`prettyPayload`/`toggleRaw`). `list_events` بترجّعه أصلًا (`SELECT *`) — مفيش تغيير Worker/SQL.
+- زرار «🕘 السجل» بقى على كل التابات (`HISTORY_TABS`) مش `main`/`archive` بس.
 
 ### 03-10-2026 — عرض النوع الأصلي للشحنة المحوّلة لـ RTO (`index.html` v1.13.0 · واجهة فقط)
 
