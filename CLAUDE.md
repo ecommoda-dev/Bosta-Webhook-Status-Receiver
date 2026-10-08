@@ -2,14 +2,14 @@
 
 # مستقبل حالة شحنات بوسطة (`Bosta-Webhook-Status-Receiver`)
 
-![version](https://img.shields.io/badge/version-v1.15.0-blue)
+![version](https://img.shields.io/badge/version-v1.16.0-blue)
 
 > بيتحمّل أوتوماتيك في كل جلسة Claude — في Claude Code وCowork.
 
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.7.0` · الواجهة `v1.15.0`
+**الإصدار:** Worker `v1.7.0` · الواجهة `v1.16.0`
 
 ---
 
@@ -303,13 +303,21 @@ Production branch : main · Builds for non-production branches: ON
   Drawer جانبي (`openHistoryDrawer`) — كله client-side على `rawEvents`، مفيش
   تغيير Worker. **التجميع على مستوى رقم التتبع مش الأوردر** — أوردر بـ S1 وS2
   بيبان صفين (قرار أحمد).
-- 🔴 **تاب ⚠️ Exception بيعرض أحداث 47 لرقم التتبع بس لو 47 هي آخر حالة ليه
-  (30-09-2026)** — أي حالة أحدث بعدها بتشيله من التاب (وبيرجع لو رجع Exception).
-  بيفضل يستبعد الأرقام المؤرشفة (45/46) زي ما كان.
-- 🔴 **الأرشفة في الشاشة بتتفعّل بكود 45 أو 46** (`ARCHIVE_TRIGGER_STATES` في
-  `index.html`) — رقم تتبع وصله Delivered أو Returned to business ولو مرة، كل
-  سجلاته بتروح تاب الأرشيف وبتتشال من "الأوردرات تحت التوصيل". تاب "↩️ Returned
-  to business" نفسه بيفضل يعرض أحداث كود 46 بس.
+- 🔴 **تاب الأرشيف اتحذف (08-10-2026) والحالات النهائية = 45 · 46 · 48.**
+  `FINAL_STATES` في `index.html` — رقم تتبع وصله Delivered (45) أو Returned to business (46)
+  أو Terminated (48) ولو مرة بيتشال من "🚚 الأوردرات تحت التوصيل" (`computeFinalTrackingNumbers()`)،
+  ومفيش تاب تجميعي ليه. تابات "↩️ Returned to business" (46) و"✅ Delivered" (45) و"🛑 Terminated"
+  (48) **صف واحد لكل `tracking_number`** (آخر حدث بنفس الحالة — `latestPerTracking()`)، والتكرار
+  بيبان في "🕘 عرض السجل" بس. نتيجة التابات متخزّنة في `tabRows` وبتتحسب مرة في `renderAllTabs()`.
+- 🔴 **الفلاتر في رأس العمود (v1.16.0 — `data-table-standard.md` v8.1.0).** مفيش قسم فلاتر فوق
+  الجدول؛ زرار القمع `[data-flt]` جنب اسم كل عمود بيفتح قايمة عائمة `.pop` على `body`
+  (`openPop`/`buildPop`/`popAction`)، وحالة الفلاتر لكل تاب في `tabState[tabKey]` (مفيش state
+  متشارك). فلتر «الوصف» و«كود الحالة» اندمجوا في فلتر واحد على «الحالة عند بوسطة»
+  (`stateDesc` = `45 · Delivered`). **ممنوع** إرجاع قسم فلاتر فوق الجدول أو `<select>` قيمة واحدة.
+- **عمود «أسباب فشل التوصيل» = `exception_reason`** (من `exceptionReason` في الويبهوك — الـ Worker
+  بيخزّنه أصلًا). بفلتر وترتيب في كل التابات وكمان تحت كل حدث في لوحة السجل. مفيش تغيير Worker/SQL.
+- **عمود «النتيجة» اتسمّى «تحديث شوبيفاي»**، وقيمتا `delivered_duplicate_skipped` و
+  `returned_duplicate_skipped` بيتعرضوا «مسجّل مسبقاً» (التسمية في الواجهة بس، القيم في D1 زي ما هي).
 
 - 🔴 **النوع الأصلي (`oldType`) للشحنة المحوّلة لـ RTO بيتحسب في الواجهة (03-10-2026).** الويبهوك مابيبعتش `oldType` أبدًا (مقيس على D1: صفر من ~٨٩٥٠ حدث). `computeOriginalTypeByTracking()`/`typeText()` في `index.html` بياخدوا أول `bosta_type` غير RTO على نفس `tracking_number` ويعرضوا «RTO (كانت: SEND)». شحنة اتحوّلت قبل تسجيل الويبهوك مالهاش أحداث سابقة فبتظهر «RTO» لوحدها. الفلتر وعمود الترتيب لسه على `bosta_type` الخام. مفيش تغيير Worker/SQL.
 
@@ -347,11 +355,17 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 | ecommoda-worker-builder | v3.7.1 |
 | bosta-api-helper | v6.0.0 |
 | ecommoda-constants | v3.1.0 |
-| ecommoda-html-builder | v8.0.1 |
+| ecommoda-html-builder | v8.1.0 |
 | ecommoda-tool-migration-playbook | (بلا رقم إصدار ظاهر وقت القراءة) |
 
-آخر مطابقة: 30-09-2026 · `index.js` v1.7.0 · `index.html` v1.12.0
+آخر مطابقة: 08-10-2026 · `index.js` v1.7.0 · `index.html` v1.16.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
+
+### 08-10-2026 — حذف الأرشيف + تاب Terminated + فلاتر رأس العمود (`index.html` v1.16.0 · واجهة فقط)
+
+- بطلب أحمد: (1) **تاب الأرشيف اتحذف** · (2) تابات Delivered/Returned **صف واحد لكل رقم تتبع** · (3) بادج التكرار «**مسجّل مسبقاً**» · (4) عمود النتيجة ← «**تحديث شوبيفاي**» في كل التابات · (5) **تاب 🛑 Terminated** (كود 48) · (6) تصميم الجدول بمعيار `ecommoda-html-builder` v8.1.0 (فلاتر رأس العمود، تثبيت العناوين، خط 12/12.5px، `#4b5563`) · (7) مربعات المحاولات «محاولتين / محاولة واحدة / 0 محاولات» · (8) عمود «**أسباب فشل التوصيل**» (`exception_reason`).
+- `WORKER_VERSION`/`MIN_WORKER_VERSION` فضلوا `1.7.0` — مفيش تغيير Worker/SQL. **يلغي** وصف تاب الأرشيف و`ARCHIVE_TRIGGER_STATES` و`HISTORY_TABS` في الإدخالات التاريخية تحت (بقوا `FINAL_STATES` وزرار السجل على كل التابات).
+- اتّحقق بـ Playwright (Worker مُحاكى): 4 تابات، الدمج لصف واحد، قايمة الفلتر بتفضل مفتوحة بعد أكتر من اختيار، «مسح كل الفلاتر»، مربعات المحاولات، عمود السبب ولوحة السجل — صفر أخطاء JS. `css-check.js` ✅.
 
 ### 08-10-2026 — حذف تاب Exception + إعادة ترتيب الأعمدة (`index.html` v1.15.0 · واجهة فقط)
 
@@ -665,6 +679,6 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
   + `extra._unregistered = true` + UPSERT في `log_value_alerts` (الجدول
   المشترك، **مش** اتعمل هنا).
 
-آخر تحديث: 30-09-2026
+آخر تحديث: 08-10-2026
 
 </div>
