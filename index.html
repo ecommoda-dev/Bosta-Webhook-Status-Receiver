@@ -371,10 +371,12 @@ body {
 .att-chip:hover{filter:brightness(.97);}
 .att-chip:active{transform:translateY(1px);}
 .att-chip-n{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:20px;background:var(--surface);border:1px solid currentColor;font-family:var(--font-mono);font-size:12.5px;font-weight:800;line-height:1;direction:ltr;font-variant-numeric:tabular-nums;}
-.att-chip.att-0{background:var(--surface-2);color:var(--text-secondary);border-color:var(--border);}
-.att-chip.att-1{background:var(--accent-light);color:var(--accent-dark);border-color:var(--accent-border);}
-.att-chip.att-2{background:var(--amber-light);color:var(--amber-dark);border-color:var(--amber-border);}
-.att-chip.att-3{background:var(--red-light);color:var(--red-dark);border-color:var(--red-border);}
+.att-chip.att-0{background:var(--green-light);color:var(--green-dark);border-color:var(--green-border);}
+.att-chip.att-1{background:var(--amber-light);color:var(--amber-dark);border-color:var(--amber-border);}
+.att-chip.att-2,.att-chip.att-3{background:var(--red-light);color:var(--red-dark);border-color:var(--red-border);}
+.att-chip.att-null{background:var(--surface-2);color:var(--text-secondary);border-color:var(--border);}
+.state-code{display:inline-block;min-width:26px;padding:1px 6px;margin-inline-end:6px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border);font-family:var(--font-mono);font-size:12px;font-weight:700;direction:ltr;text-align:center;}
+.match-sub{font-size:10.5px;color:var(--text-secondary);font-weight:400;font-family:var(--font-mono);direction:ltr;margin-top:2px;}
 .att-chip.on{box-shadow:0 0 0 2px currentColor inset;}
 .att-chip.on::after{content:'✕';font-size:12px;font-weight:800;opacity:.75;}
 
@@ -510,9 +512,13 @@ body {
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge" id="clLatestVerBadge"></span>
-          <span class="cl-ver-date">03-10-2026</span>
+          <span class="cl-ver-date">08-10-2026</span>
         </div>
         <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>🔴 <b>تاب ⚠️ Exception اتحذف.</b> أي رقم تتبع آخر حالته Exception (47) بقى بيظهر في «🚚 الأوردرات تحت التوصيل» زي أي حالة عادية، والأرشفة بـ45/46 زي ما هي. واجهة فقط.</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>مربعات «عدد المحاولات» بقت مرتبة 2 ← 1 ← 0 من اليمين، بالرقم فقط (من غير «محاولة/محاولات»): 2 وما فوق أحمر، 1 كهرماني، 0 أخضر.</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>«كود الحالة» + «الوصف» اندمجوا في عمود واحد <b>«الحالة عند بوسطة»</b> (<code>[24] Received at warehouse</code>) — الفلاتر والترتيب (بالكود) زي ما هم. «الوقت» ← «وقت آخر تحديث». «السجل» ← «سجل التحديثات» والزرار «🕘 عرض السجل».</span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>عمود «طريقة المطابقة» اتحذف، وقيمتها (<code>tracking_number</code>/<code>type_fallback</code>) بقت بخط صغير تحت «نوع الأوردر». «نوع الأوردر» بقى «عادي (S1)» / «استبدال/استرجاع (S2)».</span></li>
           <li class="cl-item"><span class="cl-tag new">جديد</span><span><b>النوع الأصلي للشحنة المحوّلة لـ RTO:</b> عمود «نوع الشحنة» ولوحة «🕘 السجل» بيعرضوا «RTO (كانت: SEND)» أو «(كانت: EXCHANGE)». الويبهوك مابيبعتش <code>oldType</code>، فالقيمة من أول نوع ظهر على نفس رقم التتبع قبل حدث RTO. لو الشحنة اتحوّلت قبل تسجيل الويبهوك بتظهر «RTO» لوحدها. واجهة فقط — مفيش تغيير Worker/SQL.</span></li>
         </ul>
       </div>
@@ -715,12 +721,12 @@ body {
           <h4>FEATURE MAP</h4>
           <ul>
             <li><code>§SHELL</code> — App Shell + Login + Settings/About/Changelog modals</li>
-            <li><code>§TOOL::tabs</code> — 5 تابات، كل واحدة بفلاتر/بحث/فترة/ترتيب مستقل بالكامل: 🚚 الأوردرات تحت التوصيل (كل حدث مش Delivered/Exception/Returned to business، وبيستبعد كمان أرقام التتبع المؤرشفة)، ⚠️ Exception (كود 47، وبيستبعد هو كمان أرقام التتبع المؤرشفة)، ↩️ Returned to business (كود 46)، ✅ Delivered (كود 45)، 🗄 الأرشيف (آخر تاب — كل سجلات أي رقم تتبع وصل لـ Delivered أو Returned to business، بكل حالاته)</li>
+            <li><code>§TOOL::tabs</code> — 4 تابات، كل واحدة بفلاتر/بحث/فترة/ترتيب مستقل بالكامل: 🚚 الأوردرات تحت التوصيل (آخر حالة لكل رقم تتبع، أي حالة غير Delivered/Returned — Exception (47) حالة عادية هنا — وبيستبعد أرقام التتبع المؤرشفة)، ↩️ Returned to business (كود 46)، ✅ Delivered (كود 45)، 🗄 الأرشيف (آخر تاب — كل سجلات أي رقم تتبع وصل لـ Delivered أو Returned to business، بكل حالاته)</li>
             <li><code>buildTabPanelHtml()</code> / <code>buildMsFilterHtml()</code> — بيولّدوا HTML الفلاتر والجدول لكل تاب في وقت التحميل (بدل تكرار 5 نسخ يدويًا في الـ HTML)، بـ id namespaced بـ <code>tabKey</code></li>
             <li><code>tabState[tabKey]</code> — فلاتر اختيار متعدد + بحث أوردر/تتبع + فترة تاريخ + ترتيب، لكل تاب نسخة مستقلة بالكامل (مفيش state متشارك بين التابات)</li>
-            <li><code>computeArchivedTrackingNumbers()</code> — Set بكل <code>tracking_number</code> وصلها حدث بكود حالة 45 أو 46 مرة واحدة على الأقل، بيتحسب مرة واحدة بعد كل تحميل ويتقرا من تابي "الأوردرات تحت التوصيل" و"⚠️ Exception" (استبعاد) و"الأرشيف" (تجميع) — مش من تاب Delivered/Returned to business</li>
-            <li><code>slotLabel()</code> — بيحوّل <code>matched_slot</code> (S1/S2 الخام) لليبل عمود "نوع الأوردر" المعروض: S1 ← "عادي"، S2 ← "استبدال/استرجاع"، أي قيمة تانية بترجع كابيتال زي ما هي. عمود "النوع" (<code>bosta_type</code> — SEND/RTO/EXCHANGE...) اتسمى "نوع الشحنة" في كل التابات — البيانات في D1 ما اتغيّرتش، التسمية في الواجهة بس.</li>
-            <li><code>computeLatestStateByTracking()</code> / <code>latestEventByTracking</code> — آخر حدث لكل <code>tracking_number</code>؛ بيحكم تاب الأوردرات تحت التوصيل (صف واحد لكل رقم) وتاب Exception (يظهر لو آخر حالة 47) · <code>openHistoryDrawer(tn)</code> — لوحة سجل رقم التتبع</li>
+            <li><code>computeArchivedTrackingNumbers()</code> — Set بكل <code>tracking_number</code> وصلها حدث بكود حالة 45 أو 46 مرة واحدة على الأقل، بيتحسب مرة واحدة بعد كل تحميل ويتقرا من تابي "الأوردرات تحت التوصيل" (استبعاد) و"الأرشيف" (تجميع) — مش من تاب Delivered/Returned to business</li>
+            <li><code>slotLabel()</code> — بيحوّل <code>matched_slot</code> (S1/S2 الخام) لليبل عمود "نوع الأوردر" المعروض: S1 ← "عادي (S1)"، S2 ← "استبدال/استرجاع (S2)"، أي قيمة تانية بترجع كابيتال زي ما هي. عمود "النوع" (<code>bosta_type</code> — SEND/RTO/EXCHANGE...) اتسمى "نوع الشحنة" في كل التابات — البيانات في D1 ما اتغيّرتش، التسمية في الواجهة بس.</li>
+            <li><code>computeLatestEventByTracking()</code> / <code>latestEventByTracking</code> — آخر حدث لكل <code>tracking_number</code>؛ بيحكم تاب الأوردرات تحت التوصيل والأرشيف (صف واحد لكل رقم) · <code>openHistoryDrawer(tn)</code> — لوحة سجل رقم التتبع</li>
             <li><code>loadEvents({full})</code> — تحديث stale-while-revalidate: تحميل أولي كامل، بعده تراكمي (<code>afterId</code> + <code>ids</code>)، بلا مسح للجدول، مع <code>isLoadingEvents</code> ومزامنة كاملة كل ٣٠ دقيقة</li>
             <li><code>tabPartition(tabKey)</code> — بيفلتر <code>rawEvents</code> حسب <code>state</code> (+ حالة الأرشفة لتابي main/archive)</li>
             <li><code>§TOOL-JS::numericFilter</code> — فلاتر كود الحالة وعدد المحاولات: تبويبا قائمة قيم/نطاق من-إلى متبادلان (<code>data-table-standard.md</code> §4)</li>
@@ -816,7 +822,6 @@ body {
   <!-- ─── §TOOL::mainTabs (tabs-and-modals.md §1) — 5 تابات، كل واحدة بفلاتر وجدول مستقلين تمامًا ─── -->
   <div class="main-tabs-bar">
     <button class="main-tab-btn active" id="tab-main"      onclick="switchMainTab('main')">🚚 الأوردرات تحت التوصيل</button>
-    <button class="main-tab-btn"        id="tab-exception" onclick="switchMainTab('exception')">⚠️ Exception</button>
     <button class="main-tab-btn"        id="tab-returned"  onclick="switchMainTab('returned')">↩️ Returned to business</button>
     <button class="main-tab-btn"        id="tab-delivered" onclick="switchMainTab('delivered')">✅ Delivered</button>
     <button class="main-tab-btn"        id="tab-archive"   onclick="switchMainTab('archive')">🗄 الأرشيف</button>
@@ -828,7 +833,6 @@ body {
     <div class="banner banner-amber" id="matchFailBanner"></div>
     <div id="tabRoot-main"></div>
   </div>
-  <div class="tab-panel" id="panel-exception"><div id="tabRoot-exception"></div></div>
   <div class="tab-panel" id="panel-returned"><div id="tabRoot-returned"></div></div>
   <div class="tab-panel" id="panel-delivered"><div id="tabRoot-delivered"></div></div>
   <div class="tab-panel" id="panel-archive"><div id="tabRoot-archive"></div></div>
@@ -852,7 +856,7 @@ body {
 // 🔴 1.6.0 = أول نسخة Worker بتكتب write_status='returned_duplicate_skipped'
 //    لحدث Returned to business (46) تاني على نفس الأوردر/الـ slot.
 const MIN_WORKER_VERSION = '1.7.0';
-const TOOL_VERSION       = 'v1.14.0';
+const TOOL_VERSION       = 'v1.15.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1362,12 +1366,10 @@ function typeText(ev) {
   return old ? `${t} (كانت: ${old})` : t;
 }
 
-// 🔴 30-09-2026 — تاب Exception: الحدث بيظهر بس لو Exception (47) هي آخر حالة
-// لرقم التتبع. أي حالة أحدث بعدها (حتى غير نهائية) بتشيل رقم التتبع من التاب.
+// آخر حدث لكل tracking_number (بيحكم تابي "تحت التوصيل" والأرشيف).
 // الأحدث = أكبر bosta_timestamp، وعند التعادل received_at ثم id.
-let latestStateByTracking = new Map();
 let latestEventByTracking = new Map();
-function computeLatestStateByTracking(events) {
+function computeLatestEventByTracking(events) {
   const best = new Map();
   const key = ev => [Number(ev.bosta_timestamp) || 0, String(ev.received_at || ''), Number(ev.id) || 0];
   const newer = (a, b) => { const ka = key(a), kb = key(b); for (let i = 0; i < 3; i++) { if (ka[i] !== kb[i]) return ka[i] > kb[i]; } return false; };
@@ -1377,15 +1379,11 @@ function computeLatestStateByTracking(events) {
     if (!cur || newer(ev, cur)) best.set(t, ev);
   });
   latestEventByTracking = best;
-  const m = new Map();
-  best.forEach((ev, t) => m.set(t, Number(ev.state)));
-  return m;
 }
 const TABS = [
   // 🔴 30-09-2026 — "الأوردرات تحت التوصيل": صف واحد لكل tracking_number بآخر حالة فقط
 //    (والسجل الكامل في Drawer). رقم التتبع اللي آخر حالته 47 بيروح تاب Exception.
-  { key: 'main',      match: ev => latestEventByTracking.get(String(ev.tracking_number)) === ev && ![45, 46, 47].includes(Number(ev.state)) && !archivedTrackingNumbers.has(String(ev.tracking_number)) },
-  { key: 'exception', match: ev => Number(ev.state) === 47 && !archivedTrackingNumbers.has(String(ev.tracking_number)) && latestStateByTracking.get(String(ev.tracking_number)) === 47 },
+  { key: 'main',      match: ev => latestEventByTracking.get(String(ev.tracking_number)) === ev && ![45, 46].includes(Number(ev.state)) && !archivedTrackingNumbers.has(String(ev.tracking_number)) },
   { key: 'returned',  match: ev => Number(ev.state) === 46 },
   { key: 'delivered', match: ev => Number(ev.state) === 45 },
   // 🔴 30-09-2026 — الأرشيف بقى صف واحد لكل tracking_number بآخر حالة (زي "تحت التوصيل")،
@@ -1398,13 +1396,13 @@ const filterLabels = { type: 'نوع الشحنة', slot: 'نوع الأوردر
 const SLOT_LABELS = { S1: 'عادي', S2: 'استبدال/استرجاع' };
 function slotLabel(slot) {
   const key = String(slot || '').toUpperCase();
-  return SLOT_LABELS[key] || (slot ? String(slot).toUpperCase() : '—');
+  return SLOT_LABELS[key] ? `${SLOT_LABELS[key]} (${key})` : (slot ? String(slot).toUpperCase() : '—');
 }
 
 // 🔴 30-09-2026 — مربعات عدد المحاولات (تاب "تحت التوصيل" بس). بتكتب في فلتر `attempts` نفسه
 //    (مش حالة تانية جنبه) والعدّ من التاب كله مش المفلتر — عشان أول ضغطة ماتصفّرش باقي المربعات.
 const ATTEMPT_CHIP_TABS = new Set(['main']);
-const HISTORY_TABS = new Set(['main', 'exception', 'returned', 'delivered', 'archive']);   // زرار 🕘 السجل (وفيه Raw Payload لكل حدث) على كل التابات
+const HISTORY_TABS = new Set(['main', 'returned', 'delivered', 'archive']);   // زرار 🕘 السجل (وفيه Raw Payload لكل حدث) على كل التابات
 function attemptClass(v) { const n = Number(v); return Number.isFinite(n) ? 'att-' + Math.min(n, 3) : 'att-0'; }
 function renderAttemptChips(tabKey) {
   const box = document.getElementById(`attChips-${tabKey}`);
@@ -1414,13 +1412,13 @@ function renderAttemptChips(tabKey) {
     const k = ev.number_of_attempts == null ? 'null' : String(ev.number_of_attempts);
     counts.set(k, (counts.get(k) || 0) + 1);
   });
-  const keys = [...counts.keys()].sort((a, b) => (a === 'null') - (b === 'null') || Number(a) - Number(b));
+  const keys = [...counts.keys()].sort((a, b) => (a === 'null') - (b === 'null') || Number(b) - Number(a));   // تنازلي: 2 ← 1 ← 0 (RTL = من اليمين)
   const st = tabState[tabKey].ms.attempts;
   box.style.display = keys.length ? '' : 'none';
   box.innerHTML = `<span class="att-chips-label">عدد المحاولات:</span>` + keys.map(k => {
     const on = st.mode !== 'range' && st.selected.has(k);
-    const label = k === 'null' ? '— بدون' : `${k} ${Number(k) === 1 ? 'محاولة' : 'محاولات'}`;
-    return `<button type="button" class="att-chip ${k === 'null' ? 'att-0' : attemptClass(k)} ${on ? 'on' : ''}" data-val="${esc(k)}" aria-pressed="${on}"><span>${label}</span><span class="att-chip-n">${counts.get(k)}</span></button>`;
+    const label = k === 'null' ? '— بدون' : k;
+    return `<button type="button" class="att-chip ${k === 'null' ? 'att-null' : attemptClass(k)} ${on ? 'on' : ''}" data-val="${esc(k)}" aria-pressed="${on}"><span>${label}</span><span class="att-chip-n">${counts.get(k)}</span></button>`;
   }).join('');
   box.querySelectorAll('.att-chip').forEach(b => b.addEventListener('click', () => onAttemptChip(tabKey, b.dataset.val)));
 }
@@ -1574,15 +1572,13 @@ function buildTabPanelHtml(tabKey) {
               ${sortTh('order', 'الأوردر')}
               ${sortTh('tracking', 'رقم التتبع')}
               ${sortTh('type', 'نوع الشحنة')}
-              ${sortTh('stateCode', 'كود الحالة')}
-              <th>الوصف</th>
+              ${sortTh('stateCode', 'الحالة عند بوسطة')}
               ${sortTh('promise', 'موعد التسليم المتوقع')}
               ${sortTh('attempts', 'عدد المحاولات')}
-              ${sortTh('time', 'الوقت')}
+              ${sortTh('time', 'وقت آخر تحديث')}
               ${sortTh('slot', 'نوع الأوردر')}
-              ${sortTh('matchMethod', 'طريقة المطابقة')}
               ${sortTh('result', 'النتيجة')}
-              ${HISTORY_TABS.has(tabKey) ? '<th>السجل</th>' : ''}
+              ${HISTORY_TABS.has(tabKey) ? '<th>سجل التحديثات</th>' : ''}
             </tr>
           </thead>
           <tbody id="eventsBody-${tabKey}"></tbody>
@@ -1876,7 +1872,7 @@ function resetDateFilter(tabKey) {
 const sortConfig = {
   order: { type: 'string' }, tracking: { type: 'string' }, type: { type: 'string' },
   stateCode: { type: 'number' }, promise: { type: 'date' }, attempts: { type: 'number' },
-  time: { type: 'date' }, slot: { type: 'string' }, matchMethod: { type: 'string' }, result: { type: 'string' },
+  time: { type: 'date' }, slot: { type: 'string' }, result: { type: 'string' },
 };
 function toggleSort(tabKey, key) {
   const ts = tabState[tabKey];
@@ -1916,19 +1912,17 @@ function applySort(tabKey, rows) {
 // ─── §TOOL-JS::eventRow — بناء صف الجدول (الهايبرلينكات + الأعمدة الجديدة) ───
 function eventRowHtml(ev, tabKey) {
   const histTd = HISTORY_TABS.has(tabKey)
-    ? `<td><button class="hist-btn" onclick="openHistoryDrawer('${esc(String(ev.tracking_number))}')">🕘 السجل</button></td>` : '';
+    ? `<td><button class="hist-btn" onclick="openHistoryDrawer('${esc(String(ev.tracking_number))}')">🕘 عرض السجل</button></td>` : '';
   return `
     <tr>
       <td>${orderLink(ev.business_reference, ev.shopify_order_id)}</td>
       <td>${trackingLink(ev.tracking_number)}</td>
       <td>${esc(typeText(ev))}</td>
-      <td>${esc(ev.state)}</td>
-      <td>${esc(ev.description || '—')}</td>
+      <td><span class="state-code">${esc(ev.state)}</span> ${esc(ev.description || '—')}</td>
       <td>${ev.delivery_promise_date ? formatDateOnly(ev.delivery_promise_date) : '—'}</td>
       <td>${ev.number_of_attempts ?? '—'}</td>
       <td>${formatDateTime(ev.received_at)}</td>
-      <td>${esc(slotLabel(ev.matched_slot))}</td>
-      <td>${esc(ev.match_method || '—')}</td>
+      <td>${esc(slotLabel(ev.matched_slot))}${ev.match_method ? `<div class="match-sub">${esc(ev.match_method)}</div>` : ''}</td>
       <td>${resultBadge(ev.write_status)}</td>
       ${histTd}
     </tr>`;
@@ -2054,14 +2048,14 @@ function applyFiltersAndRender(tabKey) {
     _sort_order: ev.business_reference, _sort_tracking: ev.tracking_number, _sort_type: ev.bosta_type,
     _sort_stateCode: Number(ev.state), _sort_promise: toValidDate(ev.delivery_promise_date),
     _sort_attempts: ev.number_of_attempts, _sort_time: toValidDate(ev.received_at),
-    _sort_slot: ev.matched_slot || '—', _sort_matchMethod: ev.match_method, _sort_result: ev.write_status,
+    _sort_slot: ev.matched_slot || '—', _sort_result: ev.write_status,
   }));
   const sorted = applySort(tabKey, decorated);
 
   document.getElementById(`filteredCount-${tabKey}`).textContent = filtered.length.toLocaleString('en-US');
   body.innerHTML = sorted.length
     ? sorted.map(ev => eventRowHtml(ev, tabKey)).join('')
-    : '<tr><td colspan="12">لا توجد أحداث مطابقة</td></tr>';
+    : '<tr><td colspan="10">لا توجد أحداث مطابقة</td></tr>';
 }
 
 function onLookupInput(tabKey, el) {
@@ -2161,7 +2155,7 @@ async function fetchIncremental() {
 }
 function renderAllTabs() {
   archivedTrackingNumbers = computeArchivedTrackingNumbers(rawEvents);
-  latestStateByTracking = computeLatestStateByTracking(rawEvents);
+  computeLatestEventByTracking(rawEvents);
   originalTypeByTracking = computeOriginalTypeByTracking(rawEvents);
   TABS.forEach(t => {
     buildMsItems(t.key, tabPartition(t.key));
@@ -2179,7 +2173,7 @@ async function loadEvents({ full = false } = {}) {
   if (first) {
     TABS.forEach(t => {
       const body = document.getElementById(`eventsBody-${t.key}`);
-      if (body) body.innerHTML = '<tr><td colspan="12">...جاري التحميل</td></tr>';
+      if (body) body.innerHTML = '<tr><td colspan="10">...جاري التحميل</td></tr>';
     });
   }
   setBgLoading(true);
@@ -2213,7 +2207,7 @@ async function loadEvents({ full = false } = {}) {
       // أول تحميل فشل: مفيش بيانات نحافظ عليها — نعرض الخطأ ونسمح بإعادة المحاولة
       TABS.forEach(t => {
         const body = document.getElementById(`eventsBody-${t.key}`);
-        if (body) body.innerHTML = `<tr><td colspan="12">${esc(e.message)}</td></tr>`;
+        if (body) body.innerHTML = `<tr><td colspan="10">${esc(e.message)}</td></tr>`;
       });
     } else {
       // تحديث دوري فشل: الجدول القديم يفضل ظاهر + تنبيه صغير بدل مسحه برسالة خطأ
