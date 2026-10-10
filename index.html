@@ -369,6 +369,14 @@ body {
 .data-table tbody tr:hover{background:var(--surface-2);}
 .data-table td.td-reason{line-height:1.55;}
 .data-table td.td-reason .rsn+.rsn{margin-top:5px;padding-top:5px;border-top:1px dashed var(--border);}
+.data-table tbody tr.rto-row{background:var(--red-light);}
+.data-table tbody tr.rto-row:hover{background:#fee2e2;}
+.data-table tbody tr.rto-row td{border-bottom-color:var(--red-border);}
+.data-table tbody tr.rto-row td:first-child{box-shadow:inset -3px 0 0 var(--red);}
+.type-old{margin-top:3px;font-size:11.5px;font-weight:600;color:var(--text-secondary);}
+.type-old s{text-decoration-thickness:1.5px;}
+.att-chip.static{padding:3px 12px;cursor:default;pointer-events:none;font-size:13px;}
+.att-chip.static:hover{filter:none;}
 .data-table td.empty{padding:40px;color:var(--text-mid);font-weight:700;white-space:normal;}
 .th-in{display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px;}
 /* التحكم اللايف في عرض الأعمدة — v8.2.0 (Standards #51) */
@@ -471,6 +479,16 @@ th.flt-on .th-flt{background:var(--accent-light);border-color:var(--accent-borde
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">10-10-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span><b>أسباب فشل التوصيل بالعربي</b> للأسباب المعروفة (١٣ سبب)، وأي سبب تاني بيتعرض زي ما هو حرفيًا. <b>نوع الشحنة</b> بقى: SEND ← «توصيل عادي S1» · EXCHANGE ← «استبدال S2» · CUSTOMER_RETURN_PICKUP ← «استرجاع S2». الفلاتر والسجل بنفس التعريب. واجهة فقط.</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span>شحنات <b>RTO</b>: صفوفها بثيم أحمر، والنوع الأصلي تحت كلمة RTO مشطوب بخط في النص. رقم «عدد المحاولات» في الجدول بنفس تصميم/ألوان مربعات الفلاتر.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.17.0</span>
           <span class="cl-ver-date">10-10-2026</span>
         </div>
         <ul class="cl-items">
@@ -852,7 +870,7 @@ th.flt-on .th-flt{background:var(--accent-light);border-color:var(--accent-borde
 // 🔴 1.6.0 = أول نسخة Worker بتكتب write_status='returned_duplicate_skipped'
 //    لحدث Returned to business (46) تاني على نفس الأوردر/الـ slot.
 const MIN_WORKER_VERSION = '1.7.0';
-const TOOL_VERSION       = 'v1.17.0';
+const TOOL_VERSION       = 'v1.18.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1426,17 +1444,47 @@ function computeReasonsByTracking(events) {
   });
   return m;
 }
+// 🔴 10-10-2026 — تعريب أسباب بوسطة المعروفة (كود ← عربي، بالمطابقة على الاسم الإنجليزي). أي سبب مش في
+// القائمة بيتعرض زي ما هو حرفيًا من غير تعريب أو تغيير. المطابقة بتتجاهل الحروف الكبيرة/الصغيرة والنقطة الأخيرة.
+const REASON_AR_BY_EN = {
+  'Retry delivery - the customer is not in the address.': 'العميل غير متواجد',
+  'Retry delivery - the customer changed the address.': 'العميل غيّر العنوان',
+  'Postponed - the customer requested postponement for another day.': 'تأجيل بطلب من العميل',
+  'Cancellation - the customer wants to open the shipment.': '(إلغاء) العميل يريد فتح الشحنة',
+  'Waiting for data modification - address or phone number not clear/wrong.': 'العنوان / التليفون خطأ',
+  'Cancellation - cancellation of delivery at the request of the sender.': 'إلغاء بطلب من المُرسل',
+  'Customer is not answering.': 'العميل لا يرد',
+  'Cancellation - the customer refuses to receive the shipment.': '(إلغاء) العميل رفض الاستلام',
+  'Cancellation - the delivery address is outside Bosta coverage area.': '(إلغاء) العنوان خارج التغطية',
+  'Waiting for data modification - address not clear.': 'العنوان غير واضح',
+  'Waiting for data modification - wrong phone number.': 'رقم التليفون خطأ',
+  'Bad Weather.': 'ظروف جوية',
+  'Suspicious consignee.': 'اشتباه في المُرسل إليه',
+};
+const normReason = r => String(r).trim().replace(/\.+$/, '').toLowerCase();
+const REASON_AR = new Map(Object.entries(REASON_AR_BY_EN).map(([en, ar]) => [normReason(en), ar]));
+const reasonAr = r => REASON_AR.get(normReason(r)) || r;
 function reasonsOf(ev) {
   const arr = reasonsByTracking.get(String(ev.tracking_number));
-  if (arr && arr.length) return arr;
+  if (arr && arr.length) return arr.map(reasonAr);
   const own = String(ev.exception_reason || '').trim();
-  return own ? [own] : ['—'];
+  return own ? [reasonAr(own)] : ['—'];
 }
+// تعريب نوع الشحنة (bosta_type). RTO وأي نوع تاني بيتعرض زي ما هو.
+const TYPE_AR = { SEND: 'توصيل عادي S1', EXCHANGE: 'استبدال S2', CUSTOMER_RETURN_PICKUP: 'استرجاع S2' };
+const typeAr = t => TYPE_AR[String(t || '').toUpperCase()] || t;
 function typeText(ev) {
   const t = ev && ev.bosta_type;
   if (!t) return '—';
   const old = t === 'RTO' ? originalTypeByTracking.get(String(ev.tracking_number)) : null;
-  return old ? `${t} (كانت: ${old})` : t;
+  return old ? `${t} (كانت: ${typeAr(old)})` : typeAr(t);
+}
+// نسخة HTML: RTO وتحتها النوع الأصلي مشطوب
+function typeHtml(ev) {
+  const t = ev && ev.bosta_type;
+  if (!t) return '—';
+  const old = t === 'RTO' ? originalTypeByTracking.get(String(ev.tracking_number)) : null;
+  return old ? `<div>${esc(t)}</div><div class="type-old"><s>${esc(typeAr(old))}</s></div>` : esc(typeAr(t));
 }
 
 // آخر حدث لكل tracking_number (بيحكم تاب «تحت التوصيل»)
@@ -1484,6 +1532,7 @@ function labelOf(k, v) {
   if (k === 'result') return RESULT_LABELS[v] || v;
   if (k === 'attempts') return v === 'null' ? '— (بدون)' : v;
   if (k === 'reason' && v === '—') return '— (بدون سبب)';
+  if (k === 'type') return typeAr(v);
   return v;
 }
 const PRESETS = { today: 'اليوم', yesterday: 'أمس', last7: 'آخر 7 أيام', last30: 'آخر 30 يوم', thisMonth: 'الشهر الحالي', lastMonth: 'الشهر السابق' };
@@ -1698,14 +1747,14 @@ function sortRows(tabKey, rows) {
 // ─── §TOOL-JS::eventRow — بناء صف الجدول (الهايبرلينكات + الأعمدة) ───
 function eventRowHtml(ev) {
   return `
-    <tr>
+    <tr${ev.bosta_type === 'RTO' ? ' class="rto-row"' : ''}>
       <td>${orderLink(ev.business_reference, ev.shopify_order_id)}</td>
       <td class="col-num">${trackingLink(ev.tracking_number)}</td>
-      <td>${esc(typeText(ev))}</td>
+      <td>${typeHtml(ev)}</td>
       <td><span class="state-code">${esc(ev.state)}</span> ${esc(ev.description || '—')}</td>
       <td class="td-reason">${reasonsOf(ev).map(r => `<div class="rsn">${esc(r)}</div>`).join('')}</td>
       <td>${ev.delivery_promise_date ? formatDateOnly(ev.delivery_promise_date) : '—'}</td>
-      <td>${ev.number_of_attempts ?? '—'}</td>
+      <td>${ev.number_of_attempts == null ? '—' : `<span class="att-chip static ${attemptClass(ev.number_of_attempts)}">${esc(ev.number_of_attempts)}</span>`}</td>
       <td>${formatDateTime(ev.received_at)}</td>
       <td>${esc(slotLabel(ev.matched_slot))}${ev.match_method ? `<div class="match-sub">${esc(ev.match_method)}</div>` : ''}</td>
       <td>${resultBadge(ev.write_status)}</td>
@@ -1976,12 +2025,12 @@ function openHistoryDrawer(tn) {
     .sort((a, b) => (Number(b.bosta_timestamp) || 0) - (Number(a.bosta_timestamp) || 0) || String(b.received_at).localeCompare(String(a.received_at)) || (Number(b.id) || 0) - (Number(a.id) || 0));
   const first = evs[0] || {};
   document.getElementById('histTitle').innerHTML = `سجل ${esc(tn)} · ${esc(first.business_reference || '')} <span style="color:var(--text-secondary);font-weight:400">(${evs.length} حدث)</span>`;
-  const typeLine = first.bosta_type ? `<div class="tl-meta" style="margin-bottom:12px"><span>نوع الشحنة: <b>${esc(typeText(first))}</b></span></div>` : '';
+  const typeLine = first.bosta_type ? `<div class="tl-meta" style="margin-bottom:12px"><span>نوع الشحنة: <b>${typeHtml(first)}</b></span></div>` : '';
   document.getElementById('histBody').innerHTML = typeLine + evs.map((e, i) => `
     <div class="tl-item ${i === 0 ? 'latest' : ''}">
       <div class="tl-desc">${esc(e.description || '—')} <span style="color:var(--text-secondary);font-weight:400">(${esc(e.state)})</span></div>
       <div class="tl-meta"><span>${formatDateTime(e.received_at)}</span><span>محاولات: ${e.number_of_attempts ?? '—'}</span>${resultBadge(e.write_status)}</div>
-      ${e.exception_reason ? `<div class="tl-meta"><span>سبب فشل التوصيل: <b>${esc(e.exception_reason)}</b></span></div>` : ''}
+      ${e.exception_reason ? `<div class="tl-meta"><span>سبب فشل التوصيل: <b>${esc(reasonAr(e.exception_reason))}</b></span></div>` : ''}
       <div class="raw-toggle" onclick="toggleRaw(this)"><span class="arrow">◀</span><span>Raw Payload</span></div>
       <div class="raw-body"><pre>${esc(prettyPayload(e.raw_payload))}</pre></div>
     </div>`).join('') || '<div>لا توجد أحداث</div>';

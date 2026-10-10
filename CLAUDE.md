@@ -2,14 +2,14 @@
 
 # مستقبل حالة شحنات بوسطة (`Bosta-Webhook-Status-Receiver`)
 
-![version](https://img.shields.io/badge/version-v1.17.0-blue)
+![version](https://img.shields.io/badge/version-v1.18.0-blue)
 
 > بيتحمّل أوتوماتيك في كل جلسة Claude — في Claude Code وCowork.
 
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.7.0` · الواجهة `v1.17.0`
+**الإصدار:** Worker `v1.7.0` · الواجهة `v1.18.0`
 
 ---
 
@@ -369,7 +369,7 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 | ecommoda-html-builder | v8.3.0 |
 | ecommoda-tool-migration-playbook | (بلا رقم إصدار ظاهر وقت القراءة) |
 
-آخر مطابقة: 10-10-2026 · `index.js` v1.7.0 · `index.html` v1.17.0
+آخر مطابقة: 10-10-2026 · `index.js` v1.7.0 · `index.html` v1.18.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
 
 ### 10-10-2026 — أسباب الفشل التاريخية + مطابقة `ecommoda-html-builder` v8.3.0 (`index.html` v1.17.0 · واجهة فقط)
