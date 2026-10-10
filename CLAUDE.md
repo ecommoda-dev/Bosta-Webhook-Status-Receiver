@@ -2,14 +2,14 @@
 
 # مستقبل حالة شحنات بوسطة (`Bosta-Webhook-Status-Receiver`)
 
-![version](https://img.shields.io/badge/version-v1.16.0-blue)
+![version](https://img.shields.io/badge/version-v1.17.0-blue)
 
 > بيتحمّل أوتوماتيك في كل جلسة Claude — في Claude Code وCowork.
 
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.7.0` · الواجهة `v1.16.0`
+**الإصدار:** Worker `v1.7.0` · الواجهة `v1.17.0`
 
 ---
 
@@ -314,8 +314,19 @@ Production branch : main · Builds for non-production branches: ON
   (`openPop`/`buildPop`/`popAction`)، وحالة الفلاتر لكل تاب في `tabState[tabKey]` (مفيش state
   متشارك). فلتر «الوصف» و«كود الحالة» اندمجوا في فلتر واحد على «الحالة عند بوسطة»
   (`stateDesc` = `45 · Delivered`). **ممنوع** إرجاع قسم فلاتر فوق الجدول أو `<select>` قيمة واحدة.
-- **عمود «أسباب فشل التوصيل» = `exception_reason`** (من `exceptionReason` في الويبهوك — الـ Worker
-  بيخزّنه أصلًا). بفلتر وترتيب في كل التابات وكمان تحت كل حدث في لوحة السجل. مفيش تغيير Worker/SQL.
+- 🔴 **عمود «أسباب فشل التوصيل» = كل أسباب رقم التتبع (v1.17.0 — 10-10-2026)، مش سبب الحدث الحالي.**
+  `exception_reason` موجود بس على أحداث Exception (47)، فالشحنة اللي آخر حالتها Received at warehouse
+  كان عمودها `—`. دلوقتي `computeReasonsByTracking()` بتجمّع أسباب كل أحداث نفس `tracking_number`
+  (الأحدث فوق، من غير تكرار) و`reasonsOf(ev)` بتعرضها سطر لكل سبب. الفلتر بيشتغل «أي سبب» (`valsOf`)
+  والترتيب على أحدث سبب. لوحة السجل لسه بتعرض سبب كل حدث لوحده. مفيش تغيير Worker/SQL.
+- 🔴 **عرض الأعمدة بالسحب (v1.17.0 — `data-table-standard.md` § 9ب):** `<colgroup>` + مقبض `.col-rz` في كل
+  عنوان، `table-layout:fixed` بعد القياس الأول، عرض **واحد مشترك للتابات الأربعة**
+  (`LS_COLS = bosta_webhook_status_col_widths_v1` — **ارفع `_v1` لو الأعمدة `COLS` اتغيّرت**). الخلايا بتلتف
+  (مفيش `ellipsis`). مفيش زرار إعادة ضبط (قرار صاحب المهارة).
+- 🔴 **الخروج التلقائي بعد 60 دقيقة عدم نشاط + الخروج اليدوي بلا تأكيد (v1.17.0 — Standards #52):**
+  `IDLE_TIMEOUT_MIN = 60` (ممنوع تغييرها)، بانر تحذير z-index 9000 قبلها بدقيقة، `performLogout(reason)`
+  بتمسح `rawEvents` والجداول. الـ polling (`pollTick`) مش نشاط. z-index لوحة السجل نزل 9000/9001 → 600/601
+  عشان 9000 للبانر بس.
 - **عمود «النتيجة» اتسمّى «تحديث شوبيفاي»**، وقيمتا `delivered_duplicate_skipped` و
   `returned_duplicate_skipped` بيتعرضوا «مسجّل مسبقاً» (التسمية في الواجهة بس، القيم في D1 زي ما هي).
 
@@ -355,11 +366,17 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 | ecommoda-worker-builder | v3.7.1 |
 | bosta-api-helper | v6.0.0 |
 | ecommoda-constants | v3.1.0 |
-| ecommoda-html-builder | v8.1.0 |
+| ecommoda-html-builder | v8.3.0 |
 | ecommoda-tool-migration-playbook | (بلا رقم إصدار ظاهر وقت القراءة) |
 
-آخر مطابقة: 08-10-2026 · `index.js` v1.7.0 · `index.html` v1.16.0
+آخر مطابقة: 10-10-2026 · `index.js` v1.7.0 · `index.html` v1.17.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
+
+### 10-10-2026 — أسباب الفشل التاريخية + مطابقة `ecommoda-html-builder` v8.3.0 (`index.html` v1.17.0 · واجهة فقط)
+
+- بطلب أحمد: (1) عمود «أسباب فشل التوصيل» بيعرض **كل الأسباب القديمة** على رقم التتبع (الأحدث فوق) حتى لو آخر حالة مش Exception · (2) **عرض الأعمدة بالسحب** (v8.2.0 / #51) · (3) **خروج تلقائي 60 د + خروج يدوي بلا تأكيد** (v8.3.0 / #52) · (4) لوحة السجل z-index → 600.
+- `WORKER_VERSION`/`MIN_WORKER_VERSION` فضلوا `1.7.0` — مفيش تغيير Worker/SQL. بصمة المهارات اتحدّثت لـ html-builder v8.3.0.
+- اتّحقق بـ Playwright (Worker مُحاكى): الأسباب بالترتيب ومن غير تكرار · فلتر «أي سبب» · سحب العمود +80px بالظبط ومتحفظ ومطبّق على التابات كلها · تحذير الخروج ثم الخروج التلقائي ومسح الجداول · الخروج اليدوي بلا dialog. `css-check.js` ✅ · `js-undef-check.js` الوحيد المعلَّم `playBeep` (معرّف عبر `window.playBeep` fallback — موجود قبل التعديل).
 
 ### 08-10-2026 — حذف الأرشيف + تاب Terminated + فلاتر رأس العمود (`index.html` v1.16.0 · واجهة فقط)
 
@@ -679,6 +696,6 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
   + `extra._unregistered = true` + UPSERT في `log_value_alerts` (الجدول
   المشترك، **مش** اتعمل هنا).
 
-آخر تحديث: 08-10-2026
+آخر تحديث: 10-10-2026
 
 </div>

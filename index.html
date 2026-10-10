@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>مستقبل حالة شحنات بوسطة</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<!-- skills: ecommoda-html-builder v8.1.0 · ecommoda-worker-builder v3.7.1 · ecommoda-constants v3.1.0 — 08-10-2026 -->
+<!-- skills: ecommoda-html-builder v8.3.0 · ecommoda-worker-builder v3.7.1 · ecommoda-constants v3.1.0 — 10-10-2026 -->
 <style>
 /* ══════════════════════════════════════════════════════
    §STYLES — design tokens (design-system.md) + shell + login + tool
@@ -154,9 +154,9 @@ body {
 /* ── Toast ──────────────────────────────────────────────────── */
 .hist-btn { border:1px solid var(--accent-border); background:var(--accent-light); color:var(--accent-dark); border-radius:var(--radius-sm); padding:4px 10px; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
 .hist-btn:hover { background:var(--accent-hover); }
-.drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:9000; opacity:0; pointer-events:none; transition:opacity .2s; }
+.drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:600; opacity:0; pointer-events:none; transition:opacity .2s; }
 .drawer-overlay.open { opacity:1; pointer-events:auto; }
-.drawer { position:fixed; top:0; bottom:0; left:0; width:min(420px,100vw); background:var(--surface); box-shadow:4px 0 24px rgba(0,0,0,.2); z-index:9001; transform:translateX(-100%); transition:transform .25s ease; display:flex; flex-direction:column; }
+.drawer { position:fixed; top:0; bottom:0; left:0; width:min(420px,100vw); background:var(--surface); box-shadow:4px 0 24px rgba(0,0,0,.2); z-index:601; transform:translateX(-100%); transition:transform .25s ease; display:flex; flex-direction:column; }
 .drawer.open { transform:translateX(0); }
 .drawer-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px 16px; border-bottom:1px solid var(--border); }
 .drawer-title { font-size:15px; font-weight:700; }
@@ -360,15 +360,33 @@ body {
 .tbl-body-wrap.collapsed>*{overflow:hidden;}
 
 /* الجدول */
-.data-table{width:100%;border-collapse:collapse;font-size:var(--td-size);}
-.data-table thead th{position:sticky;top:0;z-index:20;background:var(--surface-2);color:var(--th-color);font-weight:var(--th-weight);font-size:var(--th-size);letter-spacing:.3px;padding:10px 6px;text-align:center;white-space:nowrap;box-shadow:inset 0 -2px 0 var(--border-strong);}
-.data-table tbody td{text-align:center;padding:9px 6px;border-bottom:1px solid var(--border);white-space:nowrap;font-size:var(--td-size);font-weight:var(--td-weight);}
+.data-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:var(--td-size);}
+.data-table.auto{table-layout:auto;}
+.data-table thead th{position:sticky;top:0;z-index:20;background:var(--surface-2);color:var(--th-color);font-weight:var(--th-weight);font-size:var(--th-size);letter-spacing:.3px;padding:10px 6px;text-align:center;white-space:normal;box-shadow:inset 0 -2px 0 var(--border-strong);}
+.data-table tbody td{text-align:center;padding:9px 6px;border-bottom:1px solid var(--border);white-space:normal;overflow-wrap:anywhere;font-size:var(--td-size);font-weight:var(--td-weight);}
 .data-table thead th,.data-table tbody td{border-inline-start:1px solid var(--border);}
 .data-table thead th:first-child,.data-table tbody td:first-child{border-inline-start:none;}
 .data-table tbody tr:hover{background:var(--surface-2);}
-.data-table td.td-reason{white-space:normal;min-width:170px;max-width:260px;line-height:1.55;}
+.data-table td.td-reason{line-height:1.55;}
+.data-table td.td-reason .rsn+.rsn{margin-top:5px;padding-top:5px;border-top:1px dashed var(--border);}
 .data-table td.empty{padding:40px;color:var(--text-mid);font-weight:700;white-space:normal;}
-.th-in{display:inline-flex;align-items:center;gap:5px;}
+.th-in{display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px;}
+/* التحكم اللايف في عرض الأعمدة — v8.2.0 (Standards #51) */
+.data-table.measuring th,.data-table.measuring td{white-space:nowrap;}
+.data-table.measuring .th-in{flex-wrap:nowrap;max-width:none;}
+.col-rz{position:absolute;top:0;bottom:0;inset-inline-end:0;width:10px;cursor:col-resize;touch-action:none;z-index:3;}
+.col-rz::after{content:'';position:absolute;top:24%;bottom:24%;inset-inline-end:3px;width:2px;border-radius:2px;background:var(--border-strong);transition:background .12s,top .12s,bottom .12s;}
+.col-rz:hover::after,.col-rz.active::after{background:var(--accent);top:8%;bottom:8%;}
+body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:none!important;}
+col.hl{background:var(--accent-light);}
+.w-badge{position:fixed;z-index:220;bottom:14px;left:50%;transform:translateX(-50%);background:var(--neutral-dark);color:var(--on-accent);font-size:12.5px;font-weight:700;padding:6px 14px;border-radius:20px;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.25);}
+/* الخروج التلقائي لعدم النشاط — §IDLE-JS (Standards #52) */
+.idle-warn{display:none;position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9000;width:min(92vw,440px);background:var(--amber-light);border:1px solid var(--amber-border);color:var(--amber-dark);border-radius:12px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.18);text-align:center;line-height:1.7;font-weight:800;font-size:13px;}
+.idle-warn.visible{display:block;}
+.idle-warn .idle-ask{font-weight:900;font-size:14px;}
+.idle-warn button{margin-top:8px;min-height:44px;padding:0 22px;border:none;border-radius:10px;background:var(--accent);color:var(--on-accent);font-family:var(--font-body);font-size:14px;font-weight:900;cursor:pointer;}
+.login-notice{display:none;border-radius:10px;border:1px solid var(--amber-border);background:var(--amber-light);color:var(--amber-dark);padding:9px 12px;font-size:12px;font-weight:800;text-align:center;line-height:1.6;}
+.login-notice.visible{display:block;}
 .th-label{cursor:pointer;user-select:none;padding:2px 4px;border-radius:5px;transition:background .12s,color .12s;}
 .th-label:hover,th.sorted .th-label{background:var(--accent-light);color:var(--accent-dark);}
 .sort-icon{display:inline-block;font-size:10px;color:var(--accent);font-weight:900;}
@@ -453,6 +471,18 @@ th.flt-on .th-flt{background:var(--accent-light);border-color:var(--accent-borde
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">10-10-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>عمود <b>«أسباب فشل التوصيل»</b> بقى بيعرض <b>كل الأسباب اللي مرّت على رقم التتبع</b> (الأحدث فوق، من غير تكرار) — مش سبب الحدث الحالي بس. الشحنة اللي آخر حالتها Received at warehouse بقت تبان أسباب الـ Exception السابقة. الفلتر والترتيب على العمود بيشتغلوا على كل الأسباب. واجهة فقط — مفيش تغيير Worker/SQL.</span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span><b>التحكم اللايف في عرض الأعمدة:</b> اسحب الخط على حافة أي عنوان عمود لتغيير عرضه، ودبل كليك = ضبط تلقائي على أطول محتوى. العرض مشترك بين التابات الأربعة ومتحفظ في المتصفح (<code>localStorage</code>)، والخلايا بتلتف بدل القص. <small>(<code>ecommoda-html-builder</code> v8.2.0 · #51)</small></span></li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span><span><b>خروج تلقائي بعد 60 دقيقة عدم نشاط</b> مع بانر تحذير قبلها بدقيقة وزرار «أنا موجود»، وإشعار على شاشة الدخول. <small>(<code>ecommoda-html-builder</code> v8.3.0 · #52)</small></span></li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span><span>الخروج اليدوي (الضغط على اسم الموظف) بقى <b>فوري بلا تأكيد</b>، والجداول والبيانات المحمّلة بتتمسح من الشاشة عند الخروج.</span></li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v1.16.0</span>
           <span class="cl-ver-date">08-10-2026</span>
         </div>
         <ul class="cl-items">
@@ -683,6 +713,9 @@ th.flt-on .th-flt{background:var(--accent-light);border-color:var(--accent-borde
             <li><code>tabState[tabKey]</code> — فلاتر اختيار متعدد + بحث أوردر/تتبع + فترة تاريخ + ترتيب، لكل تاب نسخة مستقلة بالكامل (مفيش state متشارك بين التابات)</li>
             <li><code>computeFinalTrackingNumbers()</code> / <code>FINAL_STATES</code> (45 · 46 · 48) — Set بكل <code>tracking_number</code> وصلها حدث بحالة نهائية مرة على الأقل؛ بتستبعدها «الأوردرات تحت التوصيل» بس. <code>latestPerTracking()</code> بتدمج أحداث تابات Delivered/Returned/Terminated لصف واحد لكل رقم تتبع. نتيجة الحساب بتتخزّن في <code>tabRows[tabKey]</code> مرة بعد كل تحميل</li>
             <li><code>slotLabel()</code> — بيحوّل <code>matched_slot</code> (S1/S2 الخام) لليبل عمود "نوع الأوردر" المعروض: S1 ← "عادي (S1)"، S2 ← "استبدال/استرجاع (S2)"، أي قيمة تانية بترجع كابيتال زي ما هي. عمود "النوع" (<code>bosta_type</code> — SEND/RTO/EXCHANGE...) اتسمى "نوع الشحنة" في كل التابات — البيانات في D1 ما اتغيّرتش، التسمية في الواجهة بس.</li>
+            <li><code>computeReasonsByTracking()</code> / <code>reasonsOf(ev)</code> — كل أسباب فشل التوصيل لرقم التتبع (الأحدث فوق، من غير تكرار) — بتحكم عمود «أسباب فشل التوصيل» وفلتره وترتيبه · <code>valsOf(k, ev)</code> — فلتر «أي قيمة من المصفوفة»</li>
+            <li><code>ensureWidths()</code> / <code>applyW()</code> / <code>fitCol()</code> — التحكم اللايف في عرض الأعمدة (<code>LS_COLS</code> = <code>bosta_webhook_status_col_widths_v1</code>، عرض واحد مشترك للتابات الأربعة)</li>
+            <li><code>IDLE_TIMEOUT_MIN</code> (60 دقيقة) · <code>idleStart/idleStop/idleTick</code> · <code>performLogout(reason)</code> — الخروج التلقائي لعدم النشاط (§IDLE-JS)؛ <code>doLogout()</code> يدوي بلا تأكيد</li>
             <li><code>computeLatestEventByTracking()</code> / <code>latestEventByTracking</code> — آخر حدث لكل <code>tracking_number</code>؛ بيحكم تاب الأوردرات تحت التوصيل (صف واحد لكل رقم) · <code>openHistoryDrawer(tn)</code> — لوحة سجل رقم التتبع</li>
             <li><code>loadEvents({full})</code> — تحديث stale-while-revalidate: تحميل أولي كامل، بعده تراكمي (<code>afterId</code> + <code>ids</code>)، بلا مسح للجدول، مع <code>isLoadingEvents</code> ومزامنة كاملة كل ٣٠ دقيقة</li>
             <li><code>tabPartition(tabKey)</code> — بترجّع <code>tabRows[tabKey]</code> (الصفوف الأساسية للتاب بعد الدمج)</li>
@@ -720,6 +753,12 @@ th.flt-on .th-flt{background:var(--accent-light);border-color:var(--accent-borde
   <div class="drawer-body" id="histBody"></div>
 </aside>
 <div class="toast-container" id="toastContainer"></div>
+<!-- بانر تحذير الخروج التلقائي — §IDLE-JS (z-index 9000) -->
+<div class="idle-warn" id="idleWarn" role="alert">
+  <div id="idleWarnText"></div>
+  <div class="idle-ask" id="idleWarnAsk"></div>
+  <button type="button" onclick="idleStay()">أنا موجود</button>
+</div>
 
 <!-- ══════════════════════════════════════════════════════
      §LOGIN
@@ -741,6 +780,7 @@ th.flt-on .th-flt{background:var(--accent-light);border-color:var(--accent-borde
         </select>
         <div class="login-status warn" id="loginStatus">الإعدادات غير مكتملة — افتح الإعدادات أولاً.</div>
       </div>
+      <div class="login-notice" id="loginNotice"></div>
       <div class="login-alert" id="loginAlert"></div>
       <div class="pin-zone" id="pinZone">
         <div class="pin-label" id="pinLabel">أدخل الـ PIN</div>
@@ -812,7 +852,7 @@ th.flt-on .th-flt{background:var(--accent-light);border-color:var(--accent-borde
 // 🔴 1.6.0 = أول نسخة Worker بتكتب write_status='returned_duplicate_skipped'
 //    لحدث Returned to business (46) تاني على نفس الأوردر/الـ slot.
 const MIN_WORKER_VERSION = '1.7.0';
-const TOOL_VERSION       = 'v1.16.0';
+const TOOL_VERSION       = 'v1.17.0';
 // 🔴 ثابت — مش حقل إعدادات ومش localStorage (Standards #28). من CLAUDE.md بتاع الريبو.
 const WORKER_URL = 'https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev';
 // 🔴 هيتغيّر لمفتاح مجموعة delivery_cod_ops_worker_secret بعد تسجيل الأداة في
@@ -1216,6 +1256,8 @@ document.addEventListener('keydown', e => {
 async function finishLogin(username, displayName) {
   currentEmployee = { username, displayName };
   document.getElementById('loginOverlay').classList.add('hidden');
+  hideLoginNotice();
+  idleStart();   // §IDLE-JS
   document.getElementById('activeUserBtn').textContent = `👤 ${displayName}`;
   showToast(`أهلاً ${displayName} 👋`, 'success');
   playBeep('success');
@@ -1227,9 +1269,16 @@ async function finishLogin(username, displayName) {
   finishLogin._poll = setInterval(pollTick, POLL_MS);
 }
 
-async function doLogout() {
+// الخروج اليدوي فوري بلا أي تأكيد (Standards #52)
+function doLogout() {
   if (!currentEmployee) return;
-  if (!confirm('تسجيل الخروج؟')) return;
+  if (isIdleBlocked()) { showToast('فيه دفعة بتتنفّذ دلوقتي — استنى لحد ما تخلص', 'warning'); return; }
+  performLogout('manual');
+}
+// reason: 'manual' | 'idle' — نفس المسار للاتنين
+function performLogout(reason) {
+  if (!currentEmployee) return;
+  idleStop();
   apiGet('log_logout', { username: currentEmployee.username, appId: APP_ID }).catch(() => {});
   currentEmployee = null; loginMode='employee'; pinDigits=[]; pendingNewPin=''; isLoginBusy=false;
   clearTimeout(autoLoginTimer);
@@ -1240,8 +1289,53 @@ async function doLogout() {
   // CUSTOMIZE — tool-specific reset
   document.getElementById('appContent').style.display = 'none';
   document.getElementById('activeUserBtn').textContent = '👤 —';
+  // بيانات حساسة: نفضّي الجداول والبيانات المحمّلة (أرقام تتبع وأسباب فشل)
+  rawEvents = []; tabRows = {};
+  TABS.forEach(t => { const b = document.getElementById(`eventsBody-${t.key}`); if (b) b.innerHTML = ''; });
+  closePop(); closeHistoryDrawer();
   document.getElementById('loginOverlay').classList.remove('hidden');
+  if (reason === 'idle') showLoginNotice('تم تسجيل خروج تلقائي لعدم النشاط');
 }
+function showLoginNotice(msg) { const el = document.getElementById('loginNotice'); if (!el) return; el.textContent = msg; el.classList.add('visible'); }
+function hideLoginNotice() { document.getElementById('loginNotice')?.classList.remove('visible'); }
+
+// ══════════════════════════════════════════════════════
+// §IDLE-JS — الخروج التلقائي لعدم النشاط (Standards #52 — 60 دقيقة لكل الأدوات)
+// ══════════════════════════════════════════════════════
+const IDLE_TIMEOUT_MIN = 60;
+const IDLE_WARN_SEC    = 60;
+const IDLE_CHECK_MS    = 30000;
+const IDLE_THROTTLE_MS = 10000;
+let idleLastActivity = Date.now(), idleTicker = null, idleFastTicker = null;
+function isIdleBlocked() { return typeof isUpdating !== 'undefined' && !!isUpdating; }   // الأداة مفيهاش دفعات تنفيذ
+function idleMark() {
+  const now = Date.now();
+  if (now - idleLastActivity < IDLE_THROTTLE_MS) return;
+  idleLastActivity = now; idleHideWarn();
+}
+// أحداث حقيقية بس — mousemove ممنوع، والـ polling (pollTick) مابيعدّش نشاط
+['keydown', 'pointerdown', 'wheel', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, idleMark, { capture: true, passive: true }));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) idleTick(); });
+window.addEventListener('focus', idleTick);
+function idleStart() { idleLastActivity = Date.now(); clearInterval(idleTicker); idleTicker = setInterval(idleTick, IDLE_CHECK_MS); }
+function idleStop() { clearInterval(idleTicker); idleTicker = null; idleHideWarn(); }
+function idleStay() { idleLastActivity = Date.now(); idleHideWarn(); }
+function idleTick() {
+  if (!currentEmployee) return;
+  const limit = IDLE_TIMEOUT_MIN * 60000;
+  if (isIdleBlocked()) { idleLastActivity = Date.now(); idleHideWarn(); return; }
+  const idleMs = Date.now() - idleLastActivity;
+  if (idleMs >= limit) { performLogout('idle'); return; }
+  const remainMs = limit - idleMs;
+  if (remainMs <= IDLE_WARN_SEC * 1000) idleShowWarn(Math.ceil(remainMs / 1000)); else idleHideWarn();
+}
+function idleShowWarn(sec) {
+  document.getElementById('idleWarnText').textContent = `سيتم تسجيل الخروج لعدم النشاط بعد ${sec} ثانية`;
+  document.getElementById('idleWarnAsk').textContent = `هل أنت موجود يا ${currentEmployee ? currentEmployee.displayName : ''}؟`;
+  document.getElementById('idleWarn').classList.add('visible');
+  if (!idleFastTicker) idleFastTicker = setInterval(idleTick, 1000);
+}
+function idleHideWarn() { document.getElementById('idleWarn')?.classList.remove('visible'); clearInterval(idleFastTicker); idleFastTicker = null; }
 
 function updateLoginSettingsBtn() {
   const btn = document.getElementById('loginSettingsBtn');
@@ -1317,6 +1411,27 @@ function computeOriginalTypeByTracking(events) {
   rto.forEach(t => { const ev = first.get(t); if (ev) m.set(t, ev.bosta_type); });
   return m;
 }
+// 🔴 10-10-2026 — «أسباب فشل التوصيل» = كل الأسباب اللي مرّت على رقم التتبع (مش سبب الحدث الحالي بس).
+// الشحنة اللي آخر حالتها Received at warehouse لسه محتاجة تبان أسباب الـ Exception السابقة.
+// الأحدث فوق (evKey)، من غير تكرار، والفاضي مابيتحسبش. من غير أي سبب = ['—'].
+let reasonsByTracking = new Map();
+function computeReasonsByTracking(events) {
+  const withReason = events.filter(ev => ev.tracking_number && String(ev.exception_reason || '').trim());
+  withReason.sort((a, b) => isNewer(a, b) ? -1 : isNewer(b, a) ? 1 : 0);
+  const m = new Map();
+  withReason.forEach(ev => {
+    const t = String(ev.tracking_number), r = String(ev.exception_reason).trim();
+    const arr = m.get(t) || m.set(t, []).get(t);
+    if (!arr.includes(r)) arr.push(r);
+  });
+  return m;
+}
+function reasonsOf(ev) {
+  const arr = reasonsByTracking.get(String(ev.tracking_number));
+  if (arr && arr.length) return arr;
+  const own = String(ev.exception_reason || '').trim();
+  return own ? [own] : ['—'];
+}
 function typeText(ev) {
   const t = ev && ev.bosta_type;
   if (!t) return '—';
@@ -1358,11 +1473,12 @@ const FL = { order: 'رقم الأوردر', tracking: 'رقم التتبع', ty
 const VAL = {
   type:      ev => ev.bosta_type || '—',
   stateDesc: ev => `${ev.state} · ${ev.description || '—'}`,
-  reason:    ev => ev.exception_reason || '—',
+  reason:    ev => reasonsOf(ev),   // مصفوفة — فلتر «أي سبب» (راجع valsOf)
   slot:      ev => ev.matched_slot || '—',
   result:    ev => ev.write_status || 'processing',
   attempts:  ev => ev.number_of_attempts == null ? 'null' : String(ev.number_of_attempts),
 };
+const valsOf = (k, ev) => { const v = VAL[k](ev); return Array.isArray(v) ? v : [v]; };
 function labelOf(k, v) {
   if (k === 'slot') return v === '—' ? '— (بدون تطابق)' : slotLabel(v);
   if (k === 'result') return RESULT_LABELS[v] || v;
@@ -1384,7 +1500,7 @@ let rawEvents = [];
 function cairoDayOf(iso) { const d = toValidDate(iso); if (!d) return ''; const p = cairoParts(d); return `${p.year}-${p.month}-${p.day}`; }
 function pass(tabKey, ev) {
   const s = tabState[tabKey];
-  for (const k of MS_KEYS) { const set = s.ms[k]; if (set.size && !set.has(VAL[k](ev))) return false; }
+  for (const k of MS_KEYS) { const set = s.ms[k]; if (set.size && !valsOf(k, ev).some(v => set.has(v))) return false; }
   const a = s.attempts;
   if (a.mode === 'list') { if (a.sel.size && !a.sel.has(VAL.attempts(ev))) return false; }
   else if (a.from !== '' || a.to !== '') {
@@ -1429,7 +1545,7 @@ function clearAll(tabKey) {
 }
 function itemsFor(tabKey, k) {
   const m = new Map();
-  tabPartition(tabKey).forEach(ev => { const v = VAL[k](ev); m.set(v, (m.get(v) || 0) + 1); });
+  tabPartition(tabKey).forEach(ev => valsOf(k, ev).forEach(v => m.set(v, (m.get(v) || 0) + 1)));
   const a = [...m.entries()].map(([v, c]) => ({ v, c, label: labelOf(k, v) }));
   const num = x => x === 'null' ? Infinity : Number(x);
   if (k === 'attempts') a.sort((x, y) => num(x.v) - num(y.v));
@@ -1488,7 +1604,7 @@ function buildThead() {
   return '<tr>' + COLS.map(c => `<th data-col="${c.k}" ${c.flt ? `data-fk="${c.flt}"` : ''}><div class="th-in">` +
     (c.nosort ? `<span>${c.l}</span>` : `<span class="th-label" data-sort="${c.k}">${c.l}<span class="sort-icon"></span></span>`) +
     (c.flt ? `<button type="button" class="th-flt" data-flt="${c.flt}" aria-label="فلتر ${esc(c.l)}">${FUNNEL}<b class="th-cnt"></b></button>` : '') +
-    '</div></th>').join('') + '</tr>';
+    `</div><span class="col-rz" data-rz="${c.k}"></span></th>`).join('') + '</tr>';
 }
 function buildTabPanelHtml(tabKey) {
   return `
@@ -1509,7 +1625,8 @@ function buildTabPanelHtml(tabKey) {
     <div class="chips-zone pad" id="chips-${tabKey}"></div>
     <div class="tbl-body-wrap" id="tblBodyWrap-${tabKey}">
       <div><div class="tbl-scroll">
-        <table class="data-table">
+        <table class="data-table auto measuring" id="tbl-${tabKey}">
+          <colgroup id="cg-${tabKey}">${COLS.map(c => `<col data-c="${c.k}">`).join('')}</colgroup>
           <thead>${buildThead()}</thead>
           <tbody id="eventsBody-${tabKey}"></tbody>
         </table>
@@ -1553,7 +1670,7 @@ function updateStates(tabKey) {
 // ─── §TOOL-JS::sort — 3 حالات، مستقل عن الفلاتر ومستقل عن التاب الآخر (data-table-standard.md §8) ───
 const SORTV = {
   order: ev => ev.business_reference, tracking: ev => ev.tracking_number, type: ev => ev.bosta_type,
-  stateDesc: ev => Number(ev.state), reason: ev => ev.exception_reason || '',
+  stateDesc: ev => Number(ev.state), reason: ev => { const r = reasonsOf(ev); return r[0] === '—' ? '' : r.join(' | '); },
   promise: ev => { const d = toValidDate(ev.delivery_promise_date); return d ? d.getTime() : null; },
   attempts: ev => ev.number_of_attempts,
   time: ev => { const d = toValidDate(ev.received_at); return d ? d.getTime() : null; },
@@ -1586,7 +1703,7 @@ function eventRowHtml(ev) {
       <td class="col-num">${trackingLink(ev.tracking_number)}</td>
       <td>${esc(typeText(ev))}</td>
       <td><span class="state-code">${esc(ev.state)}</span> ${esc(ev.description || '—')}</td>
-      <td class="td-reason">${ev.exception_reason ? esc(ev.exception_reason) : '—'}</td>
+      <td class="td-reason">${reasonsOf(ev).map(r => `<div class="rsn">${esc(r)}</div>`).join('')}</td>
       <td>${ev.delivery_promise_date ? formatDateOnly(ev.delivery_promise_date) : '—'}</td>
       <td>${ev.number_of_attempts ?? '—'}</td>
       <td>${formatDateTime(ev.received_at)}</td>
@@ -1608,6 +1725,87 @@ function applyFiltersAndRender(tabKey) {
     : `<tr><td colspan="${COLS.length}" class="empty">لا توجد أحداث مطابقة</td></tr>`;
   renderChips(tabKey); updateStates(tabKey); renderAttemptChips(tabKey);
 }
+
+// ─── §TOOL-JS::colWidths — التحكم اللايف في عرض الأعمدة (v8.2.0 · Standards #51) ───
+// عرض واحد مشترك للتابات الأربعة (نفس الأعمدة). بيتحفظ في localStorage (تفضيل واجهة مش هوية). مفيش زرار إعادة ضبط.
+const LS_COLS = 'bosta_webhook_status_col_widths_v1';   // ارفع _v1 → _v2 لو الأعمدة اتغيّرت
+const MIN_W = 64, MAX_W = 700, INIT_CAP = 260;
+const W = {}; let wReady = false, drag = null, wBadge = null;
+const allTbls = () => [...document.querySelectorAll('table.data-table')];
+function saveW() { try { localStorage.setItem(LS_COLS, JSON.stringify(W)); } catch (e) {} }
+function loadW() {
+  try { const s = JSON.parse(localStorage.getItem(LS_COLS) || 'null'); return s && COLS.every(c => s[c.k] >= MIN_W) ? s : null; } catch (e) { return null; }
+}
+function applyW() {
+  const sum = COLS.reduce((a, c) => a + (W[c.k] || 0), 0);
+  allTbls().forEach(t => {
+    t.querySelectorAll('colgroup col').forEach(col => { col.style.width = W[col.dataset.c] + 'px'; });
+    t.style.width = sum + 'px';
+  });
+}
+function freezeW() { allTbls().forEach(t => t.classList.remove('auto', 'measuring')); applyW(); wReady = true; }
+// بيتنادى من renderAllTabs: بيقيس على أول جدول ظاهر فيه صفوف حقيقية (الجداول المخفية مابتتقاسش)
+function ensureWidths() {
+  if (wReady) return;
+  const saved = loadW();
+  if (saved) { Object.assign(W, saved); freezeW(); return; }
+  const t = allTbls().find(x => x.offsetParent && x.querySelector('tbody td:not(.empty)'));
+  if (!t) return;
+  t.classList.add('auto', 'measuring'); t.style.width = '';
+  t.querySelectorAll('colgroup col').forEach(c => { c.style.width = ''; });
+  let sum = 0;
+  t.querySelectorAll('thead th').forEach(th => {
+    const w = Math.min(INIT_CAP, Math.max(MIN_W, Math.round(th.getBoundingClientRect().width)));
+    W[th.dataset.col] = w; sum += w;
+  });
+  const avail = t.closest('.tbl-scroll').clientWidth;
+  if (sum < avail) { const f = avail / sum; COLS.forEach(c => { W[c.k] = Math.floor(W[c.k] * f); }); }   // يملا عرض الكارت أول مرة
+  freezeW();
+}
+function showWBadge(w) {
+  if (!wBadge) { wBadge = document.createElement('div'); wBadge.className = 'w-badge'; document.body.appendChild(wBadge); }
+  wBadge.textContent = w + ' px';
+}
+function hideWBadge() { if (wBadge) wBadge.remove(); wBadge = null; }
+document.addEventListener('pointerdown', e => {
+  const h = e.target.closest && e.target.closest('[data-rz]'); if (!h) return;
+  if (e.button !== undefined && e.button !== 0) return;
+  if (!wReady) ensureWidths(); if (!wReady) return;
+  e.preventDefault(); e.stopPropagation(); closePop(); hideTip();
+  const k = h.dataset.rz, t = h.closest('table');
+  drag = { k, x: e.clientX, w: W[k], sign: getComputedStyle(t).direction === 'rtl' ? -1 : 1, h };   // RTL: السحب لليسار = توسيع
+  try { h.setPointerCapture(e.pointerId); } catch (_) {}
+  h.classList.add('active'); document.body.classList.add('col-resizing');
+  allTbls().forEach(x => { const c = x.querySelector(`colgroup col[data-c="${k}"]`); if (c) c.classList.add('hl'); });
+  showWBadge(W[k]);
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  W[drag.k] = Math.max(MIN_W, Math.min(MAX_W, Math.round(drag.w + drag.sign * (e.clientX - drag.x))));
+  applyW(); showWBadge(W[drag.k]);
+});
+function endDrag() {
+  if (!drag) return;
+  drag.h.classList.remove('active'); document.body.classList.remove('col-resizing');
+  document.querySelectorAll('colgroup col.hl').forEach(c => c.classList.remove('hl'));
+  drag = null; hideWBadge(); saveW();
+}
+document.addEventListener('pointerup', endDrag);
+document.addEventListener('pointercancel', endDrag);
+// دبل كليك على المقبض = ضبط تلقائي على أطول محتوى
+function fitCol(k, t) {
+  const i = COLS.findIndex(c => c.k === k); if (i < 0) return;
+  t.classList.add('measuring');
+  let w = t.querySelectorAll('thead th')[i].querySelector('.th-in').getBoundingClientRect().width + 16;
+  t.querySelectorAll('tbody tr').forEach(tr => {
+    const td = tr.children[i]; if (!td || td.classList.contains('empty')) return;
+    const rg = document.createRange(); rg.selectNodeContents(td);
+    w = Math.max(w, rg.getBoundingClientRect().width + 16);
+  });
+  t.classList.remove('measuring');
+  W[k] = Math.max(MIN_W, Math.min(MAX_W, Math.ceil(w))); applyW(); saveW();
+}
+document.addEventListener('dblclick', e => { const h = e.target.closest && e.target.closest('[data-rz]'); if (h && wReady) fitCol(h.dataset.rz, h.closest('table')); });
 
 // ─── §TOOL-JS::filterPop — القائمة العائمة (position:fixed على body، z 200) ───
 let pop = null, popKey = null, popTab = null, popAnchor = null, popQ = '';
@@ -1812,6 +2010,7 @@ function switchMainTab(tabKey) {
     document.getElementById(`tab-${t.key}`).classList.toggle('active', t.key === tabKey);
     document.getElementById(`panel-${t.key}`).classList.toggle('active', t.key === tabKey);
   });
+  ensureWidths();
 }
 
 // 🔴 مفيش سقف تحميل هنا خالص — list_events بترجع 500 كحد أقصى للنداء
@@ -1907,8 +2106,10 @@ function renderAllTabs() {
   finalTrackingNumbers = computeFinalTrackingNumbers(rawEvents);
   computeLatestEventByTracking(rawEvents);
   originalTypeByTracking = computeOriginalTypeByTracking(rawEvents);
+  reasonsByTracking = computeReasonsByTracking(rawEvents);
   TABS.forEach(t => { tabRows[t.key] = computeTabRows(t); });
   TABS.forEach(t => applyFiltersAndRender(t.key));
+  ensureWidths();
   if (pop) renderList();   // قايمة فلتر مفتوحة: عدّاداتها تتحدّث من غير ما تتقفل
   // لو لوحة سجل رقم تتبع مفتوحة، نحدّثها بالبيانات الجديدة
   const d = document.getElementById('histDrawer');
@@ -2027,6 +2228,7 @@ async function refreshDiagBanners() {
 // §INIT
 // ══════════════════════════════════════════════════════
 TABS.forEach(t => { const r = document.getElementById(`tabRoot-${t.key}`); r.dataset.tab = t.key; r.innerHTML = buildTabPanelHtml(t.key); });
+ensureWidths();   // لو فيه عرض محفوظ بيتطبّق فورًا؛ غير كده بيتقاس عند أول عرض بيانات
 renderVersionUI();
 updateSettingsBtn();
 checkWorkerVersion();
