@@ -9,7 +9,17 @@
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.7.0` · الواجهة `v1.18.0`
+**الإصدار:** Worker `v1.7.0` · الواجهة اتنقلت لمركز عمليات الشحن والتحصيل (آخر نسخة مستقلة `v1.18.0`)
+
+> 🔴 **الريبو ده Worker وبس من 12-10-2026 (قرار أحمد).** الواجهة بقت صفحة جوّه
+> `Delivery-COD-Operations-Center` → `Bosta-Webhook-Status-Receiver.html` (قسم «أدوات أخرى» · هب `v1.35.0`)،
+> وهي **النسخة الوحيدة**. `index.html` اتشال من هنا **بلا تحويل من الرابط القديم** (بقى 404 من GitHub Pages).
+> · أي تعديل على **الشاشة** (الجدول · الفلاتر · السجل · التابات) بيتعمل في ريبو الهب، وأي تعديل على الـ Worker هنا.
+> · نص «فخاخ الأداة» و«استرجاع النسخ» تحت **بيوصف الواجهة المستقلة وقت حصوله** — الأسماء (`LS_SECRET` · `currentEmployee` · `IDLE-JS` · `list_events`...) جزء منها اتشال أو بقى في الـ shell؛
+>   آخر commit فيه الواجهة المستقلة `17fe81e` (`git show 17fe81e:index.html`).
+> · 🔴 **السر:** الصفحة في الهب بتبعت سر المجموعة `delivery_cod_ops` — `WORKER_SECRET` على الـ Worker لازم يتدوّر لقيمتها + **Promote** (قبلها `401`).
+> · ⚠️ `AUTH_APPS`/`login`/`logout` في `index.js` لسه موجودين (الكتلة القياسية) بس **الصفحة مابقتش بتناديهم** — الدخول من الرئيسية على Worker الهب.
+> · ⛔ **`MIN_WORKER_VERSION` بتاعة الصفحة بقت `DCO_WORKERS.bostaWebhook.min` في ريبو الهب** (`1.7.0`) — ارفعها هناك لما الصفحة تعتمد على حاجة جديدة هنا.
 
 ---
 
@@ -20,7 +30,7 @@
 | البند | الحالة |
 |---|---|
 | الـ Worker مربوط بالريبو + Build watch paths | ✅ 20-09-2026 |
-| GitHub Pages | ✅ 20-09-2026 |
+| GitHub Pages | ⛔ مابقاش مطلوب — الواجهة اتنقلت للهب (12-10-2026) |
 | الأسرار على Cloudflare | ✅ 20-09-2026 — كلها خضرا في `diag` |
 | تسجيل رابط الويبهوك في داشبورد بوسطة | ✅ 20-09-2026 (`x-bosta-webhook-key`) |
 | جدول `bosta_webhook_events` في D1 | ✅ 21-09-2026 — **يدويًا من D1 Console** |
@@ -89,7 +99,7 @@
 ## الروابط
 
 ```
-الواجهة    : https://ecommoda-dev.github.io/Bosta-Webhook-Status-Receiver/
+الواجهة    : https://ecommoda-dev.github.io/Delivery-COD-Operations-Center/Bosta-Webhook-Status-Receiver.html   ← جوّه الهب (الرابط القديم .../Bosta-Webhook-Status-Receiver/ بقى 404 بقرار)
 الـ Worker : https://bosta-webhook-status-receiver-worker.ecommoda-dev.workers.dev
 اسم الـ Worker في الداشبورد: bosta-webhook-status-receiver-worker   ← لازم يطابق name في wrangler.toml حرف بحرف
 ```
