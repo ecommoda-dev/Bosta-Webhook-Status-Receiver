@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.7.0';
+const WORKER_VERSION = '1.8.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -415,6 +415,8 @@ const FIND_ORDER_QUERY = `
           bosta_tracking_number_s2: metafield(namespace: "custom", key: "bosta_tracking_number_s2") { value }
           bosta_webhook_last_update_s1: metafield(namespace: "custom", key: "bosta_webhook_last_update_s1") { value }
           bosta_webhook_last_update_s2: metafield(namespace: "custom", key: "bosta_webhook_last_update_s2") { value }
+          manual_status: metafield(namespace: "custom", key: "manual_status") { value }
+          status_2_r_e: metafield(namespace: "custom", key: "status_2_r_e") { value }
         }
       }
     }
@@ -630,6 +632,27 @@ async function matchAndWriteMetafields(env, rowId, n) {
     );
   }
 
+  // §4.4 — أكشن RTO (طلب أحمد 13-10-2026): الشحنة اللي نوعها RTO بتحدّث حالة الأوردر
+  // على الجنب اللي اتحدد لها لـ "In-Return": S1 ← custom.manual_status · S2 ← custom.status_2_r_e.
+  // 🔴 استثناء واعٍ تاني من قاعدة "ممنوع كتابة status_1/status_2" (الحقلين دول بيشغّلوا
+  // مخزون في Order-Status-Updater) — بطلب أحمد صراحةً. وعشان الكتابة ماتدهسش شغل الموظف:
+  //   · ماتتكتبش على حدث نهائي (45 · 46 · 48) — 46 معناها Returned مش In-Return.
+  //   · ماتتكتبش لو القيمة الحالية بالفعل In-Return، أو الموظف قفلها (Returned · Delivered ·
+  //     Cancelled) — RTO تاني بعد القفل مايرجّعش الأوردر لورا.
+  const RTO_STATUS_VALUE = 'In-Return';
+  const RTO_TERMINAL_CURRENT = new Set(['in-return', 'returned', 'delivered', 'cancelled']);
+  const RTO_FINAL_STATES = new Set([45, 46, 48]);
+  const rtoKey = slot === 's1' ? 'manual_status' : 'status_2_r_e';
+  const rtoCurrent = String(orderNode[rtoKey]?.value ?? '').trim();
+  const isRtoInReturn = String(n.bostaType || '').toUpperCase() === 'RTO'
+    && !RTO_FINAL_STATES.has(n.state)
+    && !RTO_TERMINAL_CURRENT.has(rtoCurrent.toLowerCase());
+  if (isRtoInReturn) {
+    metafieldsInput.push(
+      { ownerId: orderNode.id, namespace: 'custom', key: rtoKey, type: 'single_line_text_field', value: RTO_STATUS_VALUE },
+    );
+  }
+
   try {
     const data   = await shopifyGQL(env, token, SET_METAFIELDS_MUTATION, { metafields: metafieldsInput }, 'metafieldsSet');
     const result = data.data?.metafieldsSet;
@@ -651,10 +674,10 @@ async function matchAndWriteMetafields(env, rowId, n) {
   await writeLog(env.DB, {
     tool: TOOL_NAME, type: 'status_event',
     orderId: orderNode.legacyResourceId, orderName: n.businessReference,
-    notes: isDeliveredS1Send
-      ? `${slot.toUpperCase()} ← ${statusValue} + manual_status←Delivered + package_whereabouts_s1←Client`
-      : `${slot.toUpperCase()} ← ${statusValue}`,
-    extra: { result: 'success', slot, matchMethod, bostaId: n.bostaId, trackingNumber: cleanTracking, extraDeliveredWrite: isDeliveredS1Send },
+    notes: `${slot.toUpperCase()} ← ${statusValue}`
+      + (isDeliveredS1Send ? ' + manual_status←Delivered + package_whereabouts_s1←Client' : '')
+      + (isRtoInReturn ? ` + ${rtoKey}←${RTO_STATUS_VALUE}` : ''),
+    extra: { result: 'success', slot, matchMethod, bostaId: n.bostaId, trackingNumber: cleanTracking, extraDeliveredWrite: isDeliveredS1Send, extraRtoInReturnWrite: isRtoInReturn },
   }).catch(() => {});
 }
 
