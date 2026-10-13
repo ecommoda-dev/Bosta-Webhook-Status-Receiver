@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.8.0';
+const WORKER_VERSION = '1.8.1';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -647,7 +647,21 @@ async function matchAndWriteMetafields(env, rowId, n) {
   const isRtoInReturn = String(n.bostaType || '').toUpperCase() === 'RTO'
     && !RTO_FINAL_STATES.has(n.state)
     && !RTO_TERMINAL_CURRENT.has(rtoCurrent.toLowerCase());
+  // 🔴 مرة واحدة فقط (طلب أحمد 13-10-2026): In-Return بتتكتب عند **أول** ظهور لـ RTO على
+  // الأوردر/الـ slot وبس. أي حدث RTO بعده (أي حالة، أي تحديث) مايكتبش الميتافيلد تاني حتى لو
+  // الموظف غيّر القيمة. "أول مرة" = مفيش حدث RTO تاني على نفس business_reference+matched_slot
+  // اتسجّل عليه 'written' — فلو الكتابة الأولى فشلت (shopify_write_failed) المحاولة الجاية
+  // لسه تعتبر أول مرة. ⚠️ أوردرات RTO اللي كان ليها حدث 'written' قبل v1.8.0 مش هتتكتب (مفيش أثر رجعي).
+  let rtoFirstTime = false;
   if (isRtoInReturn) {
+    const prevRto = await env.DB.prepare(
+      `SELECT id FROM bosta_webhook_events
+       WHERE business_reference = ? AND matched_slot = ? AND UPPER(bosta_type) = 'RTO'
+         AND write_status = 'written' AND id != ? LIMIT 1`
+    ).bind(n.businessReference, slot, rowId).first();
+    rtoFirstTime = !prevRto;
+  }
+  if (isRtoInReturn && rtoFirstTime) {
     metafieldsInput.push(
       { ownerId: orderNode.id, namespace: 'custom', key: rtoKey, type: 'single_line_text_field', value: RTO_STATUS_VALUE },
     );
@@ -676,8 +690,8 @@ async function matchAndWriteMetafields(env, rowId, n) {
     orderId: orderNode.legacyResourceId, orderName: n.businessReference,
     notes: `${slot.toUpperCase()} ← ${statusValue}`
       + (isDeliveredS1Send ? ' + manual_status←Delivered + package_whereabouts_s1←Client' : '')
-      + (isRtoInReturn ? ` + ${rtoKey}←${RTO_STATUS_VALUE}` : ''),
-    extra: { result: 'success', slot, matchMethod, bostaId: n.bostaId, trackingNumber: cleanTracking, extraDeliveredWrite: isDeliveredS1Send, extraRtoInReturnWrite: isRtoInReturn },
+      + (isRtoInReturn && rtoFirstTime ? ` + ${rtoKey}←${RTO_STATUS_VALUE}` : ''),
+    extra: { result: 'success', slot, matchMethod, bostaId: n.bostaId, trackingNumber: cleanTracking, extraDeliveredWrite: isDeliveredS1Send, extraRtoInReturnWrite: isRtoInReturn && rtoFirstTime },
   }).catch(() => {});
 }
 
