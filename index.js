@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.8.1';
+const WORKER_VERSION = '1.9.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -964,6 +964,48 @@ export default {
               ok: false, errorCode: 'events_table_missing',
               error: 'جدول bosta_webhook_events مش موجود في D1 — أي حدث جاي من بوسطة بيضيع. شغّل الـ CREATE TABLE من CLAUDE.md في D1 Console.',
             }, 503, request);
+          }
+          throw e;
+        }
+      }
+
+      // 🔴 v1.9.0 — عدّادات الشاشة الرئيسية في مركز عمليات الشحن والتحصيل. قراءة بحتة بـ SQL
+      //    مجمّع: الرئيسية مابتسحبش آلاف الأحداث (list_events) عشان رقم واحد.
+      //    ⚠️ نفس تعريف تابَي «تحت التوصيل» و«In-Return» في الواجهة بالحرف:
+      //    آخر حدث لكل tracking_number (bosta_timestamp ثم received_at ثم id)،
+      //    ورقم وصله حدث 45/46/48 ولو مرة مش بيتعدّ، وأي حدث RTO بينقله لـ In-Return.
+      //    تعديل التعريف هنا لازم ينزل على `computeTabRows` في الواجهة (درس R1).
+      if (action === 'queue_summary') {
+        try {
+          const { results } = await env.DB.prepare(
+            `WITH ranked AS (
+               SELECT tracking_number, number_of_attempts AS att,
+                      ROW_NUMBER() OVER (PARTITION BY tracking_number ORDER BY bosta_timestamp DESC, received_at DESC, id DESC) AS rn
+                 FROM bosta_webhook_events WHERE tracking_number IS NOT NULL AND tracking_number <> ''
+             ), flags AS (
+               SELECT tracking_number,
+                      MAX(CASE WHEN state IN (45, 46, 48) THEN 1 ELSE 0 END) AS fin,
+                      MAX(CASE WHEN UPPER(COALESCE(bosta_type, '')) = 'RTO' THEN 1 ELSE 0 END) AS rto
+                 FROM bosta_webhook_events WHERE tracking_number IS NOT NULL AND tracking_number <> ''
+                GROUP BY tracking_number
+             )
+             SELECT f.rto AS rto, r.att AS att, COUNT(*) AS n
+               FROM flags f JOIN ranked r ON r.tracking_number = f.tracking_number AND r.rn = 1
+              WHERE f.fin = 0
+              GROUP BY f.rto, r.att`
+          ).all();
+          const main = { total: 0, attempts: {} };
+          let inReturn = 0;
+          for (const r of results) {
+            if (r.rto) { inReturn += r.n; continue; }
+            const k = r.att == null ? 'null' : String(Math.min(Number(r.att) || 0, 2));   // 2 = «٢ فأكتر»
+            main.attempts[k] = (main.attempts[k] || 0) + r.n;
+            main.total += r.n;
+          }
+          return json({ ok: true, main, inReturn }, 200, request);
+        } catch (e) {
+          if (/no such table/i.test(e.message)) {
+            return json({ ok: false, errorCode: 'events_table_missing', error: 'جدول bosta_webhook_events مش موجود في D1' }, 503, request);
           }
           throw e;
         }
