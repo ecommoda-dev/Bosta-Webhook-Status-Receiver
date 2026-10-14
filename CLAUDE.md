@@ -9,7 +9,7 @@
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.8.1` · الواجهة اتنقلت لمركز عمليات الشحن والتحصيل (آخر نسخة مستقلة `v1.18.0`)
+**الإصدار:** Worker `v1.9.0` · الواجهة اتنقلت لمركز عمليات الشحن والتحصيل (آخر نسخة مستقلة `v1.18.0`)
 
 > 🔴 **الريبو ده Worker وبس من 12-10-2026 (قرار أحمد).** الواجهة بقت صفحة جوّه
 > `Delivery-COD-Operations-Center` → `Bosta-Webhook-Status-Receiver.html` (قسم «أدوات أخرى» · هب `v1.35.0`)،
@@ -111,6 +111,7 @@
 | `POST /webhook` | هيدر مخصص (اسمه = `BOSTA_WEBHOOK_HEADER_NAME`) | استقبال حدث بوسطة — **قبل** بوابة `WORKER_SECRET` في ترتيب الـ handlers |
 | `check_employee` · `register_pin` · `verify_employee` · `log_logout` · `get_employees` | `WORKER_SECRET` | Universal D1 Auth القياسي |
 | `list_events` | `WORKER_SECRET` | للشاشة — فلتر بـ `order` / `tracking` / `dateFrom` / `dateTo`، بيرجّع `shopify_order_id` (من v1.2.0) لهايبرلينك رقم الأوردر |
+| `queue_summary` | `WORKER_SECRET` | (v1.9.0) عدّادات صف الرئيسية في مركز الشحن: `main` (أرقام التتبع تحت التوصيل + توزيع المحاولات `0/1/2+/null`) و`inReturn` — SQL مجمّع، قراءة بحتة. ⚠️ تعريفه مكرّر في `computeTabRows` بالواجهة (ريبو الهب) |
 | `diag` | `WORKER_SECRET` | آخر حدث امتى · عدد آخر ٢٤ ساعة · `duplicate_skipped`/`match_failed` · وجود الأسرار (`!!` بس) · Shopify OAuth |
 | `get_config` | `WORKER_SECRET` | `WORKER_VERSION` (الكتابة على شوبيفاي دائمة، مفيش فلاج يتفحص) |
 | `get_logs` / `get_logs_count` / `get_logs_export` | `WORKER_SECRET` | سجل `logs` المشترك (تلقائي من §SHARED) |
