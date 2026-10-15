@@ -9,7 +9,7 @@
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.9.0` · الواجهة اتنقلت لمركز عمليات الشحن والتحصيل (آخر نسخة مستقلة `v1.18.0`)
+**الإصدار:** Worker `v1.10.0` · الواجهة اتنقلت لمركز عمليات الشحن والتحصيل (آخر نسخة مستقلة `v1.18.0`)
 
 > 🔴 **الريبو ده Worker وبس من 12-10-2026 (قرار أحمد).** الواجهة بقت صفحة جوّه
 > `Delivery-COD-Operations-Center` → `Bosta-Webhook-Status-Receiver.html` (قسم «أدوات أخرى» · هب `v1.35.0`)،
@@ -110,7 +110,8 @@
 |---|---|---|
 | `POST /webhook` | هيدر مخصص (اسمه = `BOSTA_WEBHOOK_HEADER_NAME`) | استقبال حدث بوسطة — **قبل** بوابة `WORKER_SECRET` في ترتيب الـ handlers |
 | `check_employee` · `register_pin` · `verify_employee` · `log_logout` · `get_employees` | `WORKER_SECRET` | Universal D1 Auth القياسي |
-| `list_events` | `WORKER_SECRET` | للشاشة — فلتر بـ `order` / `tracking` / `dateFrom` / `dateTo`، بيرجّع `shopify_order_id` (من v1.2.0) لهايبرلينك رقم الأوردر |
+| `list_events` | `WORKER_SECRET` | للشاشة — فلتر بـ `order` / `tracking` / `dateFrom` / `dateTo`، بيرجّع `shopify_order_id` (من v1.2.0) لهايبرلينك رقم الأوردر. 🔴 **من v1.10.0 بلا `raw_payload`** (`EVENT_LIST_COLUMNS` — ممنوع `SELECT *`) |
+| `get_event_payload` | `WORKER_SECRET` | (v1.10.0) `?id=` → `raw_payload` لحدث واحد على الطلب (زرار «Raw Payload» في لوحة السجل) — `list_events` مابقاش بيرجّعه |
 | `queue_summary` | `WORKER_SECRET` | (v1.9.0) عدّادات صف الرئيسية في مركز الشحن: `main` (أرقام التتبع تحت التوصيل + توزيع المحاولات `0/1/2+/null`) و`inReturn` — SQL مجمّع، قراءة بحتة. ⚠️ تعريفه مكرّر في `computeTabRows` بالواجهة (ريبو الهب) |
 | `diag` | `WORKER_SECRET` | آخر حدث امتى · عدد آخر ٢٤ ساعة · `duplicate_skipped`/`match_failed` · وجود الأسرار (`!!` بس) · Shopify OAuth |
 | `get_config` | `WORKER_SECRET` | `WORKER_VERSION` (الكتابة على شوبيفاي دائمة، مفيش فلاج يتفحص) |
@@ -383,6 +384,13 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 
 آخر مطابقة: 10-10-2026 · `index.js` v1.7.0 · `index.html` v1.18.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
+
+### 15-10-2026 — أول تحميل أسرع: `list_events` بلا `raw_payload` (`index.js` v1.10.0)
+
+- بطلب أحمد: أول فتح للشاشة كان بطيء لأنها بتسحب **كل الأحداث** (آلاف الصفوف على صفحات 500) و`SELECT *` كان بيرجّع `raw_payload` (JSON خام كبير) مع كل صف رغم إن الشاشة مابتستخدمه غير لما الموظف يفتح «Raw Payload» لحدث واحد.
+- `list_events` (الصفوف و`updated`) بقى يختار `EVENT_LIST_COLUMNS` = كل الأعمدة **ماعدا `raw_payload`**. endpoint جديد `get_event_payload?id=` بيرجّعه لحدث واحد (400 لو `id` غلط · 404 لو مش موجود). مفيش تغيير schema.
+- ⚠️ **الواجهة (ريبو الهب v1.41.0) معتمدة على الـ endpoint الجديد** → `DCO_WORKERS.bostaWebhook.min = 1.10.0`. **انشر الـ Worker قبل الصفحة** — العكس بيخلّي «Raw Payload» يرجّع 404 لحد النشر.
+- مفيش قياس فعلي لحجم الرد قبل/بعد — التوفير المتوقع تقدير.
 
 ### 10-10-2026 — أسباب الفشل التاريخية + مطابقة `ecommoda-html-builder` v8.3.0 (`index.html` v1.17.0 · واجهة فقط)
 

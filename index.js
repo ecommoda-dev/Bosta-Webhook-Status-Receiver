@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.9.0';
+const WORKER_VERSION = '1.10.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -449,6 +449,11 @@ const SCHEMA_SQL = [
 //    موجود). الترقية الفعلية هنا: updateEventRow بيمسك "no such column"
 //    ويضيفه مرة واحدة ذاتيًا — بدون أي خطوة يدوية في D1 Console.
 const ADD_SHOPIFY_ORDER_ID_SQL = "ALTER TABLE bosta_webhook_events ADD COLUMN shopify_order_id TEXT";
+
+// 🔴 v1.10.0 — أعمدة `list_events`: كل أعمدة الجدول **ماعدا `raw_payload`**. الـ payload الخام
+//    JSON كبير لكل حدث، والشاشة بتسحب كل الأحداث في أول تحميل (آلاف الصفوف) ومابتحتاجه غير
+//    لما الموظف يفتح «Raw Payload» لحدث واحد → `get_event_payload`. ممنوع ترجع `SELECT *` هنا.
+const EVENT_LIST_COLUMNS = 'id, bosta_id, state, bosta_timestamp, tracking_number, business_reference, order_number, bosta_type, description, event_type, delivery_promise_date, number_of_attempts, cod, is_confirmed_delivery, exception_reason, exception_code, matched_slot, match_method, write_status, metafields_written, shopify_order_id, received_at';
 
 // نص ثابت لملاحظة فشل تخزين الحدث — diag بيعدّ بيه (§5)، فممنوع يتغيّر في مكان واحد بس.
 const STORE_FAIL_NOTE = 'فشل تسجيل الحدث الخام في D1';
@@ -920,7 +925,7 @@ export default {
         const limit  = Number.isFinite(limitRaw)  ? Math.max(limitRaw, 1) : 100;
         const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
 
-        let sql = 'SELECT * FROM bosta_webhook_events WHERE 1=1';
+        let sql = `SELECT ${EVENT_LIST_COLUMNS} FROM bosta_webhook_events WHERE 1=1`;
         const b = [];
         if (orderParam) {
           const withHash = orderParam.startsWith('#') ? orderParam : '#' + orderParam;
@@ -955,7 +960,7 @@ export default {
           let updated = [];
           if (idsParam.length) {
             const ph = idsParam.map(() => '?').join(',');
-            updated = (await env.DB.prepare(`SELECT * FROM bosta_webhook_events WHERE id IN (${ph})`).bind(...idsParam).all()).results;
+            updated = (await env.DB.prepare(`SELECT ${EVENT_LIST_COLUMNS} FROM bosta_webhook_events WHERE id IN (${ph})`).bind(...idsParam).all()).results;
           }
           return json({ ok: true, events: results, updated, maxId: maxRow?.m ?? 0 }, 200, request);
         } catch (e) {
@@ -964,6 +969,24 @@ export default {
               ok: false, errorCode: 'events_table_missing',
               error: 'جدول bosta_webhook_events مش موجود في D1 — أي حدث جاي من بوسطة بيضيع. شغّل الـ CREATE TABLE من CLAUDE.md في D1 Console.',
             }, 503, request);
+          }
+          throw e;
+        }
+      }
+
+      // 🔴 v1.10.0 — الـ raw_payload لحدث واحد بالـ id (على الطلب بس). `list_events` مابقاش بيرجّعه.
+      if (action === 'get_event_payload') {
+        const id = parseInt(url.searchParams.get('id') || '', 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return json({ ok: false, error: 'id مطلوب (رقم صحيح موجب)' }, 400, request);
+        }
+        try {
+          const row = await env.DB.prepare('SELECT id, raw_payload FROM bosta_webhook_events WHERE id = ?').bind(id).first();
+          if (!row) return json({ ok: false, error: 'الحدث غير موجود' }, 404, request);
+          return json({ ok: true, id: row.id, raw_payload: row.raw_payload }, 200, request);
+        } catch (e) {
+          if (/no such table/i.test(e.message)) {
+            return json({ ok: false, errorCode: 'events_table_missing', error: 'جدول bosta_webhook_events مش موجود في D1' }, 503, request);
           }
           throw e;
         }
