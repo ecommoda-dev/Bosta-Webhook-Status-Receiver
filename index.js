@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.10.0';
+const WORKER_VERSION = '1.10.1';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -575,6 +575,8 @@ async function matchAndWriteMetafields(env, rowId, n) {
   // بعده بيتسجّل في bosta_webhook_events للعرض بس — مفيش أي نداء شوبيفاي تاني.
   // بوسطة بتبعت أكتر من حدث بنفس الحالة أحيانًا (إعادة إرسال/تأكيد)، وإعادة
   // كتابة نفس القيمة مالهاش داعي.
+  // v1.10.1: الحارس بقى على tracking_number كمان — شحنة استبدال/استرجاع تانية
+  // (رقم تتبع مختلف) على نفس الأوردر/الـ slot مش تكرار وبتتكتب عادي.
   const DUPLICATE_GUARDED_STATES = {
     45: { writeStatus: 'delivered_duplicate_skipped', label: 'Delivered' },
     46: { writeStatus: 'returned_duplicate_skipped',  label: 'Returned to business' },
@@ -583,9 +585,9 @@ async function matchAndWriteMetafields(env, rowId, n) {
   if (dupGuard) {
     const dup = await env.DB.prepare(
       `SELECT id FROM bosta_webhook_events
-       WHERE business_reference = ? AND matched_slot = ? AND state = ?
+       WHERE business_reference = ? AND matched_slot = ? AND tracking_number = ? AND state = ?
          AND write_status = 'written' AND id != ? LIMIT 1`
-    ).bind(n.businessReference, slot, n.state, rowId).first();
+    ).bind(n.businessReference, slot, n.trackingNumber, n.state, rowId).first();
     if (dup) {
       await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: dupGuard.writeStatus, shopify_order_id: orderNode.legacyResourceId });
       await writeLog(env.DB, {

@@ -297,6 +297,9 @@ Production branch : main · Builds for non-production branches: ON
   بالظبط (`business_reference`+`matched_slot`+`state=46`+`written`). الحالتين
   متعرّفين في `DUPLICATE_GUARDED_STATES` في `index.js` — أي حالة تالتة تتضاف
   هناك بس.
+  🔴 **من v1.10.1 الحارس بقى على `tracking_number` كمان** (`business_reference`+`matched_slot`+
+  `tracking_number`+`state`+`written`) — قبلها كان 46 على شحنة S2 تانية (رقم تتبع مختلف) بيتعامل
+  كتكرار وكتابته بتتخطّى (أوردر #58187: 2424717137 ثم 8680010032). نفس رقم التتبع لسه بيتخطّى.
 - 🔴 **التحديث الدوري للشاشة لازم يفضل stale-while-revalidate (v1.11.0).**
   قبل كده `loadEvents()` كانت بتمسح الـ٥ جداول بـ«جاري التحميل» كل ٦٠ث وتسحب
   كل الأحداث على صفحات، فالجدول كان بيختفي ويرجع. القواعد الحالية: «جاري
