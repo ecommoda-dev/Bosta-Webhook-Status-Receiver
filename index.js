@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.10.1';
+const WORKER_VERSION = '1.11.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -617,7 +617,25 @@ async function matchAndWriteMetafields(env, rowId, n) {
     }
   }
 
-  const statusValue = `${n.state} · ${n.description || STATE_MAP[n.state] || 'Unknown'}`;
+  // 🔴 v1.11.0 (طلب أحمد 25-10-2026) — «شحنة In-Return»: نوعها RTO، أو EXCHANGE وفيه حدث
+  // 23 (Picked up from consignee) على نفس رقم التتبع بتوقيت <= الحدث ده (الأقدم من 23 لسه
+  // خروج للعميل مش رجوع). بتحكم حاجتين: ① حدث 41 على شحنة In-Return بيتكتب وصفه
+  // «Out for Return» بدل وصف بوسطة (raw_payload وD1 ما اتغيّروش) · ② كتابة In-Return (§4.4).
+  const bostaTypeUp = String(n.bostaType || '').toUpperCase();
+  let inReturnShipment = bostaTypeUp === 'RTO';
+  if (bostaTypeUp === 'EXCHANGE') {
+    if (n.state === 23) inReturnShipment = true;
+    else {
+      const picked = await env.DB.prepare(
+        `SELECT id FROM bosta_webhook_events
+         WHERE tracking_number = ? AND state = 23 AND UPPER(bosta_type) = 'EXCHANGE'
+           AND bosta_timestamp <= ? AND id != ? LIMIT 1`
+      ).bind(n.trackingNumber, n.bostaTimestamp, rowId).first();
+      inReturnShipment = !!picked;
+    }
+  }
+  const statusDesc = (n.state === 41 && inReturnShipment) ? 'Out for Return' : (n.description || STATE_MAP[n.state] || 'Unknown');
+  const statusValue = `${n.state} · ${statusDesc}`;
 
   const metafieldsInput = [
     { ownerId: orderNode.id, namespace: 'custom', key: `bosta_webhook_status_update_${slot}`, type: 'single_line_text_field', value: statusValue },
@@ -651,7 +669,7 @@ async function matchAndWriteMetafields(env, rowId, n) {
   const RTO_FINAL_STATES = new Set([45, 46, 48]);
   const rtoKey = slot === 's1' ? 'manual_status' : 'status_2_r_e';
   const rtoCurrent = String(orderNode[rtoKey]?.value ?? '').trim();
-  const isRtoInReturn = String(n.bostaType || '').toUpperCase() === 'RTO'
+  const isRtoInReturn = inReturnShipment
     && !RTO_FINAL_STATES.has(n.state)
     && !RTO_TERMINAL_CURRENT.has(rtoCurrent.toLowerCase());
   // 🔴 مرة واحدة فقط (طلب أحمد 13-10-2026): In-Return بتتكتب عند **أول** ظهور لـ RTO على
@@ -661,10 +679,19 @@ async function matchAndWriteMetafields(env, rowId, n) {
   // لسه تعتبر أول مرة. ⚠️ أوردرات RTO اللي كان ليها حدث 'written' قبل v1.8.0 مش هتتكتب (مفيش أثر رجعي).
   let rtoFirstTime = false;
   if (isRtoInReturn) {
+    // v1.11.0: «حدث In-Return سابق» = RTO، أو EXCHANGE بعد/عند حدث 23 على نفس رقم التتبع
+    // (x.id < e.id: الـ 23 كان مسجّل وقت معالجة الحدث ده، فاتعامل معاه كـ In-Return فعلاً).
     const prevRto = await env.DB.prepare(
-      `SELECT id FROM bosta_webhook_events
-       WHERE business_reference = ? AND matched_slot = ? AND UPPER(bosta_type) = 'RTO'
-         AND write_status = 'written' AND id != ? LIMIT 1`
+      `SELECT e.id FROM bosta_webhook_events e
+       WHERE e.business_reference = ? AND e.matched_slot = ?
+         AND e.write_status = 'written' AND e.id != ?
+         AND (UPPER(e.bosta_type) = 'RTO'
+              OR (UPPER(e.bosta_type) = 'EXCHANGE' AND (e.state = 23 OR EXISTS (
+                    SELECT 1 FROM bosta_webhook_events x
+                     WHERE x.tracking_number = e.tracking_number AND x.state = 23
+                       AND UPPER(x.bosta_type) = 'EXCHANGE' AND x.bosta_timestamp <= e.bosta_timestamp
+                       AND x.id < e.id))))
+       LIMIT 1`
     ).bind(n.businessReference, slot, rowId).first();
     rtoFirstTime = !prevRto;
   }
@@ -998,7 +1025,7 @@ export default {
       //    مجمّع: الرئيسية مابتسحبش آلاف الأحداث (list_events) عشان رقم واحد.
       //    ⚠️ نفس تعريف تابَي «تحت التوصيل» و«In-Return» في الواجهة بالحرف:
       //    آخر حدث لكل tracking_number (bosta_timestamp ثم received_at ثم id)،
-      //    ورقم وصله حدث 45/46/48 ولو مرة مش بيتعدّ، وأي حدث RTO بينقله لـ In-Return.
+      //    ورقم وصله حدث 45/46/48 ولو مرة مش بيتعدّ، وأي حدث RTO (أو EXCHANGE بحالة 23) بينقله لـ In-Return.
       //    تعديل التعريف هنا لازم ينزل على `computeTabRows` في الواجهة (درس R1).
       if (action === 'queue_summary') {
         try {
@@ -1010,7 +1037,8 @@ export default {
              ), flags AS (
                SELECT tracking_number,
                       MAX(CASE WHEN state IN (45, 46, 48) THEN 1 ELSE 0 END) AS fin,
-                      MAX(CASE WHEN UPPER(COALESCE(bosta_type, '')) = 'RTO' THEN 1 ELSE 0 END) AS rto
+                      MAX(CASE WHEN UPPER(COALESCE(bosta_type, '')) = 'RTO'
+                               OR (UPPER(COALESCE(bosta_type, '')) = 'EXCHANGE' AND state = 23) THEN 1 ELSE 0 END) AS rto
                  FROM bosta_webhook_events WHERE tracking_number IS NOT NULL AND tracking_number <> ''
                 GROUP BY tracking_number
              )
