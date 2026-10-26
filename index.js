@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.11.0';
+const WORKER_VERSION = '1.12.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -617,18 +617,18 @@ async function matchAndWriteMetafields(env, rowId, n) {
     }
   }
 
-  // 🔴 v1.11.0 (طلب أحمد 25-10-2026) — «شحنة In-Return»: نوعها RTO، أو EXCHANGE وفيه حدث
+  // 🔴 v1.11.0 (طلب أحمد 25-10-2026) — «شحنة In-Return»: نوعها RTO، أو EXCHANGE/CUSTOMER_RETURN_PICKUP (v1.12.0) وفيه حدث
   // 23 (Picked up from consignee) على نفس رقم التتبع بتوقيت <= الحدث ده (الأقدم من 23 لسه
   // خروج للعميل مش رجوع). بتحكم حاجتين: ① حدث 41 على شحنة In-Return بيتكتب وصفه
   // «Out for Return» بدل وصف بوسطة (raw_payload وD1 ما اتغيّروش) · ② كتابة In-Return (§4.4).
   const bostaTypeUp = String(n.bostaType || '').toUpperCase();
   let inReturnShipment = bostaTypeUp === 'RTO';
-  if (bostaTypeUp === 'EXCHANGE') {
+  if (bostaTypeUp === 'EXCHANGE' || bostaTypeUp === 'CUSTOMER_RETURN_PICKUP') {
     if (n.state === 23) inReturnShipment = true;
     else {
       const picked = await env.DB.prepare(
         `SELECT id FROM bosta_webhook_events
-         WHERE tracking_number = ? AND state = 23 AND UPPER(bosta_type) = 'EXCHANGE'
+         WHERE tracking_number = ? AND state = 23 AND UPPER(bosta_type) IN ('EXCHANGE', 'CUSTOMER_RETURN_PICKUP')
            AND bosta_timestamp <= ? AND id != ? LIMIT 1`
       ).bind(n.trackingNumber, n.bostaTimestamp, rowId).first();
       inReturnShipment = !!picked;
@@ -686,10 +686,10 @@ async function matchAndWriteMetafields(env, rowId, n) {
        WHERE e.business_reference = ? AND e.matched_slot = ?
          AND e.write_status = 'written' AND e.id != ?
          AND (UPPER(e.bosta_type) = 'RTO'
-              OR (UPPER(e.bosta_type) = 'EXCHANGE' AND (e.state = 23 OR EXISTS (
+              OR (UPPER(e.bosta_type) IN ('EXCHANGE', 'CUSTOMER_RETURN_PICKUP') AND (e.state = 23 OR EXISTS (
                     SELECT 1 FROM bosta_webhook_events x
                      WHERE x.tracking_number = e.tracking_number AND x.state = 23
-                       AND UPPER(x.bosta_type) = 'EXCHANGE' AND x.bosta_timestamp <= e.bosta_timestamp
+                       AND UPPER(x.bosta_type) IN ('EXCHANGE', 'CUSTOMER_RETURN_PICKUP') AND x.bosta_timestamp <= e.bosta_timestamp
                        AND x.id < e.id))))
        LIMIT 1`
     ).bind(n.businessReference, slot, rowId).first();
@@ -1038,7 +1038,7 @@ export default {
                SELECT tracking_number,
                       MAX(CASE WHEN state IN (45, 46, 48) THEN 1 ELSE 0 END) AS fin,
                       MAX(CASE WHEN UPPER(COALESCE(bosta_type, '')) = 'RTO'
-                               OR (UPPER(COALESCE(bosta_type, '')) = 'EXCHANGE' AND state = 23) THEN 1 ELSE 0 END) AS rto
+                               OR (UPPER(COALESCE(bosta_type, '')) IN ('EXCHANGE', 'CUSTOMER_RETURN_PICKUP') AND state = 23) THEN 1 ELSE 0 END) AS rto
                  FROM bosta_webhook_events WHERE tracking_number IS NOT NULL AND tracking_number <> ''
                 GROUP BY tracking_number
              )
