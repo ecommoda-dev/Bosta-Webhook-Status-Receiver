@@ -388,6 +388,10 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 آخر مطابقة: 10-10-2026 · `index.js` v1.7.0 · `index.html` v1.18.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
 
+### 26-10-2026 — `CUSTOMER_RETURN_PICKUP` بعد الحدث 23 = In-Return كمان (`index.js` v1.12.0)
+
+- بطلب أحمد: نفس قاعدة EXCHANGE بالحرف (حدث `state=23` على نفس رقم التتبع بتوقيت ≤ الحدث الحالي) بقت تنطبق على `CUSTOMER_RETURN_PICKUP` — كتابة In-Return (§4.4)، وصف «Out for Return» لحدث 41، وعمود `rto` في `queue_summary`. مفيش أثر رجعي. `DCO_WORKERS.bostaWebhook.min` → `1.12.0` في ريبو الهب. ما اتجرّبش على شوبيفاي حقيقية.
+
 ### 25-10-2026 — استبدال (EXCHANGE) بعد الحدث 23 = In-Return + وصف «Out for Return» (`index.js` v1.11.0)
 
 - بطلب أحمد: **«شحنة In-Return» = نوعها `RTO`، أو `EXCHANGE` وعليها حدث `state=23` (Picked up from consignee)** على نفس رقم التتبع بتوقيت ≤ الحدث الحالي (الأقدم من 23 لسه خروج للعميل مش رجوع). `CUSTOMER_RETURN_PICKUP` **مش** داخل (قرار أحمد: EXCHANGE بس).
