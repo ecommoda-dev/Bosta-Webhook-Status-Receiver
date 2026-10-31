@@ -9,7 +9,7 @@
 **بتعمل إيه:** بتستقبل أحداث الويبهوك من بوسطة (تغيير حالة شحنة)، تسجّلها خام
 في D1، وتكتب آخر حالة في ٤ ميتافيلدات على الأوردر المطابق في شوبيفاي.
 **مين بيستخدمها:** فريق العمليات — شاشة مراقبة للأحداث والاستثناءات.
-**الإصدار:** Worker `v1.11.0` · الواجهة اتنقلت لمركز عمليات الشحن والتحصيل (آخر نسخة مستقلة `v1.18.0`)
+**الإصدار:** Worker `v1.13.0` · الواجهة اتنقلت لمركز عمليات الشحن والتحصيل (آخر نسخة مستقلة `v1.18.0`)
 
 > 🔴 **الريبو ده Worker وبس من 12-10-2026 (قرار أحمد).** الواجهة بقت صفحة جوّه
 > `Delivery-COD-Operations-Center` → `Bosta-Webhook-Status-Receiver.html` (قسم «أدوات أخرى» · هب `v1.35.0`)،
@@ -387,6 +387,14 @@ v1.1.0 (واجهة) · Worker v1.0.0 — commit 57012a7 (20-09-2026)
 
 آخر مطابقة: 10-10-2026 · `index.js` v1.7.0 · `index.html` v1.18.0
 🔴 معلّقة: تسجيل `ecommoda-constants` §7 (tool/type) — **بقى متأخّرًا، الأداة بتكتب فعليًا وناجحة دلوقتي** — وتسجيل عضوية `delivery_cod_ops` في `secret-groups.md`.
+
+### 31-10-2026 — تراجع Delivered: بوسطة بتبعت 45 وبعدها بترجّع الشحنة (`index.js` v1.13.0)
+
+- 🔴 **المشكلة (مقيسة على D1):** #56174 · #59912 · #60320 · #61162 — Delivered (45) ثم Received at warehouse (محاولات 0) بعد ٤٠–٢٧٠ دقيقة ثم Exception ثم RTO ثم 46. الـ Worker كان كاتب `manual_status=Delivered` و`package_whereabouts_s1=Client` ومحدش بيصلّحهم: حارس In-Return (§4.4) بيرفض لأن القيمة الحالية Delivered، وحدث 46 مابيكتبش `manual_status`.
+- **§4.3b (جديد):** أي حدث S1 غير 45/46/48 بعد حدث 45 **اتكتب `written` من الـ Worker ده** على نفس `business_reference`+`tracking_number` — والقيمة الحالية `manual_status=Delivered` — بيكتب `manual_status=Shipped` و`package_whereabouts_s1=Courier` **مرة واحدة** (بعدها القيمة مابقتش Delivered). ⛔ مايتراجعش لو Delivered كتبه موظف (مفيش حدث 45 written) ولا لو فيه حدث 45 أحدث. حدث RTO بيكتب `In-Return` فوق التراجع في نفس `metafieldsSet` (بيشيل مفتاح `manual_status` المكرر). 46/48 مستثناة.
+- **حارس تكرار 45:** بيتجاهل 45 سابق لو جه بعده حدث غير 45 قبل الحدث الحالي — وإلا Delivered تاني بعد التراجع كان هيتسجّل `delivered_duplicate_skipped` ومايكتبش. 46 ما اتغيّرش.
+- **`queue_summary`:** الرقم «نهائي» لو 46/48 ولو مرة أو آخر حدث ليه 45 (نفس `computeFinalTrackingNumbers` في الواجهة، ريبو الهب v1.64.0). `DCO_WORKERS.bostaWebhook.min` → `1.13.0` — **انشر الـ Worker قبل الصفحة**.
+- ⚠️ **`Shipped`/`Courier` (`DELIVERED_REVERT_STATUS`/`_WHEREABOUTS`) افتراض** — القيمة الأصلية قبل Delivered مش مسجّلة في أي مكان. ما اتجرّبش على شوبيفاي حقيقية؛ اتجرّب بس SQL الحارس على SQLite.
 
 ### 26-10-2026 — `CUSTOMER_RETURN_PICKUP` بعد الحدث 23 = In-Return كمان (`index.js` v1.12.0)
 

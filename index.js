@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.12.0';
+const WORKER_VERSION = '1.13.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -586,8 +586,13 @@ async function matchAndWriteMetafields(env, rowId, n) {
     const dup = await env.DB.prepare(
       `SELECT id FROM bosta_webhook_events
        WHERE business_reference = ? AND matched_slot = ? AND tracking_number = ? AND state = ?
-         AND write_status = 'written' AND id != ? LIMIT 1`
-    ).bind(n.businessReference, slot, n.trackingNumber, n.state, rowId).first();
+         AND write_status = 'written' AND id != ?
+         AND (? <> 45 OR NOT EXISTS (
+               SELECT 1 FROM bosta_webhook_events z
+                WHERE z.tracking_number = ? AND z.state <> 45 AND z.bosta_timestamp > bosta_webhook_events.bosta_timestamp
+                  AND z.bosta_timestamp < ?))
+       LIMIT 1`
+    ).bind(n.businessReference, slot, n.trackingNumber, n.state, rowId, n.state, n.trackingNumber, n.bostaTimestamp).first();
     if (dup) {
       await updateEventRow(env.DB, rowId, { matched_slot: slot, match_method: matchMethod, write_status: dupGuard.writeStatus, shopify_order_id: orderNode.legacyResourceId });
       await writeLog(env.DB, {
@@ -657,6 +662,33 @@ async function matchAndWriteMetafields(env, rowId, n) {
     );
   }
 
+  // §4.3b — 🔴 v1.13.0 (طلب أحمد 31-10-2026) — تراجع Delivered: بوسطة أحيانًا بتبعت Delivered وبعد دقايق
+  // ترجّع Received at warehouse (محاولات 0) أو Exception… — الشحنة ماتسلّمتش فعلًا. أي حدث S1 غير 45/46/48
+  // بعد Delivered **اتكتب فعلًا من الـ Worker ده** (حدث 45 written على نفس الأوردر/رقم التتبع) بيرجّع
+  // manual_status لـ Shipped وpackage_whereabouts_s1 لـ Courier — مرة واحدة (القيمة الحالية لازم تكون Delivered،
+  // وبعد التراجع مابقتش). ⛔ مايتراجعش لو Delivered كتبه موظف (مفيش حدث 45 written) ولا لو فيه حدث 45 أحدث.
+  // 46/48 مستثناة (حالة نهائية مش تراجع). ما اتجرّبش على شوبيفاي حقيقية.
+  const DELIVERED_REVERT_STATUS = 'Shipped';
+  const DELIVERED_REVERT_WHEREABOUTS = 'Courier';
+  let isDeliveredRevert = false;
+  if (slot === 's1' && ![45, 46, 48].includes(n.state)
+      && String(orderNode.manual_status?.value ?? '').trim().toLowerCase() === 'delivered') {
+    const prevDelivered = await env.DB.prepare(
+      `SELECT id FROM bosta_webhook_events
+       WHERE business_reference = ? AND matched_slot = 's1' AND tracking_number = ? AND state = 45
+         AND write_status = 'written' AND bosta_timestamp < ? AND id != ?
+         AND NOT EXISTS (SELECT 1 FROM bosta_webhook_events y WHERE y.tracking_number = ? AND y.state = 45 AND y.bosta_timestamp > ?)
+       LIMIT 1`
+    ).bind(n.businessReference, n.trackingNumber, n.bostaTimestamp, rowId, n.trackingNumber, n.bostaTimestamp).first();
+    isDeliveredRevert = !!prevDelivered;
+  }
+  if (isDeliveredRevert) {
+    metafieldsInput.push(
+      { ownerId: orderNode.id, namespace: 'custom', key: 'manual_status',          type: 'single_line_text_field', value: DELIVERED_REVERT_STATUS },
+      { ownerId: orderNode.id, namespace: 'custom', key: 'package_whereabouts_s1', type: 'single_line_text_field', value: DELIVERED_REVERT_WHEREABOUTS },
+    );
+  }
+
   // §4.4 — أكشن RTO (طلب أحمد 13-10-2026): الشحنة اللي نوعها RTO بتحدّث حالة الأوردر
   // على الجنب اللي اتحدد لها لـ "In-Return": S1 ← custom.manual_status · S2 ← custom.status_2_r_e.
   // 🔴 استثناء واعٍ تاني من قاعدة "ممنوع كتابة status_1/status_2" (الحقلين دول بيشغّلوا
@@ -668,7 +700,8 @@ async function matchAndWriteMetafields(env, rowId, n) {
   const RTO_TERMINAL_CURRENT = new Set(['in-return', 'returned', 'delivered', 'cancelled']);
   const RTO_FINAL_STATES = new Set([45, 46, 48]);
   const rtoKey = slot === 's1' ? 'manual_status' : 'status_2_r_e';
-  const rtoCurrent = String(orderNode[rtoKey]?.value ?? '').trim();
+  // v1.13.0: لو الحدث ده رجّع manual_status من Delivered لـ Shipped، نفس الحدث (RTO) يقدر يكتب In-Return.
+  const rtoCurrent = (isDeliveredRevert && rtoKey === 'manual_status') ? DELIVERED_REVERT_STATUS : String(orderNode[rtoKey]?.value ?? '').trim();
   const isRtoInReturn = inReturnShipment
     && !RTO_FINAL_STATES.has(n.state)
     && !RTO_TERMINAL_CURRENT.has(rtoCurrent.toLowerCase());
@@ -696,6 +729,8 @@ async function matchAndWriteMetafields(env, rowId, n) {
     rtoFirstTime = !prevRto;
   }
   if (isRtoInReturn && rtoFirstTime) {
+    const dupIdx = metafieldsInput.findIndex(m => m.key === rtoKey);   // التراجع كتب manual_status — In-Return يغلبه
+    if (dupIdx >= 0) metafieldsInput.splice(dupIdx, 1);
     metafieldsInput.push(
       { ownerId: orderNode.id, namespace: 'custom', key: rtoKey, type: 'single_line_text_field', value: RTO_STATUS_VALUE },
     );
@@ -724,8 +759,9 @@ async function matchAndWriteMetafields(env, rowId, n) {
     orderId: orderNode.legacyResourceId, orderName: n.businessReference,
     notes: `${slot.toUpperCase()} ← ${statusValue}`
       + (isDeliveredS1Send ? ' + manual_status←Delivered + package_whereabouts_s1←Client' : '')
+      + (isDeliveredRevert ? ` + تراجع Delivered: manual_status←${DELIVERED_REVERT_STATUS} + package_whereabouts_s1←${DELIVERED_REVERT_WHEREABOUTS}` : '')
       + (isRtoInReturn && rtoFirstTime ? ` + ${rtoKey}←${RTO_STATUS_VALUE}` : ''),
-    extra: { result: 'success', slot, matchMethod, bostaId: n.bostaId, trackingNumber: cleanTracking, extraDeliveredWrite: isDeliveredS1Send, extraRtoInReturnWrite: isRtoInReturn && rtoFirstTime },
+    extra: { result: 'success', slot, matchMethod, bostaId: n.bostaId, trackingNumber: cleanTracking, extraDeliveredWrite: isDeliveredS1Send, extraRtoInReturnWrite: isRtoInReturn && rtoFirstTime, extraDeliveredRevert: isDeliveredRevert },
   }).catch(() => {});
 }
 
@@ -1025,18 +1061,18 @@ export default {
       //    مجمّع: الرئيسية مابتسحبش آلاف الأحداث (list_events) عشان رقم واحد.
       //    ⚠️ نفس تعريف تابَي «تحت التوصيل» و«In-Return» في الواجهة بالحرف:
       //    آخر حدث لكل tracking_number (bosta_timestamp ثم received_at ثم id)،
-      //    ورقم وصله حدث 45/46/48 ولو مرة مش بيتعدّ، وأي حدث RTO (أو EXCHANGE بحالة 23) بينقله لـ In-Return.
+      //    ورقم وصله 46/48 ولو مرة، أو آخر حدث ليه 45 (v1.13.0: Delivered اتراجع عنه بحدث بعده يرجّعه) مش بيتعدّ، وأي حدث RTO (أو EXCHANGE بحالة 23) بينقله لـ In-Return.
       //    تعديل التعريف هنا لازم ينزل على `computeTabRows` في الواجهة (درس R1).
       if (action === 'queue_summary') {
         try {
           const { results } = await env.DB.prepare(
             `WITH ranked AS (
-               SELECT tracking_number, number_of_attempts AS att,
+               SELECT tracking_number, number_of_attempts AS att, state AS last_state,
                       ROW_NUMBER() OVER (PARTITION BY tracking_number ORDER BY bosta_timestamp DESC, received_at DESC, id DESC) AS rn
                  FROM bosta_webhook_events WHERE tracking_number IS NOT NULL AND tracking_number <> ''
              ), flags AS (
                SELECT tracking_number,
-                      MAX(CASE WHEN state IN (45, 46, 48) THEN 1 ELSE 0 END) AS fin,
+                      MAX(CASE WHEN state IN (46, 48) THEN 1 ELSE 0 END) AS fin,
                       MAX(CASE WHEN UPPER(COALESCE(bosta_type, '')) = 'RTO'
                                OR (UPPER(COALESCE(bosta_type, '')) IN ('EXCHANGE', 'CUSTOMER_RETURN_PICKUP') AND state = 23) THEN 1 ELSE 0 END) AS rto
                  FROM bosta_webhook_events WHERE tracking_number IS NOT NULL AND tracking_number <> ''
@@ -1044,7 +1080,7 @@ export default {
              )
              SELECT f.rto AS rto, r.att AS att, COUNT(*) AS n
                FROM flags f JOIN ranked r ON r.tracking_number = f.tracking_number AND r.rn = 1
-              WHERE f.fin = 0
+              WHERE f.fin = 0 AND r.last_state <> 45
               GROUP BY f.rto, r.att`
           ).all();
           const main = { total: 0, attempts: {} };
