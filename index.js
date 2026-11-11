@@ -9,7 +9,7 @@
 //    CLAUDE.md → "🔴 معلّقة" لتفاصيل الحالة الحالية.
 // ══════════════════════════════════════════════════════════════
 const TOOL_NAME     = 'bosta_webhook_status';
-const WORKER_VERSION = '1.13.0';
+const WORKER_VERSION = '1.14.0';
 
 // STATE_MAP — نفس أكواد bosta-api-helper Step 3، بيتستخدم fallback بس لو
 // description غايب من payload الويبهوك (الحالة الطبيعية إنه موجود دايمًا).
@@ -712,11 +712,13 @@ async function matchAndWriteMetafields(env, rowId, n) {
   // لسه تعتبر أول مرة. ⚠️ أوردرات RTO اللي كان ليها حدث 'written' قبل v1.8.0 مش هتتكتب (مفيش أثر رجعي).
   let rtoFirstTime = false;
   if (isRtoInReturn) {
+    // v1.14.0: الحارس على tracking_number كمان — شحنة استبدال/RTO تانية (رقم تتبع مختلف) على نفس الأوردر/الـ slot
+    // بتتعامل «أول مرة» لوحدها (#63656: كود 23 على الشحنة التانية اتخطّى لأن الأولى كانت In-Return).
     // v1.11.0: «حدث In-Return سابق» = RTO، أو EXCHANGE بعد/عند حدث 23 على نفس رقم التتبع
     // (x.id < e.id: الـ 23 كان مسجّل وقت معالجة الحدث ده، فاتعامل معاه كـ In-Return فعلاً).
     const prevRto = await env.DB.prepare(
       `SELECT e.id FROM bosta_webhook_events e
-       WHERE e.business_reference = ? AND e.matched_slot = ?
+       WHERE e.business_reference = ? AND e.matched_slot = ? AND e.tracking_number = ?
          AND e.write_status = 'written' AND e.id != ?
          AND (UPPER(e.bosta_type) = 'RTO'
               OR (UPPER(e.bosta_type) IN ('EXCHANGE', 'CUSTOMER_RETURN_PICKUP') AND (e.state = 23 OR EXISTS (
@@ -725,7 +727,7 @@ async function matchAndWriteMetafields(env, rowId, n) {
                        AND UPPER(x.bosta_type) IN ('EXCHANGE', 'CUSTOMER_RETURN_PICKUP') AND x.bosta_timestamp <= e.bosta_timestamp
                        AND x.id < e.id))))
        LIMIT 1`
-    ).bind(n.businessReference, slot, rowId).first();
+    ).bind(n.businessReference, slot, n.trackingNumber, rowId).first();
     rtoFirstTime = !prevRto;
   }
   if (isRtoInReturn && rtoFirstTime) {
